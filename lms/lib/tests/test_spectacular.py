@@ -431,16 +431,13 @@ PREFERENCE_DOCUMENT_BODY = {
     ),
 }
 
-#: What each superseded operation the schema describes is expected to exchange:
-#: the media types of the body it reads, and the success code with the body it
-#: answers with. ``None`` is a response code carrying no body at all.
 #: What the replacement of several names answers with, spelled out here rather
 #: than read from the module that publishes it, so that an edit to that shape
 #: is an edit this test sees. The mapping it carries is a wire format: the
 #: services this one is called beside read the same member shape.
 _MAPPING_BODY = {
     "type": "object",
-    "additionalProperties": {"type": "string"},
+    "additionalProperties": {},
     "description": (
         "One account, as the name it is stored under carrying the name asked for it. Exactly one "
         "name per object."
@@ -473,6 +470,9 @@ REPLACEMENT_OUTCOME_BODY = {
 }
 
 
+#: What each superseded operation the schema describes is expected to exchange:
+#: the media types of the body it reads, and the success code with the body it
+#: answers with. ``None`` is a response code carrying no body at all.
 SUPERSEDED_EXCHANGES = {
     ("/api/user/v1/accounts", "get"): ([], {"200": "Account[]"}),
     ("/api/user/v1/accounts/{username}", "get"): ([], {"200": "Account"}),
@@ -841,6 +841,134 @@ class SupersededPreferenceRequestBodyTest(TestCase):
             for name in ("published", "service-wide")
             for address, _method in PREFERENCE_VALUES_ACCEPTED_ONLY_BY_THE_SUPERSEDED_ADDRESS
         }
+
+
+#: A request each superseded handler reads rather than refusing for its shape:
+#: an empty password, which the closing of an account reads as a password the
+#: account does not hold, and names that are not text, which the replacement
+#: writes as names or answers among its failures.
+READ_BY_THE_SUPERSEDED_ADDRESS = {
+    ("/api/user/v1/accounts/deactivate_logout/", "post"): {"password": ""},
+    ("/api/user/v1/accounts/replace_usernames/", "post"): {
+        "username_mappings": [{"bodyheld": None}, {"bodynobody": 5}, {"bodyother": "has/a/slash"}],
+    },
+}
+
+#: The password form the superseded closing of an account reads.
+PASSWORD_FORM_BODY = {
+    "type": "object",
+    "properties": {
+        "password": {"type": "string", "description": "Current password of the account making the request."},
+    },
+    "required": ["password"],
+}
+
+
+@override_settings(USERNAME_REPLACEMENT_WORKER="bodyreplacer")
+class SupersededClosureAndReplacementBodyTest(TestCase):
+    """
+    The superseded closing of an account and replacement of names publish bodies of their own.
+
+    Each is written out from what its handler reads rather than borrowed from
+    the replacing address, so a bound or type the replacing address takes on
+    is not published for a handler that does not hold a request to it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.documents = _user_documents()
+
+    def _published_bodies(self, address, method):
+        """Yield each document's name, a media type and the body published for it at one operation."""
+        for name, document in self.documents.items():
+            for media_type, content in document["paths"][address][method]["requestBody"]["content"].items():
+                yield name, media_type, content["schema"]
+
+    def test_each_body_is_written_out_and_carries_nothing_that_bounds_it(self):
+        published = {
+            (name, address, media_type): body
+            for address, method in READ_BY_THE_SUPERSEDED_ADDRESS
+            for name, media_type, body in self._published_bodies(address, method)
+        }
+        mappings = {
+            "type": "object",
+            "properties": {
+                "username_mappings": {
+                    "type": "array",
+                    "items": _MAPPING_BODY,
+                    "description": "Accounts whose names are to be replaced, each as an object naming one of them.",
+                },
+            },
+            "required": ["username_mappings"],
+        }
+        expected = {
+            (name, "/api/user/v1/accounts/deactivate_logout/", media_type): PASSWORD_FORM_BODY
+            for name in self.documents
+            for media_type in ("application/x-www-form-urlencoded", "multipart/form-data")
+        }
+        expected.update({
+            (name, "/api/user/v1/accounts/replace_usernames/", "application/json"): mappings
+            for name in self.documents
+        })
+        assert published == expected
+        for key, body in published.items():
+            assert _keywords(body) & BOUNDING_KEYWORDS == set(), key
+
+    def test_each_request_the_handler_reads_is_one_its_published_body_allows(self):
+        for (address, method), request in READ_BY_THE_SUPERSEDED_ADDRESS.items():
+            for name, media_type, body in self._published_bodies(address, method):
+                with self.subTest(document=name, address=address, media_type=media_type):
+                    jsonschema.Draft202012Validator(body).validate(request)
+
+    def test_each_handler_reads_those_requests(self):
+        """The empty password is refused as not the account's; a missing one is refused as missing."""
+        owner = UserFactory.create(username="bodycloser", password=TEST_PASSWORD)
+        UserFactory.create(username="bodyreplacer", password=TEST_PASSWORD)
+        UserFactory.create(username="bodyheld")
+        UserFactory.create(username="bodyother")
+        closer, worker = Client(), Client()
+        assert closer.login(username=owner.username, password=TEST_PASSWORD)
+        assert worker.login(username="bodyreplacer", password=TEST_PASSWORD)
+        requests = READ_BY_THE_SUPERSEDED_ADDRESS
+        closing = "/api/user/v1/accounts/deactivate_logout/"
+        replacing = "/api/user/v1/accounts/replace_usernames/"
+        answered = {
+            "no password": closer.post(closing, {}).status_code,
+            "empty password": closer.post(closing, requests[(closing, "post")]).status_code,
+            "names": worker.post(
+                replacing, json.dumps(requests[(replacing, "post")]), content_type="application/json",
+            ),
+        }
+        assert answered["no password"] == 400
+        assert answered["empty password"] == 403
+        assert answered["names"].status_code == 200
+        assert answered["names"].json() == {
+            "successful_replacements": [{"bodynobody": 5}, {"bodyother": "has/a/slash"}],
+            "failed_replacements": [{"bodyheld": None}],
+        }
+
+    def test_the_replacing_addresses_publish_bodies_of_their_own(self):
+        for name, document in self.documents.items():
+            paths = document["paths"]
+            with self.subTest(document=name):
+                closing = paths["/api/user/v2/retirements/"]["post"]["requestBody"]["content"]
+                assert {media_type: body["schema"] for media_type, body in closing.items()} == dict.fromkeys(
+                    closing, {"$ref": "#/components/schemas/RetirementRequest"},
+                )
+                replacing = paths["/api/user/v2/username_replacements/"]["post"]["requestBody"]["content"]
+                assert replacing["application/json"]["schema"] == {
+                    "$ref": "#/components/schemas/UsernameReplacementRequest",
+                }
+
+    def test_each_body_is_published_as_required(self):
+        required = {
+            (name, address): document["paths"][address][method]["requestBody"].get("required", False)
+            for name, document in self.documents.items()
+            for address, method in READ_BY_THE_SUPERSEDED_ADDRESS
+        }
+        assert required == dict.fromkeys(required, True)
+        assert len(required) == 4
 
 
 #: The preference operations this service serves replacements for. Studio

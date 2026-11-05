@@ -206,6 +206,33 @@ def superseded_bodies():
     preferences_changed = {
         204: OpenApiResponse(description="The preferences now stand as the body asked."),
     }
+    # The closing of an account reads the password from a submitted form. A
+    # request carrying none is refused, and an empty one is read as a password
+    # the account does not hold, so the value carries no bound.
+    password_form = {
+        "type": "object",
+        "properties": {
+            "password": {
+                "type": "string",
+                "description": "Current password of the account making the request.",
+            },
+        },
+        "required": ["password"],
+    }
+    # One mapping as the replacement of several names reads and answers it. An
+    # object carrying no member or several is refused; a value of any type is
+    # written as the name, and one the database refuses, such as null, is
+    # answered among the failures, so the value carries no type.
+    username_mapping = {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "additionalProperties": {},
+        "description": (
+            "One account, as the name it is stored under carrying the name asked for it. Exactly one "
+            "name per object."
+        ),
+    }
     described = {
         ("/api/user/v1/accounts", "GET"): _SupersededBodies(None, {200: replacing.AccountSerializer(many=True)}),
         ("/api/user/v1/accounts/{username}", "GET"): _SupersededBodies(None, account),
@@ -372,8 +399,8 @@ def superseded_bodies():
         # would always be answered the refusal. It answers with nothing at all.
         ("/api/user/v1/accounts/deactivate_logout/", "POST"): _SupersededBodies(
             {
-                "application/x-www-form-urlencoded": replacing.RetirementRequestSerializer,
-                "multipart/form-data": replacing.RetirementRequestSerializer,
+                "application/x-www-form-urlencoded": password_form,
+                "multipart/form-data": password_form,
             },
             {
                 204: OpenApiResponse(
@@ -394,7 +421,7 @@ def superseded_bodies():
                     "properties": {
                         "username_mappings": {
                             "type": "array",
-                            "items": replacing.USERNAME_MAPPING_SCHEMA,
+                            "items": username_mapping,
                             "description": (
                                 "Accounts whose names are to be replaced, each as an object "
                                 "naming one of them."
@@ -411,7 +438,7 @@ def superseded_bodies():
                         "properties": {
                             "successful_replacements": {
                                 "type": "array",
-                                "items": replacing.USERNAME_MAPPING_SCHEMA,
+                                "items": username_mapping,
                                 "description": (
                                     "Every mapping that was not refused, as the name given carrying "
                                     "the name handed out for it. A name no account was stored under "
@@ -420,7 +447,7 @@ def superseded_bodies():
                             },
                             "failed_replacements": {
                                 "type": "array",
-                                "items": replacing.USERNAME_MAPPING_SCHEMA,
+                                "items": username_mapping,
                                 "description": (
                                     "Every mapping whose replacement did not finish, as the name "
                                     "given carrying the name that was to replace it."
