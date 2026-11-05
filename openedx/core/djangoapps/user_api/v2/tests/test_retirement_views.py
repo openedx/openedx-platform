@@ -2098,13 +2098,20 @@ class RetirementAccessModelTests(RetirementApiTestCase):
 
     def test_an_action_the_mapping_does_not_name_reaches_no_capability(self):
         """A later action cannot inherit the capability every named action shares."""
-        viewset = RetirementViewSet()
-        viewset.action = "an_action_added_later"
-        granted = [
-            permission.has_permission(mock.Mock(user=self.superuser), viewset)
-            for permission in viewset.get_permissions()
+        # Read from the declaration, so the answer does not depend on whether a
+        # request to this view earlier in the run let the middleware copy it.
+        with layers_read_from_their_own_declaration(RetirementViewSet):
+            viewset = RetirementViewSet()
+            viewset.action = "an_action_added_later"
+            granted = [
+                (type(permission), permission.has_permission(mock.Mock(user=self.superuser), viewset))
+                for permission in viewset.get_permissions()
+            ]
+        assert granted == [
+            (permissions.IsAuthenticated, True),
+            (permissions.NOT, False),
+            (NotJwtRestrictedApplication, True),
         ]
-        assert granted[-1] is False
 
     def test_each_named_action_carries_the_capability_it_is_mapped_to(self):
         """The classes are read from the view rather than from the mapping, so the mapping can be wrong."""
@@ -2117,13 +2124,15 @@ class RetirementAccessModelTests(RetirementApiTestCase):
             "metadata": CanRetireUser,
         }
         assert set(expected) == set(RETIREMENT_ACTION_PERMISSIONS)
-        for action, capability in expected.items():
-            with self.subTest(action=action):
-                viewset = RetirementViewSet()
-                viewset.action = action
-                built = [type(permission) for permission in viewset.get_permissions()]
-                assert built[-1] is capability
-                assert permissions.IsAuthenticated in built
+        # Read from the declaration, so the answer does not depend on whether a
+        # request to this view earlier in the run let the middleware copy it.
+        with layers_read_from_their_own_declaration(RetirementViewSet):
+            for action, capability in expected.items():
+                with self.subTest(action=action):
+                    viewset = RetirementViewSet()
+                    viewset.action = action
+                    built = [type(permission) for permission in viewset.get_permissions()]
+                    assert built == [permissions.IsAuthenticated, capability, NotJwtRestrictedApplication]
 
     def test_the_classes_of_a_view_must_all_admit_a_caller(self):
         """Being authenticated is not enough, and holding the capability without being signed in is not either."""
@@ -2332,12 +2341,20 @@ class RetirementRecordAccessReachTests(RetirementApiTestCase):
         )
 
     def test_an_action_added_to_the_disposal_later_reaches_no_capability(self):
-        viewset = RetirementCleanupViewSet()
-        viewset.action = "an_action_added_later"
-        assert [
-            permission.has_permission(mock.Mock(user=self.superuser), viewset)
-            for permission in viewset.get_permissions()
-        ][-1] is False
+        # Read from the declaration, so the answer does not depend on whether a
+        # request to this view earlier in the run let the middleware copy it.
+        with layers_read_from_their_own_declaration(RetirementCleanupViewSet):
+            viewset = RetirementCleanupViewSet()
+            viewset.action = "an_action_added_later"
+            granted = [
+                (type(permission), permission.has_permission(mock.Mock(user=self.superuser), viewset))
+                for permission in viewset.get_permissions()
+            ]
+        assert granted == [
+            (permissions.IsAuthenticated, True),
+            (permissions.NOT, False),
+            (NotJwtRestrictedApplication, True),
+        ]
 
 
 @skip_unless_lms
@@ -3578,16 +3595,20 @@ class UnservedMethodTests(RetirementApiTestCase):
 
     def test_an_action_the_mapping_does_not_name_still_reaches_no_capability(self):
         """An action added later is refused; it is an unserved method that is not."""
-        viewset = RetirementViewSet()
-        viewset.action = "an_action_added_later"
-        assert [
-            permission.has_permission(mock.Mock(user=self.superuser), viewset)
-            for permission in viewset.get_permissions()
-        ][-1] is False
-        viewset.action = None
-        # Read from the view rather than named here: the platform's own JWT
-        # middleware adds a class to every view it serves, so what the classes
-        # of this view are is not fixed at import.
-        assert [type(permission) for permission in viewset.get_permissions()] == list(
-            RetirementViewSet.permission_classes,
-        )
+        # Read from the declaration, so the answer does not depend on whether a
+        # request to this view earlier in the run let the middleware copy it.
+        with layers_read_from_their_own_declaration(RetirementViewSet):
+            viewset = RetirementViewSet()
+            viewset.action = "an_action_added_later"
+            granted = [
+                (type(permission), permission.has_permission(mock.Mock(user=self.superuser), viewset))
+                for permission in viewset.get_permissions()
+            ]
+            viewset.action = None
+            unserved = [type(permission) for permission in viewset.get_permissions()]
+        assert granted == [
+            (permissions.IsAuthenticated, True),
+            (permissions.NOT, False),
+            (NotJwtRestrictedApplication, True),
+        ]
+        assert unserved == [permissions.IsAuthenticated, NotJwtRestrictedApplication]
