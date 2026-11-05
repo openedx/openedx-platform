@@ -48,9 +48,15 @@ class UntagDeprecatedOperationsRegistrationTest(SimpleTestCase):
         "cms/envs/common.py": "'cms.lib.spectacular.cms_mark_migrated_paths',",
         "lms/envs/common.py": "'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',",
     }
+    SHARED_HOOK = "'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',"
 
     def test_the_hook_runs_last(self):
         for module, marking_hook in self.MARKING_HOOKS.items():
             source = (REPO_ROOT / module).read_text()
             assert HOOK in source, module
             assert source.index(marking_hook) < source.index(HOOK), module
+
+    def test_the_hook_runs_after_the_hook_marking_the_superseded_user_addresses(self):
+        source = (REPO_ROOT / "lms/envs/common.py").read_text()
+        assert self.SHARED_HOOK in source
+        assert source.index(self.SHARED_HOOK) < source.index(HOOK)
