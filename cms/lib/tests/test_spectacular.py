@@ -380,6 +380,7 @@ class SupersededUserOperationTest(DjangoTestCase):
             for alternative in operation.get("security", ())
             for credential in alternative
         }
+        assert {"cookieAuth"} <= named, sorted(named)
         assert named - described <= {"csrf"}, sorted(named - described)
         assert named & set(CREDENTIAL_SCHEMES) == set()
 

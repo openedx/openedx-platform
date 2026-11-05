@@ -448,6 +448,7 @@ class AttemptsCountedTests(RetirementRequestTestCase):
 
     def test_the_count_is_cleared_by_a_password_the_account_does_hold(self):
         assert self.ask(password="WrongPassword9999").status_code == status.HTTP_403_FORBIDDEN
+        assert self.attempts() == [1]
         assert self.ask().status_code == status.HTTP_204_NO_CONTENT
         assert self.attempts() == []
 

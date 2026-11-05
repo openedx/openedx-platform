@@ -917,7 +917,9 @@ class SupersededClosureAndReplacementBodyTest(TestCase):
 
     def test_each_request_the_handler_reads_is_one_its_published_body_allows(self):
         for (address, method), request in READ_BY_THE_SUPERSEDED_ADDRESS.items():
-            for name, media_type, body in self._published_bodies(address, method):
+            bodies = list(self._published_bodies(address, method))
+            assert {name for name, _media_type, _body in bodies} == set(self.documents), address
+            for name, media_type, body in bodies:
                 with self.subTest(document=name, address=address, media_type=media_type):
                     jsonschema.Draft202012Validator(body).validate(request)
 
@@ -954,7 +956,8 @@ class SupersededClosureAndReplacementBodyTest(TestCase):
             with self.subTest(document=name):
                 closing = paths["/api/user/v2/retirements/"]["post"]["requestBody"]["content"]
                 assert {media_type: body["schema"] for media_type, body in closing.items()} == dict.fromkeys(
-                    closing, {"$ref": "#/components/schemas/RetirementRequest"},
+                    ("application/json", "application/x-www-form-urlencoded", "multipart/form-data"),
+                    {"$ref": "#/components/schemas/RetirementRequest"},
                 )
                 replacing = paths["/api/user/v2/username_replacements/"]["post"]["requestBody"]["content"]
                 assert replacing["application/json"]["schema"] == {
