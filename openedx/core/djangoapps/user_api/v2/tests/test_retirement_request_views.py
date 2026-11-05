@@ -308,14 +308,20 @@ class RetirementRequestBodyTests(RetirementRequestTestCase):
         assert list(envelope["errors"]) == ["password"]
         self.assert_nothing_was_recorded(self.owner)
 
-    def test_a_password_sent_as_nothing_at_all_is_refused_as_a_value(self):
-        """An empty value is not a password the account could hold."""
-        envelope = assert_error_envelope(
-            self.ask(password=""),
-            expected_status=status.HTTP_400_BAD_REQUEST,
-            expected_type_slug="validation",
-        )
-        assert list(envelope["errors"]) == ["password"]
+    def test_a_password_sent_as_nothing_at_all_is_refused_as_not_the_accounts(self):
+        """The earlier address reads an empty password as one the account does not hold, and so does this one."""
+        sent = {
+            "form": self.client.post(self.url, "password=", content_type=FORM),
+            "json": self.ask(password=""),
+        }
+        for body, answered in sent.items():
+            with self.subTest(body=body):
+                envelope = assert_error_envelope(
+                    answered,
+                    expected_status=status.HTTP_403_FORBIDDEN,
+                    expected_type_slug=PASSWORD_NOT_CONFIRMED_SLUG,
+                )
+                assert envelope["detail"] == view_services.PASSWORD_NOT_CONFIRMED
         self.assert_nothing_was_recorded(self.owner)
 
     def test_a_password_is_read_exactly_as_it_was_sent(self):
@@ -423,6 +429,11 @@ class AttemptsCountedTests(RetirementRequestTestCase):
         assert self.ask(password="WrongPassword9999").status_code == status.HTTP_403_FORBIDDEN
         assert self.attempts() == [1]
 
+    def test_an_attempt_with_an_empty_password_is_counted(self):
+        """The earlier address counts it too, so blank attempts close an account as any others do."""
+        assert self.ask(password="").status_code == status.HTTP_403_FORBIDDEN
+        assert self.attempts() == [1]
+
     def test_every_attempt_adds_to_the_count_until_the_account_is_closed_to_them(self):
         for expected in range(1, MAX_ATTEMPTS + 1):
             assert self.ask(password="WrongPassword9999").status_code == status.HTTP_403_FORBIDDEN
@@ -470,6 +481,14 @@ class AttemptsNotCountedTests(RetirementRequestTestCase):
             )
         assert [record.failure_count for record in LoginFailures.objects.filter(user=self.owner)] == []
         assert self.ask().status_code == status.HTTP_204_NO_CONTENT
+
+    def test_an_empty_password_is_refused_and_not_counted(self):
+        assert_error_envelope(
+            self.ask(password=""),
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_type_slug=PASSWORD_NOT_CONFIRMED_SLUG,
+        )
+        assert [record.failure_count for record in LoginFailures.objects.filter(user=self.owner)] == []
 
 
 @skip_unless_lms

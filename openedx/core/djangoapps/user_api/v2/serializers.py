@@ -1255,12 +1255,16 @@ class RetirementRequestSerializer(serializers.Serializer):  # pylint: disable=ab
 
     The value is read exactly as it was sent, spaces at either end included,
     because that is how a password was stored, and it is never sent back or
-    written down anywhere.
+    written down anywhere. An empty one is read as a password the account does
+    not hold, and counted as an attempt like any other, as the address this
+    one replaces counts it: refused as a malformed value instead, blank
+    attempts would add nothing towards closing the account to further ones.
     """
 
     password = serializers.CharField(
         write_only=True,
         trim_whitespace=False,
+        allow_blank=True,
         help_text=(
             "Current password of the account making the request, which confirms that whoever is "
             "making it is the account's owner."

@@ -280,6 +280,23 @@ class RefusalParityTests(RequestParityTestCase):
         assert counted == {EARLIER: [1], "conforming": [1]}
 
     @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
+    def test_an_empty_password_is_refused_and_counted_by_both(self):
+        """Neither refuses it as a malformed value, so blank attempts count towards closing the account."""
+        answered, counted = {}, {}
+        for address, owner in self.addresses():
+            client = self.signed_in(owner)
+            answered[address] = self.ask(address, password="", client=client)
+            counted[address] = [record.failure_count for record in LoginFailures.objects.filter(user=owner)]
+        assert {address: sent.status_code for address, sent in answered.items()} == dict.fromkeys(
+            answered, status.HTTP_403_FORBIDDEN,
+        )
+        assert answered[EARLIER].json() == ""
+        assert answered["conforming"].json()["type"] == error_type_uri(PASSWORD_NOT_CONFIRMED_SLUG)
+        assert answered["conforming"].json()["detail"] == view_services.PASSWORD_NOT_CONFIRMED
+        assert counted == {EARLIER: [1], "conforming": [1]}
+        assert UserRetirementStatus.objects.count() == 0
+
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
     def test_an_account_closed_to_attempts_is_refused_by_both(self):
         answered = {}
         for address, owner in self.addresses():
@@ -441,6 +458,7 @@ MEASURED_AT_BOTH = (
     ("a body sent as JSON", "measure_a_body_sent_as_json"),
     ("a body in a form neither address reads", "measure_a_body_in_a_form_neither_address_reads"),
     ("a refusal of the request itself", "measure_a_refusal_of_the_request_itself"),
+    ("an empty password", "measure_an_empty_password"),
     (
         "an account that already has a record while its password still signs its owner in",
         "measure_an_account_that_already_has_a_record",
@@ -503,6 +521,17 @@ class DeclaredDifferenceTests(RequestParityTestCase):
         return (
             answered.status_code,
             sorted(refusal) if isinstance(refusal, dict) else "not an object at all",
+        )
+
+    def measure_an_empty_password(self, address):
+        """Return what each address answers an empty password, what it counts, and what it records."""
+        owner, client = self.a_caller_of_their_own(address, "empty-password")
+        with override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True):
+            answered = self.ask(address, password="", client=client)
+        return (
+            answered.status_code,
+            [record.failure_count for record in LoginFailures.objects.filter(user=owner)],
+            self.records_of(owner).count(),
         )
 
     def measure_an_account_that_already_has_a_record(self, address):
