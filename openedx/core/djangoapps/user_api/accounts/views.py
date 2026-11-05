@@ -95,7 +95,7 @@ from .serializers import (
     UserSearchEmailSerializer,
 )
 from .signals import USER_RETIRE_LMS_CRITICAL, USER_RETIRE_LMS_MISC, USER_RETIRE_MAILINGS
-from .utils import create_retirement_request_and_deactivate_account, username_suffix_generator
+from .utils import create_retirement_request_and_deactivate_account, get_orgs_for_user, username_suffix_generator
 
 log = logging.getLogger(__name__)
 
@@ -681,14 +681,7 @@ class AccountRetirementPartnerReportView(ViewSet):
         """
         Returns a set of orgs that the user has enrollments with
         """
-        orgs = set()
-        for enrollment in user.courseenrollment_set.all():
-            org = enrollment.course_id.org
-
-            # Org can conceivably be blank or this bogus default value
-            if org and org != "outdated_entry":
-                orgs.add(org)
-        return orgs
+        return get_orgs_for_user(user)
 
     def retirement_partner_report(self, request):  # pylint: disable=unused-argument
         """
