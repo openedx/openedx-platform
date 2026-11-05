@@ -1,15 +1,9 @@
 """Components of this API that a document carries although nothing in it refers to them."""
 
-# Nothing is imported in this module. A settings module reads it while the
-# settings are still being assembled, which is too early for any module that
-# reads a setting of its own.
+# No imports: a settings module reads this while settings are still being built.
 
-# The retirement-status model that a partial update of a version 1 retirement
-# was published as reading. Where that operation publishes the object its
-# handler really reads, the model has no reference left to generate it from,
-# and a client generated from a document names a class after each model in it.
-# The model is therefore named here, exactly as it was published, for such a
-# service to append, so the class keeps its name in every document it builds.
+# The model the v1 retirement-status PATCH was published as reading, kept by
+# name so generated clients keep the class once the operation no longer refers to it.
 PATCHED_USER_RETIREMENT_STATUS = {
     'type': 'object',
     'description': 'Perform serialization for the RetirementStatus model',

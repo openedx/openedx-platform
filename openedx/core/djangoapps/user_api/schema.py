@@ -264,9 +264,8 @@ def superseded_bodies():
         ("/api/user/v1/accounts/retirements_by_status_and_date/", "GET"): _SupersededBodies(
             None, {200: retirement.UserRetirementStatusSerializer(many=True)},
         ),
-        # The move of a retirement to another pipeline step reads the step and
-        # the log entry alongside the account's name, and refuses a body
-        # carrying anything else; it answers with nothing at all.
+        # The move reads the name, step and log entry, refuses anything else, and
+        # answers with nothing.
         ("/api/user/v1/accounts/update_retirement_status/", "PATCH"): _SupersededBodies(
             {
                 json_type: {
@@ -332,9 +331,8 @@ def superseded_bodies():
             },
             {204: OpenApiResponse(description="The partner report entries named are gone.")},
         ),
-        # The cancellation names the retirement by its own identifier, and its
-        # view declares no parsers, so the body is read in every form the
-        # platform reads one in.
+        # The cancellation's view declares no parsers, so every platform media type
+        # is read.
         ("/api/user/v1/accounts/cancel_retirement/", "POST"): _SupersededBodies(
             in_every_form({
                 "type": "object",

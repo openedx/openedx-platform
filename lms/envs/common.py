@@ -2194,21 +2194,13 @@ SPECTACULAR_SETTINGS = {
         'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
-    # Carried by every document built from these settings, including the
-    # service-wide one, which overlays its own keys over them. The other
-    # service that serves this API still generates these components from its
-    # own description of the operations, identical to the definition here.
+    # Carried by every document built from these settings; Studio generates the
+    # identical model from its own description of the operation.
     'APPEND_COMPONENTS': {
         'schemas': dict(KEPT_COMPONENT_SCHEMAS),
     },
-    # A set of choices is published as its own model, named after the field
-    # carrying it while one field of the service carries that name alone. The
-    # moment a second field of the same name carries a different set, both are
-    # renamed after the models they sit in, so the plain name disappears and a
-    # client generated from the document loses that class. The names below are
-    # fixed here so that the sets keep them whatever else the service grows,
-    # and each names the model it sits in, so that none claims a plain name
-    # another field of the service may come to carry.
+    # Pinned so a second same-named choice field cannot rename these sets; each
+    # names its model so it never claims a plain name another field may need.
     'ENUM_NAME_OVERRIDES': {
         'RetirementErasureScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
         'RetirementBatchResultOutcomeEnum':

@@ -1110,24 +1110,16 @@ class EmailOptInSerializer(serializers.Serializer):  # pylint: disable=abstract-
         return value
 
 
-#: Properties the ``minimal`` preset keeps of a retirement. None of them is
-#: anything the account's owner entered, so a caller that only needs to know
-#: which retirements are waiting reads none of their personal data.
+#: Properties the ``minimal`` preset keeps of a retirement; none is personal data.
 RETIREMENT_MINIMAL_FIELDS = ("id", "original_username", "current_state")
 
-#: The set of personal data an erasure clears, named by the scope that clears
-#: it. The core scope clears what the platform itself holds about a person;
-#: the miscellaneous scope clears what the features built on top of it hold.
+#: The personal data each erasure scope clears: core for the platform, misc for features on top.
 ERASURE_CORE_SCOPE = "lms_core"
 ERASURE_MISC_SCOPE = "lms_misc"
 ERASURE_SCOPES = (ERASURE_CORE_SCOPE, ERASURE_MISC_SCOPE)
 
-#: Each erasure scope with what it clears, as the request body offers them.
-#: The pair is declared here rather than inside the field so that the name the
-#: published set of choices is kept under can be configured from the same
-#: values: a set of choices is matched to its configured name by its values
-#: and their descriptions together, and a configured name that does not match
-#: has no effect.
+#: Each erasure scope with what it clears. Declared here so ENUM_NAME_OVERRIDES
+#: can name the set from the same values (it matches values and labels together).
 ERASURE_SCOPE_CHOICES = (
     (ERASURE_CORE_SCOPE, "Profile, images, certificates, entitlements and the account itself."),
     (ERASURE_MISC_SCOPE, "Wiki revisions, enrollment audits, credit and API access records."),
@@ -1184,9 +1176,7 @@ class RetirementAccountSerializer(serializers.Serializer):  # pylint: disable=ab
     )
     profile = RetirementAccountProfileSerializer(
         read_only=True,
-        # An account need not hold a profile, and one being retired may never
-        # have held one, so the property is answered as null rather than left
-        # out: a caller reading it finds it under the same name either way.
+        # An account may have no profile; answer null rather than drop the property.
         allow_null=True,
         help_text="The profile of the account, or null for an account that has none.",
     )
@@ -1402,9 +1392,7 @@ class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint
     created = serializers.DateTimeField(help_text="When this user was added to the partner reporting queue.")
 
 
-#: The most entries one claim can be held to, which is the number of rows a
-#: page of any collection of this version holds. A claim held to nothing takes
-#: every entry waiting.
+#: The most entries one claim can be held to (a page); no limit takes every entry.
 PARTNER_REPORT_CLAIM_MAX = UserApiPagination.max_page_size
 
 

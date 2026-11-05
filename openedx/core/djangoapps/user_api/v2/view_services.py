@@ -56,15 +56,11 @@ PENDING_STATE = "PENDING"
 #: only step its record is deleted from.
 COMPLETE_STATE = "COMPLETE"
 
-#: What is written over a retirement record's copies of the account's name and
-#: address before the record is deleted, so that a downstream system treating
-#: the delete as a soft one holds the replacement rather than the data.
+#: Written over a record's copies of name and address before it is deleted.
 REDACTED_VALUE = "redacted-before-delete"
 REDACTED_EMAIL = "redacted-before-delete@safe.com"
 
-#: What a caller is told about a failure. The specific reason is logged with
-#: the records it names rather than returned, because it is written for whoever
-#: operates the pipeline and not for whoever calls it.
+#: What a caller is told about a failure; the specific reason is logged instead.
 NO_SUCH_RETIREMENT = "No retirement was requested under that name."
 NOT_OPEN_TO_ACTION = "This retirement does not stand at a step of the pipeline that admits this operation."
 CANNOT_MOVE_TO_STEP = "This retirement cannot be moved to that step from the step it stands at."
@@ -174,9 +170,7 @@ def cancel_retirement(retirement):
 def _erase_core_data(retirement):
     """Erase what the platform itself holds about the account being retired."""
     user = retirement.user
-    # The name the account was registered under, rather than the name it holds
-    # now: this step replaces the one it holds, so a run of it that follows one
-    # that got that far would otherwise hash a hash.
+    # The registered name, not the current one: a re-run would otherwise hash a hash.
     retired_username = retirement.retired_username or get_retired_username_by_username(
         retirement.original_username,
     )
@@ -234,10 +228,8 @@ def _erase_misc_data(retirement):
     )
 
 
-#: What each scope erases. The steps of a scope run in the order they are
-#: written, and each scope announces what it has done to whatever else holds
-#: data about the account. The sender named is the one the pipeline has always
-#: announced these steps under, because a listener may select on it.
+#: What each scope erases, in order, and the signal it sends; the sender is the
+#: v1 view, because a listener may select on it.
 _ERASURES = {
     ERASURE_CORE_SCOPE: _erase_core_data,
     ERASURE_MISC_SCOPE: _erase_misc_data,
@@ -370,18 +362,14 @@ def delete_retirements(records, usernames):
         _refuse_batch(refused)
     doomed = [record.id for record in found.values()]
     if doomed:
-        # The record's own copies of the name, the address and the full name are
-        # written over before it goes, so that a system syncing these rows and
-        # treating a delete as a soft one is left holding the replacement.
+        # Overwrite the record's PII first, for systems that treat a delete as soft.
         UserRetirementStatus.objects.filter(id__in=doomed).update(
             original_username=REDACTED_VALUE,
             original_email=REDACTED_EMAIL,
             original_name=REDACTED_VALUE,
         )
-        # The step is stated again on the delete, because the write above has
-        # left the records with nothing of the account on them and a record
-        # moved off that step between the two statements is one the caller was
-        # never answered about.
+        # Re-check the step on delete: a record moved off it after the write was never
+        # answered about.
         UserRetirementStatus.objects.filter(
             id__in=doomed, current_state__state_name=COMPLETE_STATE,
         ).delete()

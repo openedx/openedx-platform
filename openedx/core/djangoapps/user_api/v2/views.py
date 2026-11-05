@@ -2327,10 +2327,7 @@ class EmailOptInViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-#: Fields the retirement queue sorts on. A retirement's own identifier is not
-#: among them: it is the order the queue is worked in and the order a page
-#: falls back to, but it is a database key rather than something a caller
-#: chooses a working order by.
+#: Fields the retirement queue sorts on (the id is the tie-break, not a choice).
 RETIREMENT_SORT_FIELDS = ("created", "modified", "original_username", "current_state")
 
 #: The order the queue is worked in, which is the order retirements were
@@ -2357,9 +2354,7 @@ _RETIREMENT_VIEW_PARAM = query_param(
     "stands, carrying none of the account owner's own data. Omit it to receive the whole record.",
     enum=list(RETIREMENT_PRESETS),
 )
-#: The number of days is published from the filter that reads it, so the two
-#: cannot disagree. It is declared here because the kind of value a filter
-#: taking a method of its own reads cannot be worked out from the records.
+#: Published from the filter that reads it; a method filter's type cannot be inferred.
 _COOL_OFF_FILTER = RetirementFilterSet.base_filters["cool_off_days"]
 _RETIREMENT_COOL_OFF_PARAM = query_param(
     "cool_off_days",
@@ -2400,10 +2395,7 @@ _RETIREMENT_SHAPES = ResponseShapes(
 _RESP_NO_SUCH_RETIREMENT = OpenApiResponse(
     ErrorResponse, description="No retirement was requested under that name.",
 )
-#: What a refusal says at an address that finds the record it acts on by the
-#: name the record was requested under. That name is not unique, so more than
-#: one record may answer to it, and the request is refused rather than one of
-#: them picked.
+#: The refusal when the requested-under name (not unique) matches several records.
 _RESP_AMBIGUOUS_OR_BAD_REQUEST = OpenApiResponse(
     ErrorResponse,
     description=(
@@ -2471,13 +2463,9 @@ class _RetirementRecordAccessMixin:
     """
 
     permission_classes = (permissions.IsAuthenticated,)
-    # The operations these addresses replace read a body as JSON alone, and
-    # one of them erases personal data for good, so the same narrowing is kept
-    # rather than widened to every media type the platform can parse.
+    # JSON only, as in the v1 operations these replace.
     parser_classes = (JSONParser,)
-    # Any caller holding the pipeline's capability may act on every
-    # retirement, so the policy keeps the records whole; a narrower policy can
-    # replace it here and is applied by every operation below.
+    # The pipeline capability reaches every retirement; a narrower policy goes here.
     scoping_policy = FullScopePolicy()
     #: The capability each action asks for beyond the classes above.
     action_permissions = {}
@@ -2485,12 +2473,7 @@ class _RetirementRecordAccessMixin:
     def get_permissions(self):
         """Return the classes deciding who may make the request being served."""
         if self.action is None:
-            # No action serves this method at this address, so there is no
-            # capability to ask for: the request is admitted by the classes
-            # every action shares and answered as a method this address does
-            # not serve. Each address this replaces serves one method and asks
-            # its capability of every caller it is given, so a caller without
-            # that capability is refused there before the method is weighed.
+            # No action serves this method here: the shared classes admit it and it answers 405.
             return [permission() for permission in self.permission_classes]
         # An action this mapping does not name reaches no capability of this
         # resource, rather than inheriting the one every other action shares.
@@ -2513,12 +2496,8 @@ class _RetirementRecordsMixin:
         return retirements()
 
 
-#: Who may make each request the retirement collection serves. Cancelling a
-#: retirement is the one operation of this collection that is not pipeline
-#: work: it undoes a request rather than carrying it out, so it is open to
-#: whoever handles that for a learner and closed to the pipeline itself. An
-#: action this mapping does not name is refused, so one added later cannot
-#: reach the pipeline's capability by inheriting it.
+#: Who may make each request. Cancellation is not pipeline work, so it takes a
+#: different capability; an unnamed action is refused.
 RETIREMENT_ACTION_PERMISSIONS = {
     "list": (CanRetireUser,),
     "retrieve": (CanRetireUser,),
@@ -2529,18 +2508,8 @@ RETIREMENT_ACTION_PERMISSIONS = {
 }
 
 
-# How this collection is built, which is written here rather than in the
-# description the class carries: that description is what an OPTIONS request
-# is answered with, so it is published text and belongs to the caller.
-#
-# A retirement is not written through generic machinery -- every change goes
-# through the pipeline's own model layer, which is what decides whether a step
-# may run. Access is layered: the permission classes decide who may call an
-# action at all, the visibility policy decides which retirements such a caller
-# may act on, and the filters narrow the page a list carries further. Every
-# action resolves the records it reads or changes from the selection the policy
-# left, a member address included, so a retirement the policy leaves out is
-# reported as absent rather than refused.
+# Changes go through the model layer. Access: permission classes, then the
+# visibility policy, then filters; a record the policy hides answers 404.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     list=extend_schema(
@@ -2684,9 +2653,7 @@ class RetirementViewSet(
     filterset_class = RetirementFilterSet
     ordering_fields = RETIREMENT_SORT_FIELDS
     ordering = RETIREMENT_DEFAULT_SORT
-    # A sort the caller asks for is completed with the order the queue is
-    # worked in, so that retirements comparing equal keep one relative order
-    # from page to page and none is seen twice or missed.
+    # Tie-break the caller's sort with the queue order so pages are stable.
     ordering_tiebreak = ("id",)
     minimal_fields = RETIREMENT_MINIMAL_FIELDS
     response_presets = RETIREMENT_PRESETS
@@ -2696,9 +2663,7 @@ class RetirementViewSet(
         """Return the query parameters the action being served reads."""
         names = super().known_query_params()
         if self.action != "list":
-            # One retirement is answered whole, so neither the filters that
-            # choose which retirements a page carries nor the parameters that
-            # cut it into pages are read at a member address.
+            # A member address reads no filters or page parameters.
             names -= set(self.filterset_class.base_filters)
             names -= {
                 StrictOrderingFilter.ordering_param,
@@ -2768,9 +2733,7 @@ class _PartnerReportAccessMixin:
     """
 
     permission_classes = (permissions.IsAuthenticated, CanRetireUser)
-    # The operations these addresses replace read a body as JSON alone, and
-    # that narrowing is kept rather than widened to every media type the
-    # platform can parse.
+    # JSON only, as in the v1 operations these replace.
     parser_classes = (JSONParser,)
     scoping_policy = FullScopePolicy()
 
@@ -2915,22 +2878,15 @@ class RetirementPartnerReportViewSet(
 
     def update(self, request, username):
         """Queue the retiring account this name addresses for partner reporting."""
-        # The record this queues belongs to the retirement collection rather
-        # than to this one, whose own selection is of queue entries, so the
-        # records it is resolved from are named here and the policy this view
-        # declares is applied to them, as it is to everything else it acts on.
+        # The record queued is a retirement, so name its records and apply this view's
+        # policy to them.
         records = self.scoping_policy.scope(retirements(), request.user)
         record_partner_report(retirement_open_to_action(records, username))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# The entries a request answers with are read first and marked by the
-# identifiers that were read, which is what keeps an entry added during the
-# read from being marked by a caller that never saw it; the enrolments behind
-# the organization names are fetched with the entries so that the cost of the
-# answer does not grow with the number of entries. Written here rather than in
-# the description the class carries, which is published to every caller that
-# asks an address what it does.
+# Entries are read, then marked by the ids read, so one added meanwhile is not
+# marked; enrolments are prefetched.
 _RESP_BATCH_OUTCOME = OpenApiResponse(
     RetirementBatchOutcomeSerializer,
     description=(
@@ -2940,13 +2896,8 @@ _RESP_BATCH_OUTCOME = OpenApiResponse(
 )
 
 
-# One operation over a set of records named in its body, with a condition that
-# covers the whole set and no member address of its own, so it stands at a
-# collection of its own rather than among the operations on one record. Who may
-# call it and which records it deletes are resolved through the layers those
-# operations resolve them through, so a rule added to the records is asked of
-# their disposal too. Written here rather than in the description the class
-# carries, which is published to every caller that asks what this address does.
+# A batch operation with no member address, so its own collection; access and
+# selection go through the retirement records' layers.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     create=extend_schema(
@@ -3010,13 +2961,8 @@ class RetirementCleanupViewSet(
         return Response(self.get_serializer({"results": results}).data)
 
 
-# This disposal stands at a collection of its own for the same reason the
-# retirement records' own disposal does, and the two are kept apart because
-# they act on different records in different tables under different conditions.
-# Who may call this one and which entries it deletes are resolved through the
-# layers the operations on those entries resolve them through. Written here
-# rather than in the description the class carries, which is published to every
-# caller that asks what this address does.
+# Its own collection, as above; access and selection go through the partner
+# report entries' layers.
 @extend_schema(tags=[USER_TAG])
 @extend_schema_view(
     create=extend_schema(
