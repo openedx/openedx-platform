@@ -824,7 +824,7 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
 
         handleGradingSelect: function(event) {
             event.preventDefault();
-            if (this.$('#grading_type').val() !== 'notgraded' && course.get('self_paced') && course.get('is_custom_relative_dates_active')) {
+            if (this.$('#grading_type').val() !== 'notgraded' && course.get('self_paced')) {
                 $('#relative_date_input').show();
             } else {
                 $('#relative_date_input').hide();
@@ -1409,7 +1409,7 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
                 } else if (xblockInfo.isSequential()) {
                     tabs[0].editors = [ReleaseDateEditor, GradingEditor, DueDateEditor];
                     tabs[1].editors = [ContentVisibilityEditor, ShowCorrectnessEditor];
-                    if (course.get('self_paced') && course.get('is_custom_relative_dates_active')) {
+                    if (course.get('self_paced')) {
                         tabs[0].editors.push(SelfPacedDueDateEditor);
                     }
                     if (options.enable_proctored_exams || options.enable_timed_exams) {

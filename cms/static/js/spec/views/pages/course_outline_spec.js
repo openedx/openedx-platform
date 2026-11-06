@@ -13,7 +13,7 @@ describe('CourseOutlinePage', function() {
     var createCourseOutlinePage, displayNameInput, model, outlinePage, requests, xhrFactory, getItemsOfType, getItemHeaders,
         verifyItemsExpanded, expandItemsAndVerifyState, collapseItemsAndVerifyState, selectBasicSettings,
         selectVisibilitySettings, selectDiscussionSettings, selectAdvancedSettings, createMockCourseJSON, createMockSectionJSON,
-        createMockSubsectionJSON, verifyTypePublishable, mockCourseJSON, mockEmptyCourseJSON, setSelfPaced, setSelfPacedCustomPLS,
+        createMockSubsectionJSON, verifyTypePublishable, mockCourseJSON, mockEmptyCourseJSON, setSelfPaced,
         mockSingleSectionCourseJSON, createMockVerticalJSON, createMockIndexJSON, mockCourseEntranceExamJSON,
         selectOnboardingExam, createMockCourseJSONWithReviewRules, mockCourseJSONWithReviewRules,
         mockOutlinePage = readFixtures('templates/mock/mock-course-outline-page.underscore'),
@@ -216,11 +216,6 @@ describe('CourseOutlinePage', function() {
     setSelfPaced = function() {
         /* global course */
         course.set('self_paced', true);
-    };
-
-    setSelfPacedCustomPLS = function() {
-        setSelfPaced();
-        course.set('is_custom_relative_dates_active', true);
     };
 
     createCourseOutlinePage = function(test, courseJSON, createOnly) {
@@ -1358,7 +1353,9 @@ describe('CourseOutlinePage', function() {
             setSelfPaced();
             outlinePage.$('.outline-subsection .configure-button').click();
             expect($('.edit-settings-release').length).toBe(0);
-            expect($('.grading-due-date').length).toBe(0);
+            // Only the relative "due in weeks" editor; the fixed due date editor is hidden.
+            expect($('.grading-due-date').length).toBe(1);
+            expect($('#due_in').length).toBe(1);
             expect($('.edit-settings-grading').length).toBe(1);
             expect($('.edit-content-visibility').length).toBe(1);
             expect($('.edit-show-correctness').length).toBe(1);
@@ -2232,7 +2229,7 @@ describe('CourseOutlinePage', function() {
                     ])
                 ]);
                 createCourseOutlinePage(this, mockCourseJSON, false);
-                setSelfPacedCustomPLS();
+                setSelfPaced();
                 course.set('start', '2014-07-09T00:00:00Z');
             });
 

@@ -8,7 +8,6 @@ from django.dispatch import receiver
 from edx_when.api import FIELDS_TO_EXTRACT, set_dates_for_course
 from xblock.fields import Scope
 
-from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from openedx.core.lib.graph_traversals import get_children, leaf_filter, traverse_pre_order
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
@@ -142,13 +141,13 @@ def extract_dates_from_course(course):
                     # apply the default Personalized Learner Schedules (PLS)
                     # logic for self paced courses.
                     relative_weeks_due = subsection.fields['relative_weeks_due'].read_from(subsection)
-                    if (CUSTOM_RELATIVE_DATES.is_enabled(course.id) and relative_weeks_due):
+                    if relative_weeks_due:
                         section_due_date = max(section_due_date, timedelta(weeks=relative_weeks_due))
                         section_date_items.extend(_get_custom_pacing_children(subsection, relative_weeks_due))
                     else:
                         section_due_date = max(section_due_date, weeks_to_complete)
                         section_date_items.extend(_gather_graded_items(subsection, weeks_to_complete))
-                if section_date_items and (section.graded or CUSTOM_RELATIVE_DATES.is_enabled(course.id)):
+                if section_date_items:
                     date_items.append((section.location, {'due': section_due_date}))
                 date_items.extend(section_date_items)
     else:
