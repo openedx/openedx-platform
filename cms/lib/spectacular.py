@@ -4,15 +4,25 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
-# Legacy operations superseded by a conforming address under /api/authoring/.
-# Each is listed in the truncated spelling as well as the full one: the routes
-# make the final character optional, so both addresses resolve, and which one
-# the generator emits depends on how it renders that regex.
+# Legacy operations superseded by a conforming address under /api/authoring/,
+# matched on the exact path. A route that makes its final character optional
+# resolves with and without it, and the generator may emit either spelling, so
+# such a route is listed in both.
 SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+    # → /api/authoring/v1/courses/{course_key}/advanced_settings/
+    "/api/contentstore/v0/advanced_settings/{course_id}",
+    # → /api/authoring/v1/custom_pages/?course_key={course_key}
+    "/api/contentstore/v0/tabs/{course_id}",
+    # → /api/authoring/v1/courses/{course_key}/custom_page_order/
+    "/api/contentstore/v0/tabs/{course_id}/reorder",
+    # → /api/authoring/v1/courses/{course_key}/tabs/{tab_id}/
+    "/api/contentstore/v0/tabs/{course_id}/settings",
+    # → /api/authoring/v2/courses/{course_key}/group_configurations/
+    "/api/contentstore/v1/group_configurations/{course_id}",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
