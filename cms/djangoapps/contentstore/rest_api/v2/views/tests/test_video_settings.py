@@ -458,10 +458,10 @@ class CourseVideoSettingsSchemaTest(CourseTestCase):
                 "$ref": "#/components/schemas/ErrorResponse"
             }, code
 
-    def test_the_legacy_video_operations_are_unchanged(self):
+    def test_the_legacy_videos_operation_is_marked_deprecated_and_its_siblings_are_not(self):
         operation = self.schema["paths"][LEGACY_VIDEOS_PATH]["get"]
         assert operation["operationId"] == "v1_videos_retrieve"
-        assert "deprecated" not in operation
+        assert operation["deprecated"] is True
         for path, view in self._legacy_sibling_paths():
             for operation in self.schema["paths"][path].values():
                 assert "deprecated" not in operation, (path, view)

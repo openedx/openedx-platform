@@ -2,13 +2,16 @@
 Custom permissions for the content store views.
 """
 
-from openedx_authz.constants.permissions import COURSES_VIEW_PAGES_AND_RESOURCES
+from openedx_authz.constants.permissions import COURSES_VIEW_CERTIFICATES, COURSES_VIEW_PAGES_AND_RESOURCES
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.lib.api.view_utils import validate_course_key
+
+COURSE_NOT_FOUND_MESSAGE = "The requested course does not exist."
 
 
 class HasStudioWriteAccess(BasePermission):
@@ -41,6 +44,31 @@ class CanViewPagesAndResources(BasePermission):
         return user_has_course_permission(
             request.user,
             COURSES_VIEW_PAGES_AND_RESOURCES.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ,
+        )
+
+
+class CanViewCertificates(BasePermission):
+    """
+    Allow callers who may view the certificate configuration of the course in the path.
+
+    Reads the parsed ``course_key`` URL argument. On courses where
+    policy-based authoring permissions are enabled, only that policy is
+    consulted; elsewhere the caller needs Studio read access to the course.
+    A key that names only a version has no course run behind it and the
+    permission lookup raises for one, so it is answered as a missing course.
+    """
+
+    def has_permission(self, request, view):
+        course_key = view.kwargs.get("course_key")
+        if course_key is None:
+            return False
+        if course_key.org is None:
+            raise NotFound(COURSE_NOT_FOUND_MESSAGE)
+        return user_has_course_permission(
+            request.user,
+            COURSES_VIEW_CERTIFICATES.identifier,
             course_key,
             LegacyAuthoringPermission.READ,
         )
