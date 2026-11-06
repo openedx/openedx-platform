@@ -55,6 +55,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
 from lms.djangoapps.instructor import permissions as instructor_permissions
+from openedx.core.djangoapps.authz.tests.fixtures import seed_policies
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
@@ -67,7 +68,8 @@ class RolesTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self._seed_database_with_policies()
+        seed_policies()
+        AuthzEnforcer.get_enforcer().clear_policy()  # Clear to simulate fresh start for each test
         self.course_key = CourseKey.from_string('course-v1:course-v1:edX+toy+2012_Fall')
         self.course_loc = self.course_key.make_usage_key('course', '2012_Fall')
         self.course = CourseOverviewFactory.create(id=self.course_key)
@@ -77,28 +79,6 @@ class RolesTestCase(TestCase):
         self.course_staff = StaffFactory(course_key=self.course_key)
         self.course_instructor = InstructorFactory(course_key=self.course_key)
         self.orgs = ["Marvel", "DC"]
-
-    @classmethod
-    def _seed_database_with_policies(cls):
-        """Seed the database with policies from the policy file for openedx_authz tests.
-
-        This simulates the one-time database seeding that would happen
-        during application deployment, separate from the runtime policy loading.
-        """
-        import casbin
-        import pkg_resources
-        from openedx_authz.engine.utils import migrate_policy_between_enforcers
-
-        global_enforcer = AuthzEnforcer.get_enforcer()
-        global_enforcer.load_policy()
-        model_path = pkg_resources.resource_filename("openedx_authz.engine", "config/model.conf")
-        policy_path = pkg_resources.resource_filename("openedx_authz.engine", "config/authz.policy")
-
-        migrate_policy_between_enforcers(
-            source_enforcer=casbin.Enforcer(model_path, policy_path),
-            target_enforcer=global_enforcer,
-        )
-        global_enforcer.clear_policy()  # Clear to simulate fresh start for each test
 
     @ddt.data(True, False)
     def test_global_staff(self, authz_enabled):
