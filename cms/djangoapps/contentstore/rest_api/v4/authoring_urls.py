@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from cms.djangoapps.contentstore.rest_api.v4.views import home
+from cms.djangoapps.contentstore.rest_api.v4.views import home, legacy_libraries
 
 app_name = "authoring_v4"
 
@@ -11,5 +11,10 @@ urlpatterns = [
         "courses/",
         home.HomeCoursesViewSet.as_view({"get": "list"}),
         name="course_list",
+    ),
+    path(
+        "legacy_libraries/",
+        legacy_libraries.LegacyLibraryViewSet.as_view({"get": "list"}),
+        name="legacy_library_list",
     ),
 ]
