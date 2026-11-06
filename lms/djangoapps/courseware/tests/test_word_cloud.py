@@ -1,5 +1,4 @@
 """Word cloud integration tests using mongo modulestore."""
-import importlib
 import json
 import re
 from operator import itemgetter
@@ -7,12 +6,9 @@ from unittest.mock import patch
 from uuid import UUID
 
 import pytest
-from django.conf import settings
-from django.test import override_settings
 from xblock import plugin
 
 from common.djangoapps.student.tests.factories import RequestFactoryNoCsrf
-from xmodule import word_cloud_block
 
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F401
@@ -34,7 +30,6 @@ class _TestWordCloudBase(BaseTestXmodule):
     def setUpClass(cls):
         super().setUpClass()
         plugin.PLUGIN_CACHE = {}
-        importlib.reload(word_cloud_block)
 
     def setUp(self):
         super().setUp()
@@ -49,18 +44,15 @@ class _TestWordCloudBase(BaseTestXmodule):
         users_state = {}
 
         for user in self.users:
-            if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-                # The extracted Word Cloud XBlock uses @XBlock.json_handler, which expects a different
-                # request format and url pattern
-                handler_url = self.get_url('', handler_name='handle_get_state')
-                response = self.clients[user.username].post(
-                    handler_url,
-                    data=json.dumps({}),
-                    content_type='application/json',
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest',
-                )
-            else:
-                response = self.clients[user.username].post(self.get_url('get_state'))
+            # The extracted Word Cloud XBlock uses @XBlock.json_handler, which expects a different
+            # request format and url pattern
+            handler_url = self.get_url('', handler_name='handle_get_state')
+            response = self.clients[user.username].post(
+                handler_url,
+                data=json.dumps({}),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            )
             users_state[user.username] = json.loads(response.content.decode('utf-8'))
 
         return users_state
@@ -73,22 +65,15 @@ class _TestWordCloudBase(BaseTestXmodule):
         users_state = {}
 
         for user in self.users:
-            if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-                # The extracted Word Cloud XBlock uses @XBlock.json_handler, which expects a different
-                # request format and url pattern
-                handler_url = self.get_url('', handler_name='handle_submit_state')
-                response = self.clients[user.username].post(
-                    handler_url,
-                    data=json.dumps({'student_words': words}),
-                    content_type='application/json',
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest',
-                )
-            else:
-                response = self.clients[user.username].post(
-                    self.get_url('submit'),
-                    {'student_words[]': words},
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-                )
+            # The extracted Word Cloud XBlock uses @XBlock.json_handler, which expects a different
+            # request format and url pattern
+            handler_url = self.get_url('', handler_name='handle_submit_state')
+            response = self.clients[user.username].post(
+                handler_url,
+                data=json.dumps({'student_words': words}),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            )
             users_state[user.username] = json.loads(response.content.decode('utf-8'))
 
         return users_state
@@ -244,25 +229,11 @@ class _TestWordCloudBase(BaseTestXmodule):
             for user in self.users
         }
 
-        if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-            # The extracted Word Cloud XBlock uses @XBlock.json_handler to handle AJAX requests,
-            # which automatically returns a 404 for unknown requests, so there's no need to test
-            # the incorrect dispatch case in this scenario.
-            for username, response in responses.items():  # noqa: B007
-                self.assertEqual(response.status_code, 404)  # noqa: PT009
-            return
-
-        status_codes = {response.status_code for response in responses.values()}
-        assert status_codes.pop() == 200
-
-        for user in self.users:
-            self.assertDictEqual(  # noqa: PT009
-                json.loads(responses[user.username].content.decode('utf-8')),
-                {
-                    'status': 'fail',
-                    'error': 'Unknown Command!'
-                }
-            )
+        # The extracted Word Cloud XBlock uses @XBlock.json_handler to handle AJAX requests,
+        # which automatically returns a 404 for unknown requests, so there's no need to test
+        # the incorrect dispatch case in this scenario.
+        for username, response in responses.items():  # noqa: B007
+            self.assertEqual(response.status_code, 404)  # noqa: PT009
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_word_cloud_constructor(self, mock_render_django_template):
@@ -278,30 +249,18 @@ class _TestWordCloudBase(BaseTestXmodule):
             'submitted': False,  # default value,
         }
 
-        if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-            # If `USE_EXTRACTED_WORD_CLOUD_BLOCK` is enabled, the `expected_context` will be different
-            # because in the extracted Word Cloud XBlock, the expected context:
-            # - contains `range_num_inputs`
-            # - uses `UUID` for `element_id` instead of `html_id()`
-            # - does not include `ajax_url` since it uses the `@XBlock.json_handler` decorator for AJAX requests
-            expected_context['range_num_inputs'] = range(5)
-            uuid_str = re.search(r"UUID\('([a-f0-9\-]+)'\)", fragment.content).group(1)
-            expected_context['element_id'] = UUID(uuid_str)
-            mock_render_django_template.assert_called_once()
-            # Remove i18n service
-            fragment_content_clean = re.sub(r"\{.*?}", "{}", fragment.content)
-            assert fragment_content_clean == self.runtime.render_template('templates/word_cloud.html', expected_context)
-        else:
-            expected_context['ajax_url'] = self.block.ajax_url
-            expected_context['element_id'] = self.block.location.html_id()
-            assert fragment.content == self.runtime.render_template('word_cloud.html', expected_context)
+        # In the extracted Word Cloud XBlock, the expected context:
+        # - contains `range_num_inputs`
+        # - uses `UUID` for `element_id` instead of `html_id()`
+        # - does not include `ajax_url` since it uses the `@XBlock.json_handler` decorator for AJAX requests
+        expected_context['range_num_inputs'] = range(5)
+        uuid_str = re.search(r"UUID\('([a-f0-9\-]+)'\)", fragment.content).group(1)
+        expected_context['element_id'] = UUID(uuid_str)
+        mock_render_django_template.assert_called_once()
+        # Remove i18n service
+        fragment_content_clean = re.sub(r"\{.*?}", "{}", fragment.content)
+        assert fragment_content_clean == self.runtime.render_template('templates/word_cloud.html', expected_context)
 
 
-@override_settings(USE_EXTRACTED_WORD_CLOUD_BLOCK=True)
 class TestWordCloudExtracted(_TestWordCloudBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_WORD_CLOUD_BLOCK=False)
-class TestWordCloudBuiltIn(_TestWordCloudBase):
     __test__ = True

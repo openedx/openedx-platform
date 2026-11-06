@@ -2,17 +2,14 @@
 import json
 from unittest.mock import Mock
 
-from django.conf import settings
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from fs.memoryfs import MemoryFS
 from lxml import etree
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from webob import Request
-from webob.multidict import MultiDict
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
-
-from xmodule import word_cloud_block
+from xblocks_contrib.word_cloud import WordCloudBlock
 
 from . import get_test_descriptor_system, get_test_system
 
@@ -26,7 +23,7 @@ class _TestWordCloudBase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.word_cloud_class = word_cloud_block.reset_class()
+        cls.word_cloud_class = WordCloudBlock
 
     def setUp(self):
         super().setUp()
@@ -83,18 +80,11 @@ class _TestWordCloudBase(TestCase):
         module_system = get_test_system()
         block = self.word_cloud_class(module_system, DictFieldData(self.raw_field_data), Mock())
 
-        if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-            # The extracted Word Cloud XBlock uses @XBlock.json_handler for handling AJAX requests,
-            # which requires a different way of method invocation.
-            with self.assertRaises(AttributeError) as context:  # noqa: PT027
-                json.loads(block.bad_dispatch('bad_dispatch', {}))
-            self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))  # noqa: PT009  # pylint: disable=line-too-long
-        else:
-            response = json.loads(block.handle_ajax('bad_dispatch', {}))
-            self.assertDictEqual(response, {  # noqa: PT009
-                'status': 'fail',
-                'error': 'Unknown Command!'
-            })
+        # The extracted Word Cloud XBlock uses @XBlock.json_handler for handling AJAX requests,
+        # which requires a different way of method invocation.
+        with self.assertRaises(AttributeError) as context:  # noqa: PT027
+            json.loads(block.bad_dispatch('bad_dispatch', {}))
+        self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_good_ajax_request(self):
         """
@@ -103,14 +93,10 @@ class _TestWordCloudBase(TestCase):
         module_system = get_test_system()
         block = self.word_cloud_class(module_system, DictFieldData(self.raw_field_data), Mock())
 
-        if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-            # The extracted Word Cloud XBlock uses @XBlock.json_handler for handling AJAX requests.
-            # It expects a standard Python dictionary as POST data and returns a JSON object in response.
-            post_data = {'student_words': ['cat', 'cat', 'dog', 'sun']}
-            response = block.submit_state(post_data)
-        else:
-            post_data = MultiDict(('student_words[]', word) for word in ['cat', 'cat', 'dog', 'sun'])
-            response = json.loads(block.handle_ajax('submit', post_data))
+        # The extracted Word Cloud XBlock uses @XBlock.json_handler for handling AJAX requests.
+        # It expects a standard Python dictionary as POST data and returns a JSON object in response.
+        post_data = {'student_words': ['cat', 'cat', 'dog', 'sun']}
+        response = block.submit_state(post_data)
         assert response['status'] == 'success'
         assert response['submitted'] is True
         assert response['total_count'] == 22
@@ -152,16 +138,12 @@ class _TestWordCloudBase(TestCase):
             'num_top_words': 10,
             'display_student_percents': 'False',
         }
-        if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
-            # In the extracted Word Cloud XBlock, we use StudioEditableXBlockMixin.submit_studio_edits,
-            # which expects a different handler name and request JSON format.
-            handler_name = 'submit_studio_edits'
-            TEST_REQUEST_JSON = {
-                'values': TEST_SUBMIT_DATA,
-            }
-        else:
-            handler_name = 'studio_submit'
-            TEST_REQUEST_JSON = TEST_SUBMIT_DATA
+        # In the extracted Word Cloud XBlock, we use StudioEditableXBlockMixin.submit_studio_edits,
+        # which expects a different handler name and request JSON format.
+        handler_name = 'submit_studio_edits'
+        TEST_REQUEST_JSON = {
+            'values': TEST_SUBMIT_DATA,
+        }
         module_system = get_test_system()
         block = self.word_cloud_class(module_system, DictFieldData(self.raw_field_data), Mock())
         body = json.dumps(TEST_REQUEST_JSON)
@@ -178,11 +160,5 @@ class _TestWordCloudBase(TestCase):
         assert block.display_student_percents == (TEST_SUBMIT_DATA['display_student_percents'] == "True")
 
 
-@override_settings(USE_EXTRACTED_WORD_CLOUD_BLOCK=True)
 class TestWordCloudExtracted(_TestWordCloudBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_WORD_CLOUD_BLOCK=False)
-class TestWordCloudBuiltIn(_TestWordCloudBase):
     __test__ = True
