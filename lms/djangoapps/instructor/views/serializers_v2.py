@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
+from openedx_authz.authz import COURSES_VIEW_COURSE_INFO
 from openedx_filters.learning.filters import InstructorDashboardTabsRequested
 from rest_framework import serializers
 
@@ -36,7 +37,7 @@ from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.authz import constants as authz_constants
 from lms.djangoapps.instructor.authz import legacy as authz_legacy
-from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission, user_has_instructor_permission
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -54,6 +55,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     This serializer handles the business logic for gathering all course metadata,
     enrollment statistics, permissions, and dashboard configuration.
+
+    The Course Info fields (dates, pacing, enrollment counts, sections, grade cutoffs,
+    course errors and the Studio URL) are ``null`` when the user lacks
+    ``courses.view_course_info``. The header and tab fields are always returned.
     """
     course_id = serializers.SerializerMethodField(help_text="Course run key")
     username = serializers.SerializerMethodField(help_text="Username of the current authenticated user")
@@ -61,23 +66,51 @@ class CourseInformationSerializerV2(serializers.Serializer):
     org = serializers.SerializerMethodField(help_text="Organization identifier")
     course_number = serializers.SerializerMethodField(help_text="Course number")
     course_run = serializers.SerializerMethodField(help_text="Course run identifier")
-    enrollment_start = serializers.SerializerMethodField(help_text="Enrollment start date (ISO 8601 with timezone)")
-    enrollment_end = serializers.SerializerMethodField(help_text="Enrollment end date (ISO 8601 with timezone)")
-    start = serializers.SerializerMethodField(help_text="Course start date (ISO 8601 with timezone)")
-    end = serializers.SerializerMethodField(help_text="Course end date (ISO 8601 with timezone)")
-    pacing = serializers.SerializerMethodField(help_text="Course pacing type (self or instructor)")
-    has_started = serializers.SerializerMethodField(help_text="Whether the course has started based on current time")
-    has_ended = serializers.SerializerMethodField(help_text="Whether the course has ended based on current time")
-    total_enrollment = serializers.SerializerMethodField(help_text="Total number of enrollments across all modes")
-    learner_count = serializers.SerializerMethodField(
-        help_text="Number of enrolled learners (excludes staff and admins)"
+    enrollment_start = serializers.SerializerMethodField(
+        allow_null=True, help_text="Enrollment start date (ISO 8601 with timezone)"
     )
-    staff_count = serializers.SerializerMethodField(help_text="Number of enrolled staff and admins")
-    enrollment_counts = serializers.SerializerMethodField(help_text="Enrollment count breakdown by mode")
-    num_sections = serializers.SerializerMethodField(help_text="Number of sections/chapters in the course")
-    grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
-    course_errors = serializers.SerializerMethodField(help_text="List of course validation errors from modulestore")
-    studio_url = serializers.SerializerMethodField(help_text="URL to view/edit course in Studio")
+    enrollment_end = serializers.SerializerMethodField(
+        allow_null=True, help_text="Enrollment end date (ISO 8601 with timezone)"
+    )
+    start = serializers.SerializerMethodField(
+        allow_null=True, help_text="Course start date (ISO 8601 with timezone)"
+    )
+    end = serializers.SerializerMethodField(
+        allow_null=True, help_text="Course end date (ISO 8601 with timezone)"
+    )
+    pacing = serializers.SerializerMethodField(
+        allow_null=True, help_text="Course pacing type (self or instructor)"
+    )
+    has_started = serializers.SerializerMethodField(
+        allow_null=True, help_text="Whether the course has started based on current time"
+    )
+    has_ended = serializers.SerializerMethodField(
+        allow_null=True, help_text="Whether the course has ended based on current time"
+    )
+    total_enrollment = serializers.SerializerMethodField(
+        allow_null=True, help_text="Total number of enrollments across all modes"
+    )
+    learner_count = serializers.SerializerMethodField(
+        allow_null=True, help_text="Number of enrolled learners (excludes staff and admins)"
+    )
+    staff_count = serializers.SerializerMethodField(
+        allow_null=True, help_text="Number of enrolled staff and admins"
+    )
+    enrollment_counts = serializers.SerializerMethodField(
+        allow_null=True, help_text="Enrollment count breakdown by mode"
+    )
+    num_sections = serializers.SerializerMethodField(
+        allow_null=True, help_text="Number of sections/chapters in the course"
+    )
+    grade_cutoffs = serializers.SerializerMethodField(
+        allow_null=True, help_text="Formatted string of grade cutoffs"
+    )
+    course_errors = serializers.SerializerMethodField(
+        allow_null=True, help_text="List of course validation errors from modulestore"
+    )
+    studio_url = serializers.SerializerMethodField(
+        allow_null=True, help_text="URL to view/edit course in Studio"
+    )
     gradebook_url = serializers.SerializerMethodField(
         help_text="URL to the MFE gradebook for the course (null if not configured)"
     )
@@ -108,6 +141,18 @@ class CourseInformationSerializerV2(serializers.Serializer):
     proctored_exams_enabled = serializers.SerializerMethodField(
         help_text="Whether proctored exams, and the proctored exam results report, are enabled for this course"
     )
+
+    # Whether the user holds ``courses.view_course_info``, resolved in ``to_representation``.
+    _can_view_course_info = False
+
+    def to_representation(self, instance):
+        """
+        Serialize the course, resolving ``courses.view_course_info`` once for the Course Info fields.
+        """
+        self._can_view_course_info = user_has_instructor_permission(
+            instance['user'], COURSES_VIEW_COURSE_INFO.identifier, instance['course'].id
+        )
+        return super().to_representation(instance)
 
     @staticmethod
     def _build_tab_url(setting_name, *path_parts, strip_url=True):
@@ -364,46 +409,68 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_enrollment_start(self, data):
         """Get enrollment start date."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].enrollment_start
 
     def get_enrollment_end(self, data):
         """Get enrollment end date."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].enrollment_end
 
     def get_start(self, data):
         """Get course start date."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].start
 
     def get_end(self, data):
         """Get course end date."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].end
 
     def get_pacing(self, data):
         """Get course pacing type (self or instructor)."""
+        if not self._can_view_course_info:
+            return None
         return 'self' if data['course'].self_paced else 'instructor'
 
     def get_has_started(self, data):
         """Check if course has started."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].has_started()
 
     def get_has_ended(self, data):
         """Check if course has ended."""
+        if not self._can_view_course_info:
+            return None
         return data['course'].has_ended()
 
     def get_total_enrollment(self, data):
         """Get total enrollment count."""
+        if not self._can_view_course_info:
+            return None
         return self.get_enrollment_counts(data)['total']
 
     def get_learner_count(self, data):
         """Get enrollment count excluding staff and admins."""
+        if not self._can_view_course_info:
+            return None
         return CourseEnrollment.objects.num_enrolled_in_exclude_admins(data['course'].id)
 
     def get_staff_count(self, data):
         """Get enrollment count for staff and admins only."""
+        if not self._can_view_course_info:
+            return None
         return self.get_total_enrollment(data) - self.get_learner_count(data)
 
     def get_enrollment_counts(self, data):
         """Get enrollment counts for all configured modes and any mode with active enrollments."""
+        if not self._can_view_course_info:
+            return None
         course_id = data['course'].id
         counts = CourseEnrollment.objects.enrollment_counts(course_id)
         configured_modes = CourseMode.modes_for_course(course_id)
@@ -417,6 +484,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_num_sections(self, data):
         """Get number of sections in the course."""
+        if not self._can_view_course_info:
+            return None
         course = data['course']
         return len(course.get_children()) if hasattr(course, 'get_children') else 0
 
@@ -456,6 +525,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
         Returns:
             str: Formatted grade cutoffs (e.g., "A is 0.9, B is 0.8, C is 0.7")
         """
+        if not self._can_view_course_info:
+            return None
         course = data['course']
         if not hasattr(course, 'grading_policy') or not course.grading_policy:
             return ""
@@ -477,6 +548,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_course_errors(self, data):
         """Get course validation errors from modulestore."""
+        if not self._can_view_course_info:
+            return None
         course = data['course']
         try:
             errors = modulestore().get_course_errors(course.id)
@@ -487,6 +560,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_studio_url(self, data):
         """Get Studio URL for the course."""
+        if not self._can_view_course_info:
+            return None
         return get_studio_url(data['course'], 'course')
 
     def get_gradebook_url(self, data):
