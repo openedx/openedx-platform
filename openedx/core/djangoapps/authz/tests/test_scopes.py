@@ -340,7 +340,7 @@ class AuthzCourseOrgNamesTest(CourseAuthoringAuthzTestMixin, SharedModuleStoreTe
     @ddt.named_data(
         ("course", lambda: "course-v1:org1+C1+R", {"org1"}),
         ("org_glob", lambda: OrgCourseOverviewGlobData.build_external_key("org1"), {"org1"}),
-        ("platform", lambda: PlatformCourseOverviewGlobData.build_external_key(), {"org1", "org2"}),
+        ("platform", PlatformCourseOverviewGlobData.build_external_key, {"org1", "org2"}),
     )
     @ddt.unpack
     def test_grant_resolves_to_orgs_of_covered_courses(self, build_scope, expected_orgs):
