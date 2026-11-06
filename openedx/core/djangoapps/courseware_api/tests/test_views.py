@@ -15,6 +15,7 @@ from django.test import override_settings
 from django.test.client import RequestFactory
 from edx_django_utils.cache import TieredCache
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
+from openedx_filters import PipelineStep
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -48,6 +49,18 @@ from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 User = get_user_model()
 
 _NEXT_WEEK = datetime.now() + timedelta(days=7)
+
+
+class TestReplaceCoursewareMetadata(PipelineStep):
+    """
+    Utility class used when getting steps for pipeline.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        """
+        Pipeline step that replaces the response body with the course key and the user it received.
+        """
+        return {"data": {"course_key": str(course_key), "username": user.username}}
 
 
 @skip_unless_lms
@@ -427,6 +440,31 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         courseware_data = response.json()
         assert 'can_access_proctored_exams' in courseware_data
         assert courseware_data['can_access_proctored_exams'] == result
+
+    @ddt.data(False, True)
+    @override_settings(
+        OPEN_EDX_FILTERS_CONFIG={
+            "org.openedx.learning.courseware_metadata.api.render.started.v1": {
+                "pipeline": [
+                    "openedx.core.djangoapps.courseware_api.tests.test_views.TestReplaceCoursewareMetadata",
+                ],
+                "fail_silently": False,
+            },
+        },
+    )
+    def test_courseware_metadata_filter_replaces_response(self, masquerade):
+        """
+        The filter's returned data is sent to the client, and the filter receives the effective (masqueraded) user.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id, 'audit')
+        if masquerade:
+            self.client.login(username=self.instructor.username, password='foo')
+            self.update_masquerade(username=self.user.username)
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.json() == {"course_key": str(self.course.id), "username": self.user.username}
 
     @ddt.data(
         True,
