@@ -377,25 +377,7 @@ module.exports = Merge.merge({
                     ]
                 },
                 {
-                    test: /xmodule\/js\/src\/html\/display.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
                     test: /xmodule\/js\/src\/html\/edit.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
-                    test: /xmodule\/js\/src\/html\/imageModal.js/,
                     use: [
                         {
                             loader: 'imports-loader',
