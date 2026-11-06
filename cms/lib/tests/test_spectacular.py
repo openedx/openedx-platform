@@ -72,13 +72,16 @@ class CmsMarkSupersededPathsTest(TestCase):
         for path in SUPERSEDED_PATHS:
             assert result["paths"][path]["get"]["deprecated"] is True
 
-    def test_both_spellings_of_each_superseded_path_are_listed(self):
+    def test_the_superseded_paths_are_exactly_these(self):
+        """Optional-final-character routes appear in both spellings; the others appear once."""
         assert set(SUPERSEDED_PATHS) == {
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/help_urls",
         }
+        assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
     def test_the_conforming_paths_are_left_unmarked(self):
         conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
@@ -89,6 +92,19 @@ class CmsMarkSupersededPathsTest(TestCase):
         other = "/api/contentstore/v0/advanced_settings/{course_id}"
         result = self._run({"paths": {other: {"get": {}}}})
         assert "deprecated" not in result["paths"][other]["get"]
+
+    def test_only_the_legacy_help_urls_address_is_marked(self):
+        legacy = "/api/contentstore/v1/help_urls"
+        others = (
+            "/api/authoring/v2/help_urls/",
+            "/api/contentstore/v1/help_urls/",
+            "/api/contentstore/v1/proctored_exam_settings/{course_id}",
+            "/api/authoring/v2/courses/{course_key}/textbooks/",
+        )
+        result = self._run(_schema(legacy, *others))
+        assert result["paths"][legacy]["get"] == {"operationId": legacy, "deprecated": True}
+        for other in others:
+            assert result["paths"][other]["get"] == {"operationId": other}, other
 
     def test_path_level_keys_are_not_treated_as_operations(self):
         path = SUPERSEDED_PATHS[0]
