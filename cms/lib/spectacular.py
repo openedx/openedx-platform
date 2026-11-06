@@ -5,14 +5,18 @@ import re
 from drf_spectacular.openapi import AutoSchema
 
 # Legacy operations superseded by a conforming address under /api/authoring/.
-# Each is listed in the truncated spelling as well as the full one: the routes
-# make the final character optional, so both addresses resolve, and which one
-# the generator emits depends on how it renders that regex.
+# The v0 transcript routes make the final character optional, so both the
+# truncated and full spellings are listed; the v1 routes have a single
+# address each.
 SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+    # → /api/authoring/v2/courses/{course_key}/video_usages/{edx_video_id}/
+    "/api/contentstore/v1/videos/{course_id}/{edx_video_id}/usage",
+    # → /api/authoring/v2/courses/{course_key}/video_archives/
+    "/api/contentstore/v1/videos/{course_id}/download",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
