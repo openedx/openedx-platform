@@ -508,6 +508,8 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         ([True, True], 1),
         ([False, False], 0),
         ([False, True, True], 1),
+        # Binding while unknown in between can clear the learner's changes.
+        ([True, False, True], 2),
     )
     @ddt.unpack
     @patch(

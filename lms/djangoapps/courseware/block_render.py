@@ -508,9 +508,11 @@ def _run_learner_xblock_bound(block, user, course_key):
     Unknown users are block structure collection (whose result is cached and
     shared by every learner) and no-auth callbacks, so their blocks are left as
     authored. A block that was bound to this user while unknown is filtered the
-    first time it is returned to the known user.
+    first time it is returned to the known user, also when it had been filtered
+    for them before: binding it in between may have cleared their changes.
     """
     if not getattr(user, 'known', True):
+        block._learner_xblock_bound_user_id = _NOT_FILTERED  # pylint: disable=protected-access
         return block
     if user.id is not None and getattr(block, '_learner_xblock_bound_user_id', _NOT_FILTERED) == user.id:
         return block
