@@ -23,7 +23,6 @@ from cms.djangoapps.contentstore.views.course import (
     _accessible_courses_iter_for_tests,
     _accessible_courses_list_from_groups,
     _accessible_courses_summary_iter,
-    _get_course_keys_from_scopes,
     get_courses_accessible_to_user,
 )
 from common.djangoapps.course_action_state.models import CourseRerunState
@@ -39,6 +38,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.scopes import get_authz_course_keys_from_scopes
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
@@ -963,7 +963,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
             assert result_ids == expected_ids
 
-    def test_get_course_keys_from_scopes_with_platform_scope(self):
+    def test_get_authz_course_keys_from_scopes_with_platform_scope(self):
         """
         Platform-wide scopes should resolve to all courses with AuthZ enabled
         when the global toggle is disabled.
@@ -976,13 +976,13 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes([
+            course_keys = get_authz_course_keys_from_scopes([
                 PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
             ])
 
         assert course_keys == set(authz_keys) | set(legacy_keys)
 
-    def test_get_course_keys_from_scopes_with_platform_scope_global_flag_enabled(self):
+    def test_get_authz_course_keys_from_scopes_with_platform_scope_global_flag_enabled(self):
         """
         Platform-wide scopes should return all courses when the global AuthZ toggle
         is enabled, regardless of per-course toggle state.
@@ -995,13 +995,13 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
         ):
-            course_keys = _get_course_keys_from_scopes([
+            course_keys = get_authz_course_keys_from_scopes([
                 PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
             ])
 
         assert course_keys == set(CourseOverview.get_all_courses().values_list("id", flat=True))
 
-    def test_get_course_keys_from_scopes_platform_scope_short_circuits(self):
+    def test_get_authz_course_keys_from_scopes_platform_scope_short_circuits(self):
         """
         When a platform-wide scope is present, org and course scopes should be
         ignored and only the platform scope resolution should apply.
@@ -1014,7 +1014,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes(
+            course_keys = get_authz_course_keys_from_scopes(
                 [
                     OrgCourseOverviewGlobData(external_key=OrgCourseOverviewGlobData.build_external_key("Org1")),
                     PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key()),

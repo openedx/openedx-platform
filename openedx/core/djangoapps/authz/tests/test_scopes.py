@@ -17,10 +17,12 @@ from __future__ import annotations
 
 from unittest import mock
 
+import ddt
 import pytest
 from edx_django_utils.cache import RequestCache
 
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel, WaffleFlagOrgOverrideModel
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
@@ -29,6 +31,7 @@ try:
     # The openedx_authz engine is only wired up where content.search is installed
     # (i.e. cms), matching the skip_unless_cms guard below.
     from opaque_keys.edx.keys import CourseKey
+    from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
     from openedx_authz.api.users import assign_role_to_user_in_scope
     from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
     from openedx_authz.constants.roles import COURSE_EDITOR
@@ -36,6 +39,8 @@ try:
 
     from openedx.core.djangoapps.authz.scopes import (
         authz_grants_platform_access,
+        get_authz_course_keys_from_scopes,
+        get_authz_course_org_names,
         get_authz_flag_enabled_org_keys,
         get_authz_org_scoped_course_keys,
         get_authz_platform_course_keys,
@@ -58,8 +63,11 @@ except (RuntimeError, ImportError):
     assign_role_to_user_in_scope = None
     COURSE_EDITOR = None
     AuthzEnforcer = None
+    OrgCourseOverviewGlobData = None
+    PlatformCourseOverviewGlobData = None
     VIEW_COURSE_ACTION = "courses.view_course"
     authz_grants_platform_access = lambda user, action: False
+    get_authz_course_org_names = lambda user, permission: set()
     get_authz_flag_enabled_org_keys = lambda user, action: set()
     get_authz_org_scoped_course_keys = lambda user, action: set()
     get_authz_platform_orgs = lambda user, action: set()
@@ -312,3 +320,56 @@ class AuthzScopesOrgScopedCourseRescueTest(CourseAuthoringAuthzTestMixin, Shared
             course_keys = get_authz_org_scoped_course_keys(self.unauthorized_user, VIEW_COURSE_ACTION)
 
         assert course_keys == set()
+
+
+@ddt.ddt
+@skip_unless_cms
+@pytest.mark.skipif(not _HAS_AUTHZ_TEST_SUPPORT, reason="openedx_authz test support unavailable")
+class AuthzCourseOrgNamesTest(CourseAuthoringAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    Covers ``get_authz_course_org_names``: real per-course, org-wide and platform-wide grants
+    resolve to the orgs of the courses they cover, keeping only courses that have switched to authz.
+    """
+
+    def setUp(self):
+        super().setUp()
+        RequestCache.clear_all_namespaces()
+        self.org1_course = CourseOverviewFactory(org="org1", id=CourseKey.from_string("course-v1:org1+C1+R"))
+        self.org2_course = CourseOverviewFactory(org="org2", id=CourseKey.from_string("course-v1:org2+C1+R"))
+
+    @ddt.named_data(
+        ("course", lambda: "course-v1:org1+C1+R", {"org1"}),
+        ("org_glob", lambda: OrgCourseOverviewGlobData.build_external_key("org1"), {"org1"}),
+        ("platform", PlatformCourseOverviewGlobData.build_external_key, {"org1", "org2"}),
+    )
+    @ddt.unpack
+    def test_grant_resolves_to_orgs_of_covered_courses(self, build_scope, expected_orgs):
+        """Course, org-wide and platform-wide grants resolve to the orgs of the courses they cover."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, build_scope())
+
+        assert get_authz_course_org_names(self.authorized_user, VIEW_COURSE_ACTION) == expected_orgs
+
+    def test_no_grant_resolves_to_nothing(self):
+        """A user without grants gets no orgs."""
+        assert get_authz_course_org_names(self.unauthorized_user, VIEW_COURSE_ACTION) == set()
+
+    def test_grant_ignored_when_course_not_switched(self):
+        """Courses still on legacy access (flag off) are left out even with a grant."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, "course-v1:org1+*")
+
+        with mock.patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, "is_enabled", return_value=False):
+            assert get_authz_course_org_names(self.authorized_user, VIEW_COURSE_ACTION) == set()
+
+    def test_result_is_cached_per_request(self):
+        """The scope expansion runs once per (user, permission) within a request."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, "course-v1:org1+*")
+
+        with mock.patch(
+            "openedx.core.djangoapps.authz.scopes.get_authz_course_keys_from_scopes",
+            wraps=get_authz_course_keys_from_scopes,
+        ) as expand:
+            first = get_authz_course_org_names(self.authorized_user, VIEW_COURSE_ACTION)
+            second = get_authz_course_org_names(self.authorized_user, VIEW_COURSE_ACTION)
+
+        assert first == second == {"org1"}
+        assert expand.call_count == 1
