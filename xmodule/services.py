@@ -29,7 +29,7 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.modulestore.django import modulestore
 
 if TYPE_CHECKING:
-    from xmodule.capa_block import ProblemBlock
+    from xblocks_contrib.problem import ProblemBlock
 
 log = logging.getLogger(__name__)
 

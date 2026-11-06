@@ -57,14 +57,6 @@ module.exports = {
             './xmodule/js/src/poll/poll_main.js'
         ],
         PollBlockEditor: './xmodule/js/src/xmodule.js',
-        ProblemBlockDisplay: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/javascript_loader.js',
-            './xmodule/js/src/capa/display.js',
-            './xmodule/js/src/collapsible.js',
-            './xmodule/js/src/capa/imageinput.js',
-            './xmodule/js/src/capa/schematic.js'
-        ],
         SequenceBlockDisplay: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/sequence/display.js'

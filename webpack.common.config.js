@@ -302,7 +302,7 @@ module.exports = Merge.merge({
                  * modules here. It is very likely that many of these modules do not need to be in this list. Future
                  * refactorings are welcome to try to prune the list down to the minimal set of modules. As far as
                  * we know, the only modules that absolutely need to be added to the global namespace are those
-                 * which define module types, for example "Problem" (in xmodule/js/src/capa/display.js).
+                 * which define module types.
                  */
                 {
                     test: /xmodule\/assets\/word_cloud\/src\/js\/word_cloud.js/,
@@ -324,33 +324,6 @@ module.exports = Merge.merge({
                 },
                 {
                     test: /xmodule\/js\/src\/annotatable\/display.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
-                    test: /xmodule\/js\/src\/capa\/display.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
-                    test: /xmodule\/js\/src\/capa\/imageinput.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
-                    test: /xmodule\/js\/src\/capa\/schematic.js/,
                     use: [
                         {
                             loader: 'imports-loader',
