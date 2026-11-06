@@ -25,6 +25,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     enable_authz_course_authoring,
 )
+from openedx.core.djangoapps.authz.scopes import get_authz_course_org_names
 
 from .auth import should_use_course_authz_for_object
 from .models import TaxonomyOrg
@@ -161,7 +162,7 @@ def _get_authz_manage_tags_orgs(user: UserType, orgs: list[Organization]) -> lis
     if not orgs:
         return []
 
-    org_names = rules_cache.get_authz_manage_tags_org_names(user)
+    org_names = get_authz_course_org_names(user, authz_permissions.COURSES_MANAGE_TAGS.identifier)
     return [org for org in orgs if org.short_name in org_names]
 
 

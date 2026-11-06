@@ -312,3 +312,25 @@ def get_authz_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[Cour
         )
 
     return course_keys
+
+
+@request_cached(arg_map_function=lambda arg: getattr(arg, "username", str(arg)))
+def get_authz_course_org_names(user: User, permission: str) -> set[str]:
+    """Return the org short_names of the courses where the user holds ``permission`` through openedx-authz.
+
+    The user's scopes (course, org-wide and platform-wide) are expanded with
+    ``get_authz_course_keys_from_scopes``, so only courses that have switched to
+    openedx-authz are taken into account.
+
+    The result is cached once per ``(user, permission)`` within a request, since expanding the
+    scopes hits the course overviews. May raise on a lookup failure.
+
+    Args:
+        user: The user whose scopes are resolved.
+        permission: The permission identifier, such as ``courses.manage_tags``.
+
+    Returns:
+        The org short_names of the courses the user's grants of ``permission`` cover.
+    """
+    scopes = list(get_cached_scopes_for_permission(user, permission))
+    return {course_key.org for course_key in get_authz_course_keys_from_scopes(scopes)}

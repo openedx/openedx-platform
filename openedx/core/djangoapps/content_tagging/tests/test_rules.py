@@ -5,6 +5,7 @@ from unittest.mock import patch
 import ddt
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
 from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
@@ -855,7 +856,7 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         )
 
 
-@patch("openedx_authz.api.get_scopes_for_user_and_permission")
+@patch("openedx.core.djangoapps.authz.scopes.get_scopes_for_user_and_permission")
 class TestRulesAuthzManageTagsOrgs(TestTaxonomyMixin, TestCase):
     """
     Tests for how get_user_orgs and can_view_taxonomy resolve orgs granted through openedx-authz
@@ -864,7 +865,8 @@ class TestRulesAuthzManageTagsOrgs(TestTaxonomyMixin, TestCase):
 
     def setUp(self):
         super().setUp()
-        rules_cache.clear()  # authz scopes are cached per request
+        rules_cache.clear()
+        RequestCache.clear_all_namespaces()  # authz scopes are cached per request
         self.superuser = User.objects.create(username="superuser", email="superuser@example.com", is_superuser=True)
         self.authz_user = User.objects.create(username="authz_user", email="authz_user@example.com")
         self.legacy_user = User.objects.create(username="legacy_user", email="legacy_user@example.com")

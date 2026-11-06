@@ -131,38 +131,5 @@ class TaggingRulesCache:
             library_orgs[org_name] for org_name in org_names if org_name in library_orgs
         ]
 
-    def get_authz_manage_tags_org_names(self, user) -> set[str]:
-        """Return the orgs of the courses where the user holds ``courses.manage_tags`` through openedx-authz.
-
-        Scopes are resolved with ``get_authz_course_keys_from_scopes``, the same way other
-        authz-aware course listings do, so only courses that have switched to openedx-authz are
-        taken into account.
-
-        The result is cached for the duration of the request: org membership is evaluated once per
-        taxonomy, and each lookup would otherwise hit the authz policy store and the course
-        overviews again.
-
-        Args:
-            user: The user whose ``courses.manage_tags`` scopes are resolved.
-
-        Returns:
-            The short names of the orgs of those courses.
-        """
-        # Import here to keep openedx-authz out of this module's import-time dependencies.
-        from openedx_authz import api as authz_api
-        from openedx_authz.constants import permissions as authz_permissions
-
-        from openedx.core.djangoapps.authz.scopes import get_authz_course_keys_from_scopes
-
-        cache_key = f'authz_manage_tags_org_names:{user.username}'
-        org_names = self.request_cache.data.get(cache_key)
-        if org_names is None:
-            scopes = authz_api.get_scopes_for_user_and_permission(
-                user.username, authz_permissions.COURSES_MANAGE_TAGS.identifier
-            )
-            org_names = {course_key.org for course_key in get_authz_course_keys_from_scopes(list(scopes))}
-            self.request_cache.set(cache_key, org_names)
-        return org_names
-
 
 rules_cache = TaggingRulesCache()
