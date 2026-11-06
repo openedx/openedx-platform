@@ -267,14 +267,26 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
     def test_get_course_metadata_nonexistent_course(self):
         """
         Test error handling for non-existent course.
+
+        The permission check does not load the course, so only a user that passes it
+        (global staff) reaches the view and gets the 404.
         """
-        self.client.force_authenticate(user=self.instructor)
+        self.client.force_authenticate(user=self.admin)
         nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
         response = self.client.get(self._get_url(course_id=nonexistent_course_id))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
         error_code = "Course not found: course-v1:edX+NonExistent+2024."
         self.assertEqual(response.data['developer_message'], error_code)  # noqa: PT009
+
+    def test_get_course_metadata_nonexistent_course_without_access(self):
+        """
+        A user without access to a non-existent course gets 403, as for any other course.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url(course_id='course-v1:edX+NonExistent+2024'))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_instructor_permissions_reflected(self):
         """

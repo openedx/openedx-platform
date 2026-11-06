@@ -4,21 +4,19 @@ Tests for the course advanced settings API.
 import json
 from unittest.mock import patch
 
-import casbin
 import ddt
-import pkg_resources
 from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
 from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
-from openedx_authz.engine.utils import migrate_policy_between_enforcers
 from rest_framework.test import APIClient
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.tests.fixtures import seed_policies
 
 
 @ddt.ddt
@@ -114,7 +112,7 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
 
     def setUp(self):
         super().setUp()
-        self._seed_database_with_policies()
+        seed_policies()
         self.url = reverse(
             "cms.djangoapps.contentstore:v0:course_advanced_settings",
             kwargs={"course_id": self.course.id},
@@ -141,18 +139,6 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
     def tearDown(self):
         super().tearDown()
         AuthzEnforcer.get_enforcer().clear_policy()
-
-    @classmethod
-    def _seed_database_with_policies(cls):
-        """Seed the database with policies from the policy file."""
-        global_enforcer = AuthzEnforcer.get_enforcer()
-        global_enforcer.load_policy()
-        model_path = pkg_resources.resource_filename("openedx_authz.engine", "config/model.conf")
-        policy_path = pkg_resources.resource_filename("openedx_authz.engine", "config/authz.policy")
-        migrate_policy_between_enforcers(
-            source_enforcer=casbin.Enforcer(model_path, policy_path),
-            target_enforcer=global_enforcer,
-        )
 
     def test_authorized_for_specific_course(self, mock_flag):
         """User authorized for specific course can access."""
