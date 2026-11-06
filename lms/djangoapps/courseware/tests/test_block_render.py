@@ -588,14 +588,30 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         side_effect=lambda **kwargs: kwargs['block'],
     )
     def test_learner_xblock_bound_filter_anonymous_user(self, run_filter):
-        """The bound filter runs once for an anonymous user, whose id is None."""
-        block = BlockFactory(category='html', parent=CourseFactory())
-        run_bound_filter = render._run_learner_xblock_bound  # pylint: disable=protected-access
+        """
+        An anonymous user is bound again on every lookup, which clears cached
+        user-scoped fields, so the bound filter runs again and its changes are kept.
+        """
+        def set_user_state(block, **kwargs):  # pylint: disable=unused-argument
+            block.fields['position']._set_cached_value(block, 2)  # pylint: disable=protected-access
+            return block
 
-        for _ in range(2):
-            run_bound_filter(block, AnonymousUser(), self.toy_course.id)
+        run_filter.side_effect = set_user_state
+        course = CourseFactory.create()
+        block = BlockFactory.create(parent=course, category='sequential')
+        user = AnonymousUser()
+        request = self.request_factory.get('')
+        request.user = user
+        field_data_cache = FieldDataCache([block], course.id, user)
 
-        assert run_filter.call_count == 1
+        with patch('lms.djangoapps.courseware.block_render.has_access', return_value=True):
+            for _ in range(2):
+                bound = render.get_block_for_descriptor(
+                    user, request, block, field_data_cache, course.id, course=course
+                )
+                assert bound.position == 2
+
+        assert run_filter.call_count == 2
 
     @patch('lms.djangoapps.courseware.block_render.LearnerXBlockBound.run_filter', return_value=None)
     def test_learner_xblock_bound_filter_returns_no_block(self, run_filter):  # pylint: disable=unused-argument
