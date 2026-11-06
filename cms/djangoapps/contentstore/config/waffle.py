@@ -21,4 +21,3 @@ ENABLE_ACCESSIBILITY_POLICY_PAGE = WaffleSwitch(  # pylint: disable=toggle-missi
 ENABLE_CHECKLISTS_QUALITY = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.enable_checklists_quality', __name__, LOG_PREFIX
 )
-
