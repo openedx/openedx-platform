@@ -11,13 +11,13 @@ from unittest.mock import MagicMock, Mock, patch
 import ddt
 import freezegun
 import pytest
-from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory
 from django.utils.timezone import now
 from edxval import api
 from webob import Request, Response
 from xblock.django.request import DjangoWebobRequest
+from xblocks_contrib.video import VideoBlock
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
@@ -36,7 +36,6 @@ from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-impo
 
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
-from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW
 
 from .helpers import BaseTestXmodule
@@ -207,17 +206,11 @@ class TestVideo(BaseTestVideoXBlock):
             {'demoo�': 'sample'}
         ]
         for sample in data:
-            if settings.USE_EXTRACTED_VIDEO_BLOCK:
-                handler_url = self.get_url('save_user_state', handler_name='ajax_handler')
-                response = self.clients[self.users[0].username].post(
-                    handler_url,
-                    sample,
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-            else:
-                response = self.clients[self.users[0].username].post(
-                    self.get_url('save_user_state'),
-                    sample,
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            handler_url = self.get_url('save_user_state', handler_name='ajax_handler')
+            response = self.clients[self.users[0].username].post(
+                handler_url,
+                sample,
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             assert response.status_code == 200
 
         assert self.block.speed is None
@@ -800,7 +793,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
         if sub:
             assert ('Location', f'/static/dummy/static/subs_{sub}.srt.sjson') in response.headerlist
 
-    @patch('xmodule.video_block.VideoBlock.context_key', return_value='not_a_course_locator')
+    @patch('xblocks_contrib.video.VideoBlock.context_key', return_value='not_a_course_locator')
     def test_translation_static_non_course(self, __):  # noqa: PT019
         """
         Test that get_static_transcript short-circuits in the case of a non-CourseLocator.
@@ -822,7 +815,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
             store.update_item(self.course, self.user.id)
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.edxval_api.get_video_transcript_data')
-    @patch('xmodule.video_block.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
+    @patch('xblocks_contrib.video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
     def test_translation_fallback_transcript(self, mock_get_video_transcript_data):
         """
         Verify that the val transcript is returned as a fallback,
@@ -854,7 +847,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
         for attribute, value in expected_headers.items():
             assert response.headers[attribute] == value
 
-    @patch('xmodule.video_block.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
+    @patch('xblocks_contrib.video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
     def test_translation_fallback_transcript_feature_disabled(self):
         """
         Verify that val transcript is not returned when its feature is disabled.

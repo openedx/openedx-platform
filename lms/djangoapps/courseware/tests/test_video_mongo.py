@@ -5,6 +5,7 @@ Video xmodule tests in mongo.
 
 import json
 import shutil
+import unittest
 from collections import OrderedDict
 from contextlib import contextmanager
 from tempfile import mkdtemp
@@ -35,8 +36,12 @@ from edxval.utils import create_file_in_fs
 from fs.osfs import OSFS
 from fs.path import combine
 from lxml import etree
+from opaque_keys.edx.locator import CourseLocator
 from path import Path as path
-from xblocks_contrib.video import bumper_utils
+from xblock.field_data import DictFieldData
+from xblock.fields import ScopeIds
+from xblocks_contrib.video import VideoBlock, bumper_utils, video_utils
+from xblocks_contrib.video.video import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE
 from common.test.utils import assert_dict_contains_subset
@@ -56,6 +61,7 @@ from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
+from xmodule.tests import get_test_descriptor_system
 
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F401
@@ -63,9 +69,6 @@ from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F4
     override_descriptor_system,
 )
 from xmodule.tests.test_import import DummyModuleStoreRuntime
-from xmodule.tests.test_video import VideoBlockTestBase
-from xmodule.video_block import VideoBlock, video_utils
-from xmodule.video_block.video_block import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
 from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
 
 from .test_video_handlers import BaseTestVideoXBlock, TestVideo
@@ -82,6 +85,55 @@ I am overwatch.
 """
 
 TRANSCRIPT_FILE_SJSON_DATA = """{\n   "start": [10],\n   "end": [100],\n   "text": ["Hi, welcome to edxval."]\n}"""
+
+
+def instantiate_block(**field_data):
+    """
+    Instantiate block with most properties.
+
+    Moved from the deleted xmodule/tests/test_video.py; now builds the
+    xblocks_contrib VideoBlock instead of the removed built-in block.
+    """
+    if field_data.get('data', None):
+        field_data = VideoBlock.parse_video_xml(field_data['data'])
+    system = get_test_descriptor_system()
+    course_key = CourseLocator('org', 'course', 'run')
+    usage_key = course_key.make_usage_key('video', 'SampleProblem')
+    return system.construct_xblock_from_class(
+        VideoBlock,
+        scope_ids=ScopeIds(None, None, usage_key, usage_key),
+        field_data=DictFieldData(field_data),
+    )
+
+
+class VideoBlockTestBase(unittest.TestCase):
+    """
+    Base class for tests for VideoBlock
+
+    Moved from the deleted xmodule/tests/test_video.py.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.block = instantiate_block()
+
+    def assertXmlEqual(self, expected, xml):
+        """
+        Assert that the given XML fragments have the same attributes, text, and
+        (recursively) children
+        """
+        def get_child_tags(elem):
+            """Extract the list of tag names for children of elem"""
+            return [child.tag for child in elem]
+
+        for attr in ['tag', 'attrib', 'text', 'tail']:
+            expected_attr = getattr(expected, attr)
+            actual_attr = getattr(xml, attr)
+            assert expected_attr == actual_attr
+
+        assert get_child_tags(expected) == get_child_tags(xml)
+        for left, right in zip(expected, xml):  # noqa: B905
+            self.assertXmlEqual(left, right)
 
 
 class TestVideoYouTube(TestVideo):  # pylint: disable=missing-class-docstring, test-inherits-tests
@@ -1169,7 +1221,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         """
         Verify val profiles on toggling HLS Playback feature.
         """
-        with patch('xmodule.video_block.video_block.edxval_api.get_urls_for_profiles') as get_urls_for_profiles:
+        with patch('edxval.api.get_urls_for_profiles') as get_urls_for_profiles:
             get_urls_for_profiles.return_value = {
                 'desktop_webm': 'https://webm.com/dw.webm',
                 'hls': 'https://hls.com/hls.m3u8',
@@ -1193,7 +1245,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         'openedx.core.djangoapps.video_config.services.VideoConfigService.is_hls_playback_enabled',
         Mock(return_value=True)
     )
-    @patch('xmodule.video_block.video_block.edxval_api.get_urls_for_profiles')
+    @patch('edxval.api.get_urls_for_profiles')
     def test_get_html_hls(self, get_urls_for_profiles, mock_render_django_template):
         """
         Verify that hls profile functionality works as expected.
@@ -1280,7 +1332,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         assert '"saveStateEnabled": false' in context
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xmodule.video_block.video_block.edxval_api.get_course_video_image_url')
+    @patch('edxval.api.get_course_video_image_url')
     def test_poster_image(self, get_course_video_image_url, _):  # noqa: PT019
         """
         Verify that poster image functionality works as expected.
@@ -1294,7 +1346,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         assert '"poster": "/media/video-images/poster.png"' in context
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xmodule.video_block.video_block.edxval_api.get_course_video_image_url')
+    @patch('edxval.api.get_course_video_image_url')
     def test_poster_image_without_edx_video_id(self, get_course_video_image_url, _):  # noqa: PT019
         """
         Verify that poster image is set to None and there is no crash when no edx_video_id.
@@ -1440,7 +1492,7 @@ class TestVideoBlockInitialization(BaseTestVideoXBlock):
         a video component is initialized. Current implementation considers this youtube source as a valid
         external youtube source.
         """
-        with patch('xmodule.video_block.video_block.edxval_api.get_urls_for_profiles') as get_urls_for_profiles:
+        with patch('edxval.api.get_urls_for_profiles') as get_urls_for_profiles:
             get_urls_for_profiles.return_value = val_video_encodings
             self.initialize_block(
                 data='<video display_name="Video" download_video="true" edx_video_id="12345-67890">[]</video>'
@@ -1480,7 +1532,7 @@ class TestVideoBlockInitialization(BaseTestVideoXBlock):
         Accepted order of source priority is:
             VAL's youtube source > external youtube source > hls > mp4 > webm.
         """
-        with patch('xmodule.video_block.video_block.edxval_api.get_urls_for_profiles') as get_urls_for_profiles:
+        with patch('edxval.api.get_urls_for_profiles') as get_urls_for_profiles:
             get_urls_for_profiles.return_value = val_video_encodings
             # pylint: disable=line-too-long
             self.initialize_block(
@@ -1571,7 +1623,7 @@ class TestEditorSavedMethod(BaseTestVideoXBlock):
         item.editor_saved(self.user, old_metadata, None)
         assert item.edx_video_id == stripped_video_id
 
-    @patch('xmodule.video_block.video_block.edxval_api.get_url_for_profile', Mock(return_value='test_yt_id'))
+    @patch('edxval.api.get_url_for_profile', Mock(return_value='test_yt_id'))
     def test_editor_saved_with_yt_val_profile(self):
         """
         Verify editor saved overrides `youtube_id_1_0` when a youtube val profile is there

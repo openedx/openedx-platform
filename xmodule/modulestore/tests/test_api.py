@@ -9,6 +9,7 @@ from lti_consumer.lti_xblock import LtiConsumerXBlock
 from xblock.field_data import DictFieldData
 from xblock.test.test_runtime import TestSimpleMixin
 from xblock.test.tools import TestRuntime
+from xblocks_contrib.video import VideoBlock
 
 from xmodule.modulestore.api import (
     get_javascript_i18n_file_name,
@@ -17,7 +18,6 @@ from xmodule.modulestore.api import (
     get_root_module_name,
     get_xblock_root_module_name,
 )
-from xmodule.video_block import VideoBlock
 
 
 def test_get_root_module_name():
@@ -25,9 +25,7 @@ def test_get_root_module_name():
     Ensure the module name function works with different xblocks.
     """
     assert get_root_module_name(LtiConsumerXBlock) == 'lti_consumer'
-
-    expected_root_module = 'xblocks_contrib' if settings.USE_EXTRACTED_VIDEO_BLOCK else 'xmodule'
-    assert get_root_module_name(VideoBlock) == expected_root_module
+    assert get_root_module_name(VideoBlock) == 'xblocks_contrib'
     assert get_root_module_name(DoneXBlock) == 'done'
 
 
