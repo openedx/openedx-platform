@@ -12,7 +12,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import ContainerHandlerMixin
 from cms.djangoapps.contentstore.rest_api.v1.serializers import ContainerChildrenSerializer, CourseIndexSerializer
 from cms.djangoapps.contentstore.utils import (
@@ -115,7 +114,9 @@ class CourseIndexView(DeveloperErrorViewMixin, APIView):
         course_index_context.update({
             "discussions_incontext_learnmore_url": settings.DISCUSSIONS_INCONTEXT_LEARNMORE_URL,
             "discussions_incontext_feedback_url": settings.DISCUSSIONS_INCONTEXT_FEEDBACK_URL,
-            "is_custom_relative_dates_active": CUSTOM_RELATIVE_DATES.is_enabled(course_key),
+            # Custom relative dates are always on. Kept for authoring MFE versions that still read it;
+            # remove once frontend-app-authoring no longer uses it.
+            "is_custom_relative_dates_active": True,
         })
 
         serializer = CourseIndexSerializer(course_index_context)

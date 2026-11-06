@@ -326,7 +326,7 @@ if (is_proctored_exam) {
                         <% } %>
                     </p>
                 </div>
-                <% if (course.get('self_paced') && course.get('is_custom_relative_dates_active') && xblockInfo.get('relative_weeks_due')) { %>
+                <% if (course.get('self_paced') && xblockInfo.get('relative_weeks_due')) { %>
                     <div class="status-grading">
                         <p>
                             <span class="icon fa fa-calendar" aria-hidden="true"></span>
@@ -356,7 +356,7 @@ if (is_proctored_exam) {
                         <% } %>
                     </p>
                 </div>
-                <% if (course.get('self_paced') && course.get('is_custom_relative_dates_active') && xblockInfo.get('relative_weeks_due')) { %>
+                <% if (course.get('self_paced') && xblockInfo.get('relative_weeks_due')) { %>
                     <div class="status-grading">
                         <p>
                             <span class="icon fa fa-calendar" aria-hidden="true"></span>
@@ -375,7 +375,7 @@ if (is_proctored_exam) {
                         </p>
                     </div>
                 <% } %>
-            <% } else if (course.get('self_paced') && course.get('is_custom_relative_dates_active') && xblockInfo.get('relative_weeks_due')) { %>
+            <% } else if (course.get('self_paced') && xblockInfo.get('relative_weeks_due')) { %>
                 <div class="status-grading">
                     <p>
                         <span class="sr status-grading-label"> <%- gettext('Graded as:') %> </span>

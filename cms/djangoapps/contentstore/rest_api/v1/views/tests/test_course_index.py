@@ -8,7 +8,6 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 
-from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import PermissionAccessMixin
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase
 from cms.djangoapps.contentstore.utils import get_lms_link_for_item, get_pages_and_resources_url
@@ -54,7 +53,6 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             kwargs={"course_id": self.course.id},
         )
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_course_index_response(self):
         """Check successful response content"""
         response = self.client.get(self.url)
@@ -99,7 +97,6 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=False)
     def test_course_index_response_with_show_locators(self):
         """Check successful response content with show query param"""
         response = self.client.get(self.url, {"show": str(self.unit.location)})
@@ -113,7 +110,7 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             },
             "discussions_incontext_feedback_url": "",
             "discussions_incontext_learnmore_url": settings.DISCUSSIONS_INCONTEXT_LEARNMORE_URL,
-            "is_custom_relative_dates_active": False,
+            "is_custom_relative_dates_active": True,
             "initial_state": {
                 "expanded_locators": [
                     str(self.unit.location),

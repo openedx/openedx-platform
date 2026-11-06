@@ -15,7 +15,6 @@
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.helpers import xblock_type_display_name
 from lms.djangoapps.branding import api as branding_api
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
@@ -173,7 +172,6 @@ from openedx.core.release import RELEASE_LINE
             display_course_number: "${context_course.display_coursenumber | n, js_escaped_string}",
             revision: "${context_course.location.branch | n, js_escaped_string}",
             self_paced: ${ context_course.self_paced | n, dump_js_escaped_json },
-            is_custom_relative_dates_active: ${CUSTOM_RELATIVE_DATES.is_enabled(context_course.id) | n, dump_js_escaped_json},
             start: ${context_course.start | n, dump_js_escaped_json},
             discussions_settings: ${context_course.discussions_settings | n, dump_js_escaped_json}
             });

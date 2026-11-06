@@ -2,9 +2,6 @@
 from datetime import timedelta
 from unittest.mock import patch  # pylint: disable=wrong-import-order
 
-from edx_toggles.toggles.testutils import override_waffle_flag
-
-from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from openedx.core.djangoapps.course_date_signals.handlers import (
     _gather_graded_items,
     _get_custom_pacing_children,
@@ -220,7 +217,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         # get updated course
         self.course = self.store.get_item(course.location)
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_inheritance(self):
         """
         extract_dates_from_course should return a list of (block item location, field metadata dictionary)
@@ -241,7 +237,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         course = self.store.get_item(self.course.location)
         self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_one_subsection(self):
         """
         relative_weeks_due in one of the subsections. Only one of them should have a set due date.
@@ -262,7 +257,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         course = self.store.get_item(self.course.location)
         self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_one_subsection_graded(self):
         """
         A section with a subsection that has relative_weeks_due and
@@ -296,7 +290,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=6)):
             self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_multiple_subsections_graded(self):
         """
         A section with a subsection that has relative_weeks_due and multiple sections without
@@ -337,7 +330,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=8)):
             self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_all_subsections(self):
         """
         With relative_weeks_due on all subsections. All subsections should
@@ -358,7 +350,6 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
         course = self.store.get_item(self.course.location)
         self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
-    @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_no_subsections(self):
         """
         Without relative_weeks_due on all subsections. None of the subsections should

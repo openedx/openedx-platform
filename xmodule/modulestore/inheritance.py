@@ -48,7 +48,7 @@ class InheritanceMixin(XBlockMixin):
         help=_("Enter the default date by which problems are due."),
         scope=Scope.settings,
     )
-    # This attribute is for custom pacing in self paced courses for Studio if CUSTOM_RELATIVE_DATES flag is active
+    # This attribute is for custom pacing in self paced courses
     relative_weeks_due = Integer(
         display_name=_("Number of Relative Weeks Due By"),
         help=_("Enter the number of weeks the problems are due by relative to the learner's enrollment date"),
