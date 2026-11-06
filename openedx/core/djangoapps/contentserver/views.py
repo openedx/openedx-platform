@@ -25,8 +25,8 @@ from common.djangoapps.student.auth import has_studio_read_access
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.header_control import force_header_for_response
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import XASSET_LOCATION_TAG, StaticContent
+from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore import InvalidLocationError
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -141,7 +141,7 @@ def process_request(request):
         if request.META.get('HTTP_RANGE'):
             # If we have a StaticContent, get a StaticContentStream.  Can't manipulate the bytes otherwise.
             if isinstance(content, StaticContent):
-                content = AssetManager.find(loc, as_stream=True)
+                content = contentstore().find(loc, as_stream=True)
 
             header_value = request.META['HTTP_RANGE']
             try:
@@ -367,7 +367,7 @@ def load_asset_from_location(location):
     content = get_cached_content(location)
     if content is None:
         # Not in cache, so just try and load it from the asset manager.
-        content = AssetManager.find(location, as_stream=True)
+        content = contentstore().find(location, as_stream=True)
 
         # Now that we fetched it, let's go ahead and try to cache it. We cap this at 1MB
         # because it's the default for memcached and also we don't want to do too much
