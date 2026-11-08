@@ -335,10 +335,10 @@ if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):  # noqa: F405
     from .private import *  # pylint: disable=import-error,wildcard-import  # noqa: F403
 
 ############## Authoring API drf-spectacular openapi settings ##############
-# The rest of SPECTACULAR_SETTINGS, the hooks included, is defined once in
+# The rest of SDK_SPECTACULAR_SETTINGS, the hooks included, is defined once in
 # common.py. DESCRIPTION and SERVERS are set again here because production.py
 # built them from its own CMS_BASE and LMS_ROOT_URL, which this module changes.
-SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
+SDK_SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
     f'''Experimental API to edit xblocks and course content.
     \n\nDanger: Do not use on running courses!
     \n\n - How to gain access: Please email the owners of this openedx service.
@@ -353,7 +353,7 @@ SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
     [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
     \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)'''
 )
-SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+SDK_SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
     {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
     {'url': f'http://{CMS_BASE}', 'description': 'Local'},
 ]

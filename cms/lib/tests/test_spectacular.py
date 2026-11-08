@@ -138,10 +138,11 @@ class CmsMarkMigratedPathsTest(SimpleTestCase):
 
 class SpectacularSettingsTest(SimpleTestCase):
     """
-    The service settings the hooks depend on.
+    The Authoring API schema settings the hooks depend on.
 
-    They are defined once in cms/envs/common.py, which every environment
-    inherits, so the test settings carry the same values.
+    They are defined once as SDK_SPECTACULAR_SETTINGS in cms/envs/common.py,
+    which every environment inherits, so the test settings carry the same
+    values.
     """
 
     # devstack.py and production.py only add environment-specific keys.
@@ -151,20 +152,27 @@ class SpectacularSettingsTest(SimpleTestCase):
         return (Path(__file__).resolve().parents[3] / module).read_text()
 
     def test_both_hooks_are_configured(self):
-        assert settings.SPECTACULAR_SETTINGS["PREPROCESSING_HOOKS"] == ["cms.lib.spectacular.cms_api_filter"]
-        hooks = settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+        assert settings.SDK_SPECTACULAR_SETTINGS["PREPROCESSING_HOOKS"] == ["cms.lib.spectacular.cms_api_filter"]
+        hooks = settings.SDK_SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
         assert "cms.lib.spectacular.cms_mark_superseded_paths" in hooks
         assert "cms.lib.spectacular.cms_mark_migrated_paths" in hooks
 
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
-        assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+        hooks = settings.SDK_SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+        assert "drf_spectacular.hooks.postprocess_schema_enums" in hooks
 
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
+        assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SDK_SPECTACULAR_SETTINGS
         assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
 
     def test_the_tag_prefix_covers_both_mounts(self):
-        assert settings.SPECTACULAR_SETTINGS["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
+        assert settings.SDK_SPECTACULAR_SETTINGS["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
+
+    def test_the_service_wide_schema_is_not_filtered(self):
+        """The Authoring API hooks and prefix apply to the SDK subset only, not to /api-docs."""
+        assert "PREPROCESSING_HOOKS" not in settings.SPECTACULAR_SETTINGS
+        assert "SCHEMA_PATH_PREFIX" not in settings.SPECTACULAR_SETTINGS
 
     def test_no_server_advertises_a_single_mount_as_its_root(self):
         for module in self.SETTINGS_MODULES:

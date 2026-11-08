@@ -2214,6 +2214,43 @@ LEARNER_PROGRESS_PROMPT_FOR_NON_ACTIVE_CONTRACT = ''
 # How long to cache OpenAPI schemas and UI, in seconds.
 OPENAPI_CACHE_TIMEOUT = 60 * 60
 
+# .. setting_name: SPECTACULAR_SETTINGS
+# .. setting_default: see below
+# .. setting_description: drf-spectacular configuration for the service-wide OpenAPI
+#   schema: the document each service serves at ``/api-docs/`` (and as ``swagger.json``
+#   / ``swagger.yaml``), and the one ``manage.py <service> spectacular`` emits. It covers
+#   every DRF endpoint in the service. The narrower, SDK-facing schemas (the Enrollment
+#   API in the LMS, the Authoring API in Studio) layer their differences over this; see
+#   ``SDK_SPECTACULAR_SETTINGS`` in lms/envs/common.py and cms/envs/common.py.
+#   ``CONTACT`` is derived from ``API_ACCESS_MANAGER_EMAIL``.
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Open edX API',
+    'DESCRIPTION': 'APIs for access to Open edX information',
+    'VERSION': 'v1',
+    'CONTACT': Derived(
+        lambda settings: {'email': settings.API_ACCESS_MANAGER_EMAIL} if settings.API_ACCESS_MANAGER_EMAIL else {}
+    ),
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Drop the SDK tag from deprecated operations. The enum hook is
+    # drf-spectacular's default, restated because setting this key replaces
+    # the default list.
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'openedx.core.apidocs.untag_deprecated_operations',
+    ],
+    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
+    # than drf-spectacular's default unpinned jsdelivr CDN URLs, keeping them
+    # self-hosted and version-pinned as the drf-yasg bundles were.
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    # Deliberately left at drf-spectacular's defaults: no PREPROCESSING_HOOKS
+    # (every endpoint is documented), no SCHEMA_PATH_PREFIX (tags and
+    # operationIds derive from the paths' common prefix) and no SERVERS (the
+    # document is valid for whichever host served it, and the /api-docs cache
+    # key relies on nothing in it varying by requester).
+}
+
 ################################### AWS ####################################
 
 AWS_QUERYSTRING_AUTH = True
