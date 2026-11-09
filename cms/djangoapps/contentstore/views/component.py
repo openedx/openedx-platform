@@ -27,7 +27,7 @@ from cms.djangoapps.contentstore.toggles import libraries_v2_enabled, use_new_un
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
-from common.djangoapps.xblock_django.api import authorable_xblocks, disabled_xblocks
+from common.djangoapps.xblock_django.api import authorable_xblocks, default_advanced_xblocks, disabled_xblocks
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
@@ -75,6 +75,9 @@ CONTAINER_TEMPLATES = [
     "edit-title-button", "edit-upstream-alert",
 ]
 
+# Advanced modules which are offered in every course, in addition to the ones each course lists in its own
+# Advanced Module List. Operators can add to this list without forking the platform by marking XBlocks as
+# advanced by default in XBlockStudioConfiguration (see `default_advanced_xblocks`).
 DEFAULT_ADVANCED_MODULES = [
     'google-calendar',
     'google-document',
@@ -413,8 +416,10 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
     # Check if there are any advanced modules specified in the course policy.
     # These modules should be specified as a list of strings, where the strings
     # are the names of the modules in ADVANCED_COMPONENT_TYPES that should be
-    # enabled for the course.
-    course_advanced_keys = list(dict.fromkeys(courselike.advanced_modules + DEFAULT_ADVANCED_MODULES))
+    # enabled for the course. They are combined with the modules which are enabled for every course: the
+    # platform-wide DEFAULT_ADVANCED_MODULES, plus any which this operator has marked as advanced by default.
+    default_advanced_keys = DEFAULT_ADVANCED_MODULES + [block.name for block in default_advanced_xblocks()]
+    course_advanced_keys = list(dict.fromkeys(courselike.advanced_modules + default_advanced_keys))
     advanced_component_templates = {
         "type": "advanced",
         "templates": [],
