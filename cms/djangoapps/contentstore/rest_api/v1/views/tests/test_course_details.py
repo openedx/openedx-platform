@@ -2,6 +2,7 @@
 Unit tests for course details views.
 """
 import json
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import ddt
@@ -182,6 +183,28 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+
+    def test_put_partial_body_self_paced(self):
+        """
+        A body with only self_paced switches a course that hasn't started yet
+        and keeps its start date, instead of clearing the date and ignoring the change.
+        """
+        self.course.start = datetime(2040, 1, 1, tzinfo=timezone.utc)
+        self.course.self_paced = False
+        self.store.update_item(self.course, self.user.id)
+
+        response = self.client.put(
+            path=self.url,
+            data=json.dumps({"self_paced": True}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["self_paced"] is True
+        assert response.json()["start_date"] == "2040-01-01T00:00:00Z"
+        course = self.store.get_course(self.course.id)
+        assert course.self_paced is True
+        assert course.start == datetime(2040, 1, 1, tzinfo=timezone.utc)
 
     def test_put_emits_course_published_signal_once(self):
         """
