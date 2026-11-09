@@ -1,6 +1,7 @@
 """
 Features Proxy Implementation
 """
+import traceback
 import warnings
 from collections.abc import Mapping, MutableMapping
 
@@ -57,14 +58,32 @@ class FeaturesProxy(MutableMapping):
             return value
         return self.ns[key]
 
-    def __setitem__(self, key, value):
-        """Sets a key-value pair while emitting a deprecation warning about using FEATURES as a dict."""
+    # Frames to skip when walking the stack for the [caller: ...] suffix.
+    # mock.patch.dict's machinery is several frames deep, so simple stacklevel
+    # arithmetic can't reach the user test code on its own.
+    _STACK_SKIP_PATTERNS = ('features_setting_proxy.py', '/unittest/mock.py', '/contextlib.py')
+
+    def _warn_dict_access(self, key, value):
+        """Emit the FEATURES-as-dict deprecation warning, attributed to the caller of __setitem__/update."""
+        # stacklevel=3 walks past warnings.warn -> _warn_dict_access -> caller-of-_warn_dict_access,
+        # so the warning is reported from the line that actually mutated FEATURES (test code or app code).
+        stack = traceback.extract_stack()
+        user_frame = next(
+            (f for f in reversed(stack[:-1]) if not any(p in f.filename for p in self._STACK_SKIP_PATTERNS)),
+            None,
+        )
+        suffix = f" [caller: {user_frame.filename}:{user_frame.lineno}]" if user_frame else ""
         warnings.warn(
             f"Accessing FEATURES as a dict is deprecated. "
-            f"Add '{key} = {value!r}' to your Django settings module instead of modifying FEATURES.",
+            f"Add '{key} = {value!r}' to your Django settings module instead of modifying FEATURES."
+            f"{suffix}",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=3,
         )
+
+    def __setitem__(self, key, value):
+        """Sets a key-value pair while emitting a deprecation warning about using FEATURES as a dict."""
+        self._warn_dict_access(key, value)
         self.ns[key] = value
 
     def __delitem__(self, key):
@@ -114,21 +133,27 @@ class FeaturesProxy(MutableMapping):
             proxy.update({'FEATURE_A': True}, FEATURE_B=False)
                 -> other={'FEATURE_A': True}; kwds = {'FEATURE_B': False}
         """
+        # We bypass __setitem__ and emit the warning here so that stacklevel
+        # points at the caller of update() rather than at this method's body.
         if isinstance(other, Mapping):
             # Handles objects that formally conform to the Mapping interface
             # Mapping-like types: defaultdict, OrderedDict, Counter
             for key in other:
-                self[key] = other[key]
+                self._warn_dict_access(key, other[key])
+                self.ns[key] = other[key]
         elif hasattr(other, "keys"):
             # Fallback for objects that implement a .keys() method but
             # may not formally subclass Mapping
             for key in other.keys():
-                self[key] = other[key]
+                self._warn_dict_access(key, other[key])
+                self.ns[key] = other[key]
         else:
             for key, value in other:
-                self[key] = value
+                self._warn_dict_access(key, value)
+                self.ns[key] = value
         for key, value in kwds.items():
-            self[key] = value
+            self._warn_dict_access(key, value)
+            self.ns[key] = value
 
     def copy(self):
         """
