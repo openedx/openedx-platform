@@ -298,10 +298,10 @@ class DjangoStorageReportStore(ReportStore):
         A binary buffer is handed to the storage backend as-is, so the backend
         streams it -- S3Boto3Storage uploads in parts and FileSystemStorage
         writes in chunks -- and peak memory stays at one chunk rather than the
-        whole report. This matters for grade reports, which can run to hundreds
-        of megabytes on large courses; previously the entire file was read into
-        memory, re-encoded, and copied into a ContentFile before upload, so an
-        on-disk report still cost roughly 3x its size in RAM at the final step.
+        whole report. This matters most for ORA submission-file exports, which
+        are built in a temporary file and can run to gigabytes; previously the
+        entire file was read into memory and copied into a ContentFile before
+        upload, so an on-disk report was held in RAM in full at the final step.
 
         A text buffer still works, but has to be read and encoded in full
         because the storage backends require bytes. Callers handling
