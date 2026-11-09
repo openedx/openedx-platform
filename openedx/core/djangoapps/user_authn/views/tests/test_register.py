@@ -1075,7 +1075,7 @@ class RegistrationViewTestV1(
             response = self.client.post(self.url, data)
         self.assertHttpOK(response)
         account_url = reverse("accounts_api", kwargs={"username": self.USERNAME})
-        assert self.client.get(account_url).json()["phone_number"] == (phone or "")
+        assert self.client.get(account_url).json()["phone_number"] == phone
 
     def test_registration_form_goals(self):
         self._assert_reg_field(

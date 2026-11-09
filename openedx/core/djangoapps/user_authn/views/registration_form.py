@@ -229,6 +229,7 @@ class AccountCreationForm(forms.Form):
                         self.fields[field_name] = forms.CharField(
                             required=required,
                             strip=False,
+                            empty_value=None,
                             max_length=phone_number_field.max_length,
                             validators=phone_number_field.validators,
                             error_messages={"required": error_message_dict[field_name]},
