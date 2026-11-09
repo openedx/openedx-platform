@@ -38,6 +38,7 @@ from common.djangoapps.util.views import expose_header
 from lms.djangoapps.course_goals.api import add_course_goal, get_course_goal
 from lms.djangoapps.course_goals.models import CourseGoal
 from lms.djangoapps.course_home_api.outline.serializers import CourseBlockSerializer, OutlineTabSerializer
+from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData
 from lms.djangoapps.course_home_api.tasks import collect_progress_for_user_in_course
 from lms.djangoapps.course_home_api.toggles import send_course_progress_analytics_for_student_is_enabled
 from lms.djangoapps.course_home_api.utils import get_course_or_403
@@ -509,20 +510,30 @@ class CourseNavigationBlocksView(RetrieveAPIView):
     def filter_inaccessible_blocks(self, course_blocks, course_key):
         """
         Filter out sections and subsections that are not accessible to the current user.
-        """
-        if course_blocks:
-            user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))  # noqa: UP017  # pylint: disable=line-too-long
-            course_sections = course_blocks.get('children', [])
-            course_blocks['children'] = self.get_accessible_sections(user_course_outline, course_sections)
 
-            for section_data in course_sections:
-                section_data['children'] = self.get_accessible_sequences(
-                    user_course_outline,
-                    section_data.get('children', [])
-                )
-                accessible_sequence_ids = {str(usage_key) for usage_key in user_course_outline.accessible_sequences}
-                for sequence_data in section_data['children']:
-                    sequence_data['accessible'] = sequence_data['id'] in accessible_sequence_ids
+        If the learning sequences outline (UserCourseOutlineData) does not exist yet
+        — for example, right after a publish before the CMS worker writes the outline —
+        we catch the DoesNotExist exception and return the blocks unfiltered rather than
+        raising a 500 error. This mirrors the behavior of the OutlineTabView.
+        """
+        try:
+            if course_blocks:
+                user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))  # noqa: UP017  # pylint: disable=line-too-long
+                course_sections = course_blocks.get('children', [])
+                course_blocks['children'] = self.get_accessible_sections(user_course_outline, course_sections)
+
+                for section_data in course_sections:
+                    section_data['children'] = self.get_accessible_sequences(
+                        user_course_outline,
+                        section_data.get('children', [])
+                    )
+                    accessible_sequence_ids = {str(usage_key) for usage_key in user_course_outline.accessible_sequences}
+                    for sequence_data in section_data['children']:
+                        sequence_data['accessible'] = sequence_data['id'] in accessible_sequence_ids
+        except CourseOutlineData.DoesNotExist:
+            # Learning sequences outline not yet available (e.g., right after publish).
+            # Return the blocks unfiltered rather than raising a 500 error.
+            pass
 
         return course_blocks
 
