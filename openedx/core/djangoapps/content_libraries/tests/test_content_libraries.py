@@ -25,6 +25,7 @@ from openedx_authz.constants import roles
 from openedx_authz.constants.permissions import VIEW_LIBRARY
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_content.models_api import LearningPackage
+from openedx_events.content_authoring.signals import CONTENT_LIBRARY_DELETED
 from organizations.models import Organization
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -72,6 +73,29 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
     library slug and bundle UUID does not because it's assumed to be immutable
     and cached forever.
     """
+
+    def test_restricted_library_deletion_preserves_content(self):
+        """Related unit content prevents deletion without losing the library."""
+        library = self._create_library(slug="restricted-delete", title="Restricted library")
+        unit = self._create_container(library["id"], "unit", "unit", "Unit")
+        block = self._add_block_to_library(library["id"], "html", "child")
+        self._add_container_children(unit["id"], [block["id"]])
+        self._publish_container(unit["id"])
+        deleted = []
+
+        def on_deleted(**kwargs):
+            deleted.append(kwargs)
+
+        CONTENT_LIBRARY_DELETED.connect(on_deleted)
+        self.addCleanup(CONTENT_LIBRARY_DELETED.disconnect, on_deleted)
+        response = self._delete_library(library["id"], expect_response=400)
+        assert isinstance(response["detail"], str)
+        assert response["detail"]
+        assert self._get_library(library["id"])["id"] == library["id"]
+        assert self._get_container(unit["id"])["id"] == unit["id"]
+        assert self._get_library_block(block["id"])["id"] == block["id"]
+        assert len(self._get_container_children(unit["id"])) == 1
+        assert not deleted
 
     def test_library_crud(self):
         """
