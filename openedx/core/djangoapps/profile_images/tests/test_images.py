@@ -19,10 +19,14 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from ..exceptions import ImageValidationError
 from ..images import (
+    _AVATAR_COLORS,
+    _get_avatar_color,
     _get_exif_orientation,
+    _get_initials,
     _get_valid_file_types,
     _update_exif_orientation,
     create_profile_images,
+    generate_initials_image,
     remove_profile_images,
     validate_uploaded_image,
 )
@@ -243,3 +247,119 @@ class TestRemoveProfileImages(TestCase):
             deleted_names = [v[0][0] for v in mock_storage.delete.call_args_list]
             assert list(requested_sizes.values()) == deleted_names
             mock_storage.save.reset_mock()
+
+
+@skip_unless_lms
+class TestGetInitials(TestCase):
+    """
+    Test _get_initials helper.
+    """
+
+    def test_two_word_name_returns_two_initials(self):
+        assert _get_initials('John Doe', 'jdoe') == 'JD'
+
+    def test_three_word_name_uses_first_two_words(self):
+        assert _get_initials('John Middle Doe', 'jdoe') == 'JM'
+
+    def test_one_word_name_returns_one_initial(self):
+        assert _get_initials('John', 'jdoe') == 'J'
+
+    def test_empty_name_falls_back_to_username(self):
+        assert _get_initials('', 'alice') == 'A'
+
+    def test_none_name_falls_back_to_username(self):
+        assert _get_initials(None, 'alice') == 'A'
+
+    def test_whitespace_only_name_falls_back_to_username(self):
+        assert _get_initials('   ', 'alice') == 'A'
+
+    def test_initials_are_uppercase(self):
+        assert _get_initials('john doe', 'jdoe') == 'JD'
+
+
+@skip_unless_lms
+class TestGetAvatarColor(TestCase):
+    """
+    Test _get_avatar_color helper.
+    """
+
+    def test_returns_hex_color_string(self):
+        color = _get_avatar_color('testuser')
+        assert color.startswith('#')
+        assert len(color) == 7
+
+    def test_is_deterministic(self):
+        assert _get_avatar_color('testuser') == _get_avatar_color('testuser')
+
+    def test_color_is_from_palette(self):
+        color = _get_avatar_color('testuser')
+        assert color in _AVATAR_COLORS
+
+
+@skip_unless_lms
+@override_settings(PROFILE_IMAGE_SIZES_MAP={'full': 500, 'small': 30})
+class TestGenerateInitialsImage(TestCase):
+    """
+    Test generate_initials_image.
+    """
+
+    def _make_mock_storage(self, exists=False, saved_names=None):
+        """Return a mock storage that optionally records saved filenames."""
+        m = mock.Mock()
+        m.exists.return_value = exists
+        m.url.side_effect = lambda name: f'/media/{name}'
+        if saved_names is not None:
+            m.save.side_effect = lambda name, _: saved_names.append(name)
+        return m
+
+    def test_returns_url_for_each_configured_size(self):
+        mock_storage = self._make_mock_storage()
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=mock_storage,
+        ):
+            urls = generate_initials_image('testuser', 'John Doe')
+        assert set(urls.keys()) == {'full', 'small'}
+
+    def test_saves_image_when_not_cached(self):
+        mock_storage = self._make_mock_storage(exists=False)
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=mock_storage,
+        ):
+            generate_initials_image('testuser', 'John Doe')
+        assert mock_storage.save.call_count == 2  # one per size
+
+    def test_skips_save_when_already_cached(self):
+        mock_storage = self._make_mock_storage(exists=True)
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=mock_storage,
+        ):
+            generate_initials_image('testuser', 'John Doe')
+        mock_storage.save.assert_not_called()
+
+    def test_name_change_produces_different_cache_key(self):
+        """Changing the user's name generates a new filename (cache invalidation)."""
+        names_first = []
+        names_second = []
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=self._make_mock_storage(saved_names=names_first),
+        ):
+            generate_initials_image('testuser', 'John Doe')
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=self._make_mock_storage(saved_names=names_second),
+        ):
+            generate_initials_image('testuser', 'Jane Doe')
+        assert names_first != names_second
+
+    def test_filenames_use_auto_avatars_prefix(self):
+        saved_names = []
+        with mock.patch(
+            'openedx.core.djangoapps.profile_images.images.get_profile_image_storage',
+            return_value=self._make_mock_storage(saved_names=saved_names),
+        ):
+            generate_initials_image('testuser', 'John Doe')
+        assert all(name.startswith('auto_avatars/') for name in saved_names)
