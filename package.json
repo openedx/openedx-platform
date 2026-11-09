@@ -75,7 +75,7 @@
     "node-gyp": "^12.0.0",
     "popper.js": "^1",
     "prop-types": "^15",
-    "raw-loader": "^0.5",
+    "raw-loader": "^4.0.0",
     "react": "^16",
     "react-dom": "^16",
     "react-focus-lock": "^2.0.0",
