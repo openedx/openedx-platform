@@ -716,10 +716,6 @@ ignore_imports = [
     # lms side imports that we are ignoring for now
     "lms.djangoapps.course_home_api.outline.tests.test_view -> cms.djangoapps.contentstore.outlines",
     "lms.djangoapps.course_home_api.tests.utils -> cms.djangoapps.contentstore.outlines",
-    # lms.djangoapps.instructor.tests.test_api & lms.djangoapps.instructor.tests.test_tools
-    #   -> openedx.core.djangoapps.course_date_signals.handlers
-    #   -> cms.djangoapps.contentstore.config.waffle
-    "openedx.core.djangoapps.course_date_signals.handlers -> cms.djangoapps.contentstore.config.waffle",
     # cms side imports that we are ignoring for now
     "cms.djangoapps.contentstore.views.tests.test_block -> lms.djangoapps.lms_xblock.mixin",
     "cms.djangoapps.contentstore.signals.handlers -> lms.djangoapps.grades.api",
