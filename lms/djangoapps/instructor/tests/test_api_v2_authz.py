@@ -8,11 +8,19 @@ from unittest.mock import patch
 
 import ddt
 from django.urls import reverse
+from openedx_authz.applets.course_team_roles.constants import (
+    COURSE_AUDITOR,
+    COURSE_BETA_TESTER,
+    COURSE_DATA_RESEARCHER,
+    COURSE_EDITOR,
+    COURSE_LIMITED_STAFF,
+)
 from openedx_authz.applets.learner_administration.constants import COURSES_VIEW_COURSE_INFO
 from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
 from common.djangoapps.student.tests.factories import (
     InstructorFactory,
     StaffFactory,
@@ -107,6 +115,66 @@ class CourseMetadataViewAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTes
         assert response.data["error_code"] == "permission_denied"
         assert response.data["developer_message"]
 
+    def test_authz_limited_staff_has_the_legacy_access(self):
+        """
+        With the flag on, the legacy limited staff gets the same tabs as with the flag off.
+
+        AuthZ defines no dashboard permission for ``course_limited_staff``, which had the
+        access of the course staff before AuthZ.
+        """
+        self.set_authz_enabled(False)
+        legacy_user = UserFactory()
+        CourseLimitedStaffRole(self.course_key).add_users(legacy_user)
+        legacy_response = self._get(legacy_user)
+
+        self.set_authz_enabled(True)
+        user = self.create_user_with_authz_role(COURSE_LIMITED_STAFF.external_key, self.course_key)
+        response = self._get(user)
+
+        assert legacy_response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK
+        assert self._tab_ids(response)
+        assert self._tab_ids(response) == self._tab_ids(legacy_response)
+
+    def test_authz_beta_tester_keeps_the_legacy_denial(self):
+        """With the flag on, the legacy beta tester is denied, as it was before AuthZ."""
+        user = self.create_user_with_authz_role(COURSE_BETA_TESTER.external_key, self.course_key)
+
+        assert self._get(user).status_code == status.HTTP_403_FORBIDDEN
+
+    def test_authz_data_researcher_sees_only_data_downloads(self):
+        """
+        With the flag on, a data researcher keeps the access it had before AuthZ.
+
+        It opens the dashboard, but only sees the Data Downloads tab.
+        """
+        user = self.create_user_with_authz_role(COURSE_DATA_RESEARCHER.external_key, self.course_key)
+
+        response = self._get(user)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._tab_ids(response) == {"data_downloads"}
+
+    def test_legacy_data_researcher_sees_only_data_downloads(self):
+        """With the flag off, a data researcher sees the same tab through the legacy role."""
+        self.set_authz_enabled(False)
+        user = UserFactory()
+        CourseDataResearcherRole(self.course_key).add_users(user)
+
+        response = self._get(user)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._tab_ids(response) == {"data_downloads"}
+
+    @ddt.data(COURSE_AUDITOR.external_key, COURSE_EDITOR.external_key, COURSE_STAFF.external_key)
+    def test_authz_other_roles_do_not_get_data_downloads(self, role):
+        """With the flag on, the data researcher permission does not leak into other roles."""
+        user = self.create_user_with_authz_role(role, self.course_key)
+
+        response = self._get(user)
+
+        assert "data_downloads" not in self._tab_ids(response)
+
     @ddt.data(*constants.INSTRUCTOR_DASHBOARD_PERMISSIONS)
     def test_authz_any_dashboard_permission_grants_access(self, permission):
         """With the flag on, a single dashboard permission, not only ``view_course_info``, grants access."""
@@ -193,6 +261,18 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
     def test_authz_role_with_permissions_shown(self):
         """With the flag on, a role that holds dashboard permissions sees the tab."""
         user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course.id)
+
+        assert self._has_instructor_tab(user)
+
+    def test_authz_limited_staff_shown(self):
+        """With the flag on, the legacy limited staff sees the tab, as it did before AuthZ."""
+        user = self.create_user_with_authz_role(COURSE_LIMITED_STAFF.external_key, self.course.id)
+
+        assert self._has_instructor_tab(user)
+
+    def test_authz_data_researcher_shown(self):
+        """With the flag on, a data researcher sees the tab, as it did before AuthZ."""
+        user = self.create_user_with_authz_role(COURSE_DATA_RESEARCHER.external_key, self.course.id)
 
         assert self._has_instructor_tab(user)
 

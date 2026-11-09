@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 import ddt
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
+from openedx_authz.applets.course_team_roles.constants import COURSE_DATA_RESEARCHER, COURSE_LIMITED_STAFF
 from openedx_authz.applets.enrollments.constants import COURSES_ENROLL_LEARNERS, COURSES_VIEW_ENROLLMENTS
 from openedx_authz.applets.learner_administration.constants import COURSES_MANAGE_COHORTS, COURSES_VIEW_COURSE_INFO
 from openedx_authz.applets.learner_grading.constants import COURSES_VIEW_GRADEBOOK
@@ -48,6 +49,41 @@ class UserHasInstructorPermissionTest(InstructorAuthzTestMixin, TestCase):
         self.assign_authz_role(self.user, role, COURSE_KEY)
 
         assert user_has_instructor_permission(self.user, permission, COURSE_KEY) == expected
+
+    @ddt.data(COURSE_LIMITED_STAFF.external_key, COURSE_DATA_RESEARCHER.external_key)
+    def test_flag_enabled_legacy_role_uses_legacy_check(self, role):
+        """With the flag on, a legacy role without dashboard permissions is decided by the legacy check."""
+        self.assign_authz_role(self.user, role, COURSE_KEY)
+
+        assert user_has_instructor_permission(
+            self.user, COURSES_VIEW_ENROLLMENTS.identifier, COURSE_KEY, Mock(return_value=True)
+        )
+        assert not user_has_instructor_permission(
+            self.user, COURSES_VIEW_ENROLLMENTS.identifier, COURSE_KEY, Mock(return_value=False)
+        )
+
+    def test_any_permission_flag_enabled_legacy_role_uses_legacy_check_once(self):
+        """With the flag on, a collection is decided by the legacy check, evaluated once."""
+        self.assign_authz_role(self.user, COURSE_LIMITED_STAFF.external_key, COURSE_KEY)
+        legacy_check = Mock(return_value=True)
+
+        assert user_has_any_instructor_permission(
+            self.user,
+            (COURSES_VIEW_ENROLLMENTS.identifier, COURSES_VIEW_GRADEBOOK.identifier),
+            COURSE_KEY,
+            legacy_check,
+        )
+        legacy_check.assert_called_once_with(self.user, COURSE_KEY)
+
+    def test_flag_enabled_role_with_dashboard_permissions_ignores_legacy_check(self):
+        """With the flag on, a denial is final for a role that holds dashboard permissions."""
+        self.assign_authz_role(self.user, COURSE_AUDITOR.external_key, COURSE_KEY)
+        legacy_check = Mock(return_value=True)
+
+        assert not user_has_instructor_permission(
+            self.user, COURSES_MANAGE_COURSE_TEAM.identifier, COURSE_KEY, legacy_check
+        )
+        legacy_check.assert_not_called()
 
     def test_flag_enabled_ignores_legacy_check(self):
         """With the flag on, the legacy check is never called."""

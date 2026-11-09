@@ -10,6 +10,7 @@ What it contains
 - ``api.py``: ``user_has_instructor_permission`` and ``user_has_any_instructor_permission``.
 - ``permissions.py``: ``InstructorAuthzPermission``, the DRF permission class for the views.
 - ``legacy.py``: the pre-AuthZ check equivalent to each permission.
+- ``compat.py``: the legacy roles that keep their legacy access with AuthZ enabled.
 - ``tests/mixins.py``: ``InstructorAuthzTestMixin`` to assign AuthZ roles in tests.
 
 Behavior
@@ -19,6 +20,8 @@ It is driven by the ``authz.enable_course_authoring`` waffle flag, evaluated per
 
 - **Flag enabled:** only AuthZ is consulted. Legacy roles are ignored (openedx-authz already grants the global staff and superuser bypass).
 - **Flag disabled:** only the legacy check runs, so the previous behavior is unchanged.
+
+The exception are the legacy roles that openedx-authz maps without dashboard permissions (``course_limited_staff``, ``course_data_researcher`` and ``course_beta_tester``). They only hold a compatibility permission (``courses.legacy_*_permissions``), so with the flag enabled, when AuthZ denies, they are evaluated with the legacy check, the same one used with the flag disabled. They keep exactly the access their legacy role had. To cover another legacy role, add its compatibility permission to ``LEGACY_ROLE_COMPAT_PERMISSIONS`` in ``compat.py``. ``course_admin`` and ``course_staff`` are not in it: they hold dashboard permissions, so a denial is final.
 
 Every decision is logged with the path that resolved it (``authz`` or ``legacy``) in ``access_path``.
 
