@@ -11,6 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.learning.filters import CourseOutlineAPIRenderStarted
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
 from rest_framework.response import Response
@@ -178,7 +179,8 @@ class CourseOutlineView(APIView):
             raise NotFound() from does_not_exist_err
 
         serializer = self.UserCourseOutlineDataSerializer(user_course_outline_details)
-        return Response(serializer.data)
+        data = CourseOutlineAPIRenderStarted.run_filter(course_key=course_key, user=request.user, data=serializer.data)
+        return Response(data)
 
     def _determine_user(self, request, course_key: CourseKey) -> types.User:
         """

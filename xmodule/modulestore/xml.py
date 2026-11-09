@@ -910,6 +910,16 @@ class XMLModuleStore(ModuleStoreReadBase):
         """
         return BlockUsageLocator(course_key, 'course', course_key.run)
 
+    @contextmanager
+    def fresh_block_reads(self, course_key):  # pylint: disable=unused-argument
+        """
+        A no-op, although this store hands back the same block instances on every read.
+
+        This store only feeds course import and management commands; it is never configured to
+        serve learners, so its blocks are not bound to users or changed in memory per user.
+        """
+        yield
+
     def get_courses(self, **kwargs):
         """
         Returns a list of course blocks.  If there were errors on loading,

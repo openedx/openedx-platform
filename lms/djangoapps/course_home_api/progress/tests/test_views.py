@@ -11,6 +11,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_filters import PipelineStep
 from pytz import UTC
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -35,6 +36,28 @@ from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITIO
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from xmodule.modulestore.tests.factories import BlockFactory
+
+filter_users = []
+
+
+class TestReplaceProgressDataStep(PipelineStep):
+    """
+    Pipeline step that records the user and replaces the response data.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        filter_users.append(user)
+        return {'data': {'username': data['username'], 'course_key': str(course_key)}}
+
+
+class TestRecolorProgressStep(PipelineStep):
+    """
+    Pipeline step that changes the assignment colors in place.
+    """
+
+    def run_filter(self, course_key, user, data):  # pylint: disable=arguments-differ
+        data['grading_policy']['assignment_colors'][0] = '#000000'
+        return {'data': data}
 
 
 @ddt.ddt
@@ -362,3 +385,45 @@ class ProgressTabTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         assert response.data['course_grade']['percent'] == expected_percent
         assert response.data['course_grade']['is_passing'] == (expected_percent >= 0.5)
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG={
+        'org.openedx.learning.course_home_progress.api.render.started.v1': {
+            'pipeline': [f'{__name__}.TestReplaceProgressDataStep'],
+            'fail_silently': False,
+        },
+    })
+    def test_render_filter_receives_learner(self):
+        """
+        Test that the render filter can replace the response and receives the learner whose progress is shown.
+        """
+        learner = self.user
+        CourseEnrollment.enroll(learner, self.course.id)
+        filter_users.clear()
+
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.data == {'username': learner.username, 'course_key': str(self.course.id)}
+
+        self.switch_to_staff()
+        url = reverse('course-home:progress-tab-other-student', args=[self.course.id, learner.id])
+        response = self.client.get(url)
+        assert response.status_code == 200
+        assert response.data == {'username': learner.username, 'course_key': str(self.course.id)}
+        assert filter_users == [learner, learner]
+
+    def test_render_filter_changes_do_not_reach_later_responses(self):
+        """
+        Test that changing the response in place does not change the responses that follow.
+        """
+        CourseEnrollment.enroll(self.user, self.course.id)
+        with override_settings(OPEN_EDX_FILTERS_CONFIG={
+            'org.openedx.learning.course_home_progress.api.render.started.v1': {
+                'pipeline': [f'{__name__}.TestRecolorProgressStep'],
+                'fail_silently': False,
+            },
+        }):
+            filtered = self.client.get(self.url)
+        assert filtered.data['grading_policy']['assignment_colors'][0] == '#000000'
+
+        response = self.client.get(self.url)
+        assert response.data['grading_policy']['assignment_colors'][0] == '#D24242'

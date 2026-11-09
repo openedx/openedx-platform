@@ -304,3 +304,10 @@ class CCXModulestoreWrapper:
         course_id, _ = strip_ccx(course_id)
         with self._modulestore.bulk_operations(course_id, emit_signals=emit_signals, ignore_case=ignore_case):
             yield
+
+    @contextmanager
+    def fresh_block_reads(self, course_key):
+        """See the docs for xmodule.modulestore.mixed.MixedModuleStore"""
+        course_key, _ = strip_ccx(course_key)
+        with self._modulestore.fresh_block_reads(course_key):
+            yield
