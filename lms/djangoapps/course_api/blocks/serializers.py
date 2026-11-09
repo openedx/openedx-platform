@@ -162,11 +162,17 @@ class BlockSerializer(serializers.Serializer):  # pylint: disable=abstract-metho
             request=self.context['request'],
         )
 
+        # A block that is past its `hide_after_due` date is only present here because the course is showing hidden
+        # content without links. Provide it without the URLs that navigate to it, so that consumers list it but cannot
+        # link to it.
+        if HiddenContentTransformer.is_hidden_after_due(block_structure, block_key):
+            jump_to_courseware_url = None
+
         data = {
             'id': str(block_key),
             'block_id': str(block_key.block_id),
             'lms_web_url': jump_to_courseware_url,
-            'legacy_web_url': jump_to_courseware_url + '?experience=legacy',
+            'legacy_web_url': jump_to_courseware_url + '?experience=legacy' if jump_to_courseware_url else None,
             'student_view_url': reverse(
                 'render_xblock',
                 kwargs={'usage_key_string': str(block_key)},
