@@ -104,32 +104,30 @@ jobs:
           DJANGO_SETTINGS_MODULE=docs.docs_settings uv run ./manage.py lms migrate
           DJANGO_SETTINGS_MODULE=cms.envs.development uv run ./manage.py cms migrate
 
-      # `docs.docs_settings` is what `make swagger` uses: it applies the
-      # unfiltered /api-docs configuration instead of the narrow, SDK-facing
-      # schema that SPECTACULAR_SETTINGS carries by default. Without it this
-      # step would overwrite the published LMS reference with the
-      # enrollment-only subset.
-      #
-      # NOTE: docs_settings only carries that unfiltered configuration as of
-      # https://github.com/openedx/openedx-platform/pull/39108, which must merge
-      # before this workflow runs.
+      # SPECTACULAR_SETTINGS is the service-wide schema in every environment,
+      # so this is the full LMS surface, the same document `make swagger`
+      # produces and the published reference renders. `docs.docs_settings`
+      # rather than the devstack default because it needs no LMS_CFG (see the
+      # migrate step).
       - name: Generate LMS OpenAPI schema
         run: |
           DJANGO_SETTINGS_MODULE=docs.docs_settings \
           uv run python manage.py lms spectacular --file docs/lms-openapi.yaml
 
-      # Studio has no docs_settings equivalent. `manage.py cms` defaults to
-      # cms.envs.devstack, which imports production.py and so requires a
-      # CMS_CFG file that does not exist in CI — settings raise
-      # ImproperlyConfigured before the command is even registered.
-      # cms.envs.development needs no such file, and inherits the Authoring
-      # API's SPECTACULAR_SETTINGS from cms/envs/common.py, so this emits the
-      # same contentstore-scoped surface Studio publishes at
-      # /authoring-api/schema/.
+      # `manage.py cms` defaults to cms.envs.devstack, which imports
+      # production.py and so requires a CMS_CFG file that does not exist in CI
+      # — settings raise ImproperlyConfigured before the command is even
+      # registered. cms.envs.development needs no such file.
+      #
+      # This emits the same contentstore-scoped surface Studio publishes at
+      # /authoring-api/schema/: SDK_SPECTACULAR_SETTINGS layered over the
+      # service-wide schema, which --custom-settings does for this invocation
+      # the way the view does per request.
       - name: Generate CMS OpenAPI schema
         run: |
           DJANGO_SETTINGS_MODULE=cms.envs.development \
-          uv run python manage.py cms spectacular --file docs/cms-openapi.yaml
+          uv run python manage.py cms spectacular --file docs/cms-openapi.yaml \
+            --custom-settings cms.envs.development.SDK_SPECTACULAR_SETTINGS
 
       - name: Open pull request if schemas changed
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8

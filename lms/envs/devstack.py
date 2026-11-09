@@ -584,7 +584,7 @@ RETIREMENT_STATES = [
 ]
 
 ###################### drf-spectacular (LMS enrollment schema) ######################
-SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+SDK_SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
     {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
 ]
 

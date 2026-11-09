@@ -1139,7 +1139,12 @@ urlpatterns += [
     path('xqueue/', include((submissions_urls, 'submissions'), namespace='submissions')),
 ]
 
-# LMS API schema for openedx-platform-sdk generation.
+# The SDK-facing Enrollment API schema, for openedx-platform-sdk generation:
+# SDK_SPECTACULAR_SETTINGS layered over the service-wide SPECTACULAR_SETTINGS.
 urlpatterns += [
-    path('lms-api/schema/', SpectacularAPIView.as_view(), name='lms-schema'),
+    path(
+        'lms-api/schema/',
+        SpectacularAPIView.as_view(custom_settings=settings.SDK_SPECTACULAR_SETTINGS),
+        name='lms-schema',
+    ),
 ]

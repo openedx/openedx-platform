@@ -394,10 +394,10 @@ EVENT_BUS_PRODUCER_CONFIG = merge_producer_configs(
 )
 
 ############## Authoring API drf-spectacular openapi settings ##############
-# The rest of SPECTACULAR_SETTINGS, the hooks included, is defined once in
+# The rest of SDK_SPECTACULAR_SETTINGS, the hooks included, is defined once in
 # common.py. Only the parts that depend on CMS_BASE and AUTHORING_API_URL are
 # set here.
-SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
+SDK_SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
     f'''Experimental API to edit xblocks and course content.
     \n\nDanger: Do not use on running courses!
     \n\n - How to gain access: Please email the owners of this openedx service.
@@ -412,7 +412,7 @@ SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
     [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
     \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)'''  # noqa: F405
 )
-SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+SDK_SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
     {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
     {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405
 ]

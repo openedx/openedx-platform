@@ -346,9 +346,9 @@ urlpatterns += [
 # DRF's standard ``format`` suffix kwarg (without the leading dot) to select
 # JSON or YAML explicitly.
 #
-# These use ``custom_settings`` for the full API surface. SPECTACULAR_SETTINGS
-# is reserved for the narrower Authoring API schema at ``/authoring-api/``
-# registered below.
+# These serve the service-wide schema that SPECTACULAR_SETTINGS configures. The
+# narrower Authoring API schema at ``/authoring-api/``, registered below, layers
+# SDK_SPECTACULAR_SETTINGS over it.
 #
 # The Swagger and ReDoc views reverse their schema URL with no arguments, so
 # ``api-docs/schema/`` exists alongside the format-suffixed routes for them to
@@ -429,11 +429,15 @@ urlpatterns += [
     path('api/', include('openedx_learning.urls')),
 ]
 
-# Authoring-api specific API docs (using drf-spectacular and openapi-v3).
-# This is separate from and in addition to the full studio swagger documentation already existing at /api-docs.
-# Custom settings are provided in SPECTACULAR_SETTINGS as environment variables
-# Filter function in cms/lib/spectacular.py determines paths that are swagger-documented.
+# The SDK-facing Authoring API schema and its own Swagger UI, separate from and
+# in addition to the full Studio documentation at /api-docs. SDK_SPECTACULAR_SETTINGS
+# (cms/envs/common.py) layers over the service-wide SPECTACULAR_SETTINGS; its
+# filter hook in cms/lib/spectacular.py decides which paths are documented.
 urlpatterns += [
     re_path('^authoring-api/ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    re_path('^authoring-api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    re_path(
+        '^authoring-api/schema/',
+        SpectacularAPIView.as_view(custom_settings=settings.SDK_SPECTACULAR_SETTINGS),
+        name='schema',
+    ),
 ]

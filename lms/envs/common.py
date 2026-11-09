@@ -819,12 +819,12 @@ XBLOCK_NOAUTH_HANDLER_ALLOWLIST = [
     # LTI 1.1 tools posting grades back; these verify the OAuth1 body signature.
     'xmodule.lti_block._BuiltInLTIBlock.grade_handler',
     'xmodule.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
-    'xblocks_contrib.lti.lti.LTIBlock.grade_handler',
-    'xblocks_contrib.lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'xblock_lti.block.LTIBlock.grade_handler',
+    'xblock_lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
     'lti_consumer.lti_xblock.LtiConsumerXBlock.outcome_service_handler',
     'lti_consumer.lti_xblock.LtiConsumerXBlock.result_service_handler',
     # Video transcripts, fetched without a session by the mobile apps.
-    'xblocks_contrib.video.video_handlers.VideoStudentViewHandlers.transcript',
+    'xblock_video.video_handlers.VideoStudentViewHandlers.transcript',
 ]
 
 # Used for A/B testing
@@ -2191,14 +2191,20 @@ OPTIONAL_APPS += [  # noqa: F405
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ###################### drf-spectacular (LMS enrollment schema) ######################
-SPECTACULAR_SETTINGS = {
+# .. setting_name: SDK_SPECTACULAR_SETTINGS
+# .. setting_default: see below
+# .. setting_description: The SDK-facing subset of this service's OpenAPI schema: the
+#   Enrollment API, served at ``/lms-api/schema/`` for openedx-platform-sdk generation.
+#   Layered over ``SPECTACULAR_SETTINGS`` (openedx/envs/common.py) as drf-spectacular
+#   ``custom_settings``, so only the keys that differ from the service-wide schema belong
+#   here. ``SERVE_*`` keys cannot be overridden this way and stay in SPECTACULAR_SETTINGS.
+SDK_SPECTACULAR_SETTINGS = {
     'TITLE': 'LMS Enrollment API',
     'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
-    # Mark legacy slashless enrollment addresses deprecated. The enum hook is
-    # drf-spectacular's default, restated because setting this key replaces
-    # the default list.
+    # Mark legacy slashless enrollment addresses deprecated. Setting this key
+    # replaces the whole list, so drf-spectacular's default enum hook and the
+    # service-wide untag hook are restated.
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
@@ -2207,12 +2213,6 @@ SPECTACULAR_SETTINGS = {
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
     'SCHEMA_PATH_PREFIX': '/api/enrollment',
-    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
-    # than drf-spectacular's default unpinned jsdelivr CDN URLs, keeping them
-    # self-hosted and version-pinned as the drf-yasg bundles were.
-    'SWAGGER_UI_DIST': 'SIDECAR',
-    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
-    'REDOC_DIST': 'SIDECAR',
     # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
     # set in devstack.py / production.py.
 }

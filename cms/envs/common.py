@@ -1315,25 +1315,29 @@ EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
 # Used by every drf-spectacular schema Studio serves, /api-docs/ included.
 REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'cms.lib.spectacular.CmsAutoSchema'  # noqa: F405
 
-# The Authoring API schema for every settings module, including
-# cms.envs.development, which generates the committed docs/cms-openapi.yaml in
-# CI. Without these the document has no title, version 0.0.0, and every
-# endpoint in the service rather than the Authoring API's own surface.
+# .. setting_name: SDK_SPECTACULAR_SETTINGS
+# .. setting_default: see below
+# .. setting_description: The SDK-facing subset of this service's OpenAPI schema: the
+#   Authoring API, served at ``/authoring-api/schema/`` (with its own Swagger UI at
+#   ``/authoring-api/ui/``) and emitted as docs/cms-openapi.yaml in CI for
+#   openedx-platform-sdk generation. Layered over ``SPECTACULAR_SETTINGS``
+#   (openedx/envs/common.py) as drf-spectacular ``custom_settings``, so only the keys
+#   that differ from the service-wide schema belong here. ``SERVE_*`` keys cannot be
+#   overridden this way and stay in SPECTACULAR_SETTINGS.
 #
 # devstack.py and production.py set only SERVERS and a longer DESCRIPTION on
 # top of this, because those are the only parts that depend on CMS_BASE and
 # AUTHORING_API_URL, which are empty here. Everything else belongs at this
 # level so there is one copy of it.
-SPECTACULAR_SETTINGS = {
+SDK_SPECTACULAR_SETTINGS = {
     'TITLE': 'Authoring API',
     'DESCRIPTION': 'Experimental API to edit xblocks and course content.',
     'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
     # Restrict the schema to the Authoring API's endpoints (cms/lib/spectacular.py).
     'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
     # Mark superseded and migrated legacy addresses deprecated, and BFF surfaces
-    # x-internal. The enum hook is drf-spectacular's default, restated because
-    # setting this key replaces the default list.
+    # x-internal. Setting this key replaces the whole list, so drf-spectacular's
+    # default enum hook and the service-wide untag hook are restated.
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'cms.lib.spectacular.cms_mark_superseded_paths',
@@ -1345,11 +1349,6 @@ SPECTACULAR_SETTINGS = {
     # service root, so /api/contentstore and /api/authoring resolve against the
     # same base URL.
     'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
-    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
-    # than drf-spectacular's default unpinned jsdelivr CDN URLs.
-    'SWAGGER_UI_DIST': 'SIDECAR',
-    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
-    'REDOC_DIST': 'SIDECAR',
 }
 
 ################### Studio Search (beta), using Meilisearch ###################

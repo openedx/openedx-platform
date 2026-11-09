@@ -16,49 +16,6 @@ from openedx.core.lib.cache_utils import zpickle, zunpickle
 
 log = logging.getLogger(__name__)
 
-# Settings for the service-wide ``/api-docs`` schema, served by drf-spectacular.
-#
-# These are passed as ``custom_settings`` to SpectacularAPIView rather than
-# living in ``SPECTACULAR_SETTINGS``, because that global is already claimed by
-# a deliberately narrow schema in each service -- the Authoring API
-# (``/authoring-api/``) in CMS and the Enrollment API (``/lms-api/``) in LMS.
-# Both filter the surface down via ``PREPROCESSING_HOOKS`` and trim a path
-# prefix, so ``/api-docs`` must switch that filtering off explicitly to cover
-# the whole service.
-#
-# Note this is wider than what edx-api-doc-tools produced: its
-# ``ApiSchemaGenerator`` kept only paths under ``/api/`` and pinned the path
-# prefix there, so ``/api-docs`` now documents every DRF endpoint in the
-# service rather than just the versioned ``/api/*`` surface.
-# Note: ``SERVE_*`` settings cannot be overridden through ``custom_settings``
-# (drf-spectacular raises AttributeError); SpectacularAPIView takes dedicated
-# constructor arguments for those instead.
-API_DOCS_SETTINGS = {
-    'TITLE': 'Open edX API',
-    'DESCRIPTION': 'APIs for access to Open edX information',
-    'VERSION': 'v1',
-    # Document every endpoint, without the per-service filtering and prefix
-    # trimming that SPECTACULAR_SETTINGS applies.
-    'PREPROCESSING_HOOKS': [],
-    'SCHEMA_PATH_PREFIX': None,
-    'SCHEMA_PATH_PREFIX_TRIM': False,
-    'SERVERS': [],
-}
-
-
-def get_api_docs_settings():
-    """
-    Build the ``/api-docs`` schema settings, adding contact details if available.
-
-    The contact email is included when ``API_ACCESS_MANAGER_EMAIL`` is set.
-    """
-    api_docs_settings = dict(API_DOCS_SETTINGS)
-    contact_email = getattr(settings, 'API_ACCESS_MANAGER_EMAIL', None)
-    if contact_email:
-        api_docs_settings['CONTACT'] = {'email': contact_email}
-    return api_docs_settings
-
-
 # Tag that marks an operation for the generated platform SDK.
 SDK_TAG = "openedx-platform-sdk"
 
@@ -88,6 +45,11 @@ def cached_schema_view():
     """
     Build the ``/api-docs`` schema view, caching the rendered document compressed.
 
+    The document is the service-wide schema that ``SPECTACULAR_SETTINGS``
+    (openedx/envs/common.py) configures, so the view needs no
+    ``custom_settings``; those are for the narrower SDK-facing schemas, see
+    ``SDK_SPECTACULAR_SETTINGS`` in each service's settings.
+
     ``cache_page`` stores the pickled ``Response``, which for this schema is over
     memcached's default 1MB item limit. ``CACHES['default']`` sets
     ``ignore_exc: True``, so that oversized ``set`` fails silently and Django
@@ -102,23 +64,25 @@ def cached_schema_view():
     language because drf-spectacular renders the document under whatever
     language is active, and ``LocaleMiddleware`` sets that from the request's
     cookie or ``Accept-Language`` before this runs. Nothing else in it varies by
-    requester -- ``SERVE_PUBLIC`` defaults to ``True``, ``SERVE_*`` cannot be set
-    through ``custom_settings``, and ``API_DOCS_SETTINGS`` sets ``'SERVERS': []``
-    so no ``servers`` block is emitted.
+    requester -- ``SERVE_PUBLIC`` defaults to ``True`` and ``SPECTACULAR_SETTINGS``
+    sets no ``SERVERS``, so no ``servers`` block is emitted.
 
     Only GET and HEAD are cached, as ``cache_page`` did: DRF answers OPTIONS on
     this view with a 200 metadata document, which would otherwise be stored and
     served to the next GET.
 
     ``drf_spectacular.views`` is imported inside the function rather than at
-    module scope: this module is imported from the settings, and importing DRF
-    views that early freezes ``api_settings`` before ``DEFAULT_SCHEMA_CLASS`` is
-    set, which makes schema generation fail with ``Incompatible AutoSchema used
-    on View``.
+    module scope. When this module was still imported from the settings,
+    importing DRF views that early froze ``api_settings`` before
+    ``DEFAULT_SCHEMA_CLASS`` was set, failing schema generation with
+    ``Incompatible AutoSchema used on View``. Settings no longer import app
+    code, but ``SPECTACULAR_SETTINGS`` still names the hook above by dotted
+    path, so drf-spectacular imports this module while resolving its own
+    settings; the deferred import keeps that free of side effects.
     """
     from drf_spectacular.views import SpectacularAPIView  # pylint: disable=import-outside-toplevel
 
-    view = SpectacularAPIView.as_view(custom_settings=get_api_docs_settings())
+    view = SpectacularAPIView.as_view()
 
     def _response(content_type, body):
         """Build the response, marking it uncacheable downstream as drf-yasg did."""
