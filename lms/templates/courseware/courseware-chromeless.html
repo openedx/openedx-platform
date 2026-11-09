@@ -138,6 +138,14 @@ ${HTML(fragment.foot_html())}
             // the href attribute is an id or name, the page will scroll the id or name.
             $('a').on("click", function(event){
               if ($(this).attr('href')[0] === '#') {
+                // Anchors that operate a widget (like accordions, tabs, dropdowns)
+                // point at the region they control rather than navigating to it, and
+                // handle the click themselves. Scrolling that region to the top of
+                // the page jumps the surrounding learning MFE viewport every time the
+                // widget is toggled, so we can leave these anchors alone.
+                if (this.hasAttribute('aria-controls') || this.hasAttribute('data-toggle')) {
+                  return;
+                }
                 var targetId = $(this).attr('href');
                 // Checks if the href attribute is auto scrolling video transcripts.
                 // The scroll behavior for transcript scrolling requires the viewport
