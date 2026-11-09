@@ -700,7 +700,7 @@ ignore = [
 ]
 
 [tool.importlinter]
-root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog", "openedx_learning"]
+root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog", "openedx_learning", "docs"]
 include_external_packages = true
 # Our custom contract which checks that we're only importing from 'api.py'
 # for participating packages.
@@ -877,4 +877,64 @@ ignore_imports = [
     # These imports will become OK once we worked on the following issue:
     # https://github.com/openedx/edx-platform/issues/33428
     "openedx.core.djangoapps.video_config.services -> openedx.core.djangoapps.content_libraries.api",
+]
+
+[[tool.importlinter.contracts]]
+name = "Settings modules import other settings modules, not application code"
+# A settings module executes while Django is still building the settings
+# object, so anything it imports runs before settings exist. Application code
+# that reads django.conf.settings at import time -- directly, or through a
+# helper, or via a third-party module it pulls in -- configures Django from the
+# half-loaded settings module, which fails or, worse, silently succeeds with a
+# partial snapshot. Settings modules therefore import other settings modules
+# and nothing else. Only direct imports are checked: what the exceptions below
+# import in turn is their own concern.
+type = "forbidden"
+source_modules = ["openedx.envs", "lms.envs", "cms.envs", "docs.docs_settings"]
+forbidden_modules = [
+    "lms.djangoapps",
+    "lms.lib",
+    "cms.djangoapps",
+    "cms.lib",
+    "openedx.core",
+    "openedx.features",
+    "common",
+    "xmodule",
+]
+allow_indirect_imports = true
+ignore_imports = [
+    # Settings infrastructure: pure helpers that import nothing from Django or
+    # the platform, so they are safe to run at settings time.
+    "** -> openedx.core.lib.derived",
+    "** -> openedx.core.lib.features_setting_proxy",
+    "** -> openedx.core.lib.logsettings",
+    "** -> openedx.core.lib.rooted_paths",
+    "** -> openedx.core.lib.tempdir",
+    "** -> openedx.core.constants",
+    "** -> openedx.core.release",
+    "** -> openedx.core.djangoapps.plugins.constants",
+    "** -> openedx.core.djangoapps.theming.helpers_dirs",
+    # xmodule is not a root package here, so its modules are seen as the one
+    # external node "xmodule". The settings import only
+    # xmodule.modulestore.modulestore_settings (a pure helper, fine) and the
+    # XBlock mixins listed under FIXME below.
+    "lms.envs.production -> xmodule",
+    "lms.envs.test -> xmodule",
+    "cms.envs.production -> xmodule",
+    "cms.envs.test -> xmodule",
+    # FIXME: application code imported from the settings, from before this
+    # contract existed. Each one is a chance for an import-time settings read.
+    # The XBlock mixins are imported so XBLOCK_MIXINS can name the classes;
+    # they could name them by dotted path instead and be resolved at runtime.
+    "openedx.envs.common -> lms.djangoapps.lms_xblock.mixin",
+    "openedx.envs.common -> xmodule",
+    "cms.envs.common -> cms.lib.xblock.authoring_mixin",
+    "cms.envs.common -> cms.lib.xblock.upstream_sync",
+    "cms.envs.common -> xmodule",
+    # course_wiki.settings imports course_wiki.utils; ace_common.settings.common
+    # imports ace_common.utils (Firebase setup).
+    "lms.envs.common -> lms.djangoapps.course_wiki.settings",
+    "lms.envs.common -> openedx.core.djangoapps.ace_common.settings.common",
+    # The test settings patch Django's TestCase at import.
+    "openedx.envs.test -> common",
 ]
