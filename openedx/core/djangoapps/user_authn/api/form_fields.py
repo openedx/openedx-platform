@@ -97,7 +97,7 @@ def add_level_of_education_field(is_field_required=False):
     # pylint: disable=translation-of-non-string
     options = [(name, _(label)) for name, label in UserProfile.LEVEL_OF_EDUCATION_CHOICES]
 
-    if settings.ENABLE_COPPA_COMPLIANCE:
+    if settings.HIDE_YEAR_OF_BIRTH_ON_REGISTRATION:
         options = list(filter(lambda op: op[0] != 'el', options))
 
     return {
