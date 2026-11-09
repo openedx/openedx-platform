@@ -26,6 +26,7 @@ export class ElementViewing {
 
         this.topSeen = false;
         this.bottomSeen = false;
+        this.tallerThanViewport = false;
         this.seenForMs = 0;
         this.becameVisibleAt = undefined;
         this.hasBeenViewed = false;
@@ -72,6 +73,16 @@ export class ElementViewing {
         this.checkIfViewed();
     }
 
+    /** This element is taller than the viewport.
+   *
+   * Its top and bottom edges can never be on screen simultaneously, so
+   * requiring both to have been seen would make it permanently incompletable.
+   */
+    markTallerThanViewport() {
+        this.tallerThanViewport = true;
+        this.checkIfViewed();
+    }
+
     getTotalTimeSeen() {
         if (this.becameVisibleAt) {
             return this.seenForMs + (Date.now() - this.becameVisibleAt);
@@ -80,7 +91,17 @@ export class ElementViewing {
     }
 
     areViewedCriteriaMet() {
-        return this.topSeen && this.bottomSeen && (this.getTotalTimeSeen() >= this.viewedAfterMs);
+        if (this.getTotalTimeSeen() < this.viewedAfterMs) {
+            return false;
+        }
+        if (this.topSeen && this.bottomSeen) {
+            return true;
+        }
+        // A component taller than the viewport can never show both edges at
+        // once. Requiring both makes such components permanently incompletable
+        // for any learner who does not scroll their full height, which is the
+        // common case for content meant to be clicked rather than read through.
+        return this.tallerThanViewport;
     }
 
     checkIfViewed() {
@@ -164,6 +185,9 @@ export class ViewedEventTracker {
             if (rect.top < 0 && rect.bottom > window.innerHeight) {
                 visible = true;
             }
+            if (rect.bottom - rect.top > window.innerHeight) {
+                elv.markTallerThanViewport();
+            }
 
             if (visible) {
                 elv.handleVisible(now);
@@ -209,6 +233,14 @@ export class ViewedEventTracker {
               if (elBottomPosition <= viewportHeight && elBottomPosition > 0) {
                   elv.markBottomSeen();
                   visible = true;
+              }
+              // The element currently fills the viewport. Parity with the
+              // legacy path, which already counts this as visible.
+              if (elTopPosition < 0 && elBottomPosition > viewportHeight) {
+                  visible = true;
+              }
+              if (elBottomPosition - elTopPosition > viewportHeight) {
+                  elv.markTallerThanViewport();
               }
 
               if (visible) {
