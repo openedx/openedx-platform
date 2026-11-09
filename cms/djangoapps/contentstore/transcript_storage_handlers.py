@@ -19,7 +19,7 @@ from edxval.api import (
 )
 from edxval.api import delete_video_transcript as delete_video_transcript_source_function
 from opaque_keys.edx.keys import CourseKey
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
+from xblock_video.exceptions import TranscriptsGenerationException
 
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag

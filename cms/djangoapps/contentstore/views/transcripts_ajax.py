@@ -21,7 +21,7 @@ from edxval.api import create_external_video, create_or_update_video_transcript
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryLocatorV2
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
+from xblock_video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.video_storage_handlers import TranscriptProvider
 from common.djangoapps.student.auth import has_course_author_access
