@@ -34,16 +34,13 @@ class FinancialAssistanceTool(CourseTool):
         Show this link for active courses where financial assistance is available, unless upgrade deadline has passed
         """
         now = datetime.datetime.now(pytz.UTC)
-        feature_flags = None
         try:
             course_overview = CourseOverview.objects.get(id=course_key)
         except CourseOverview.DoesNotExist:
             course_overview = None
 
-        # hide link if there's no ENABLE_FINANCIAL_ASSISTANCE_FORM setting (ex: Edge) or if it's False
-        subset_name = 'FEATURES'
-        feature_flags = getattr(settings, subset_name)
-        if feature_flags is None or not feature_flags.get('ENABLE_FINANCIAL_ASSISTANCE_FORM'):
+        # hide link if financial assistance is not enabled
+        if not settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
             return False
 
         # hide link for archived courses

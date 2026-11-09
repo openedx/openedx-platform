@@ -178,11 +178,9 @@ class ExperimentDataViewSetTests(APITestCase, ModuleStoreTestCase):  # pylint: d
 
 def cross_domain_config(func):
     """Decorator for configuring a cross-domain request. """
-    feature_flag_decorator = patch.dict(settings.FEATURES, {
-        'ENABLE_CORS_HEADERS': True,
-        'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True
-    })
     settings_decorator = override_settings(
+        ENABLE_CORS_HEADERS=True,
+        ENABLE_CROSS_DOMAIN_CSRF_COOKIE=True,
         CORS_ORIGIN_WHITELIST=['https://ecommerce.edx.org'],
         CSRF_COOKIE_NAME="prod-edx-csrftoken",
         CROSS_DOMAIN_CSRF_COOKIE_NAME="prod-edx-csrftoken",
@@ -190,10 +188,8 @@ def cross_domain_config(func):
     )
     is_secure_decorator = patch.object(WSGIRequest, 'is_secure', return_value=True)
 
-    return feature_flag_decorator(
-        settings_decorator(
-            is_secure_decorator(func)
-        )
+    return settings_decorator(
+        is_secure_decorator(func)
     )
 
 

@@ -192,6 +192,22 @@ class PythonAPITests(SharedModuleStoreTestCase):
         result = teams_api.get_team_for_user_course_topic(self.user1, str(COURSE_KEY1), TOPIC1)
         assert result == expected_result
 
+    @ddt.data(True, False)
+    @mock.patch('lms.djangoapps.teams.api.logger')
+    @mock.patch('lms.djangoapps.teams.api.CourseTeam.objects')
+    def test_get_team_multiple_teams_log_squelches_pii(self, squelch_pii, mocked_manager, mock_logger):
+        """
+        The multiple-teams error log identifies the user by id when SQUELCH_PII_IN_LOGS is enabled.
+        """
+        mocked_manager.get.side_effect = CourseTeam.MultipleObjectsReturned()
+        with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            teams_api.get_team_for_user_course_topic(self.user1, str(COURSE_KEY1), TOPIC1)
+
+        expected_identifier = self.user1.id if squelch_pii else self.user1.username
+        mock_logger.error.assert_called_once_with(
+            f"user {expected_identifier} is on multiple teams within course {COURSE_KEY1} topic {TOPIC1}"
+        )
+
     def test_get_team_course_not_found(self):
         team = teams_api.get_team_for_user_course_topic(self.user1, 'nonsense/garbage/nonexistant', 'topic')
         assert team is None

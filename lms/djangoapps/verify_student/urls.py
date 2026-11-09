@@ -121,7 +121,7 @@ urlpatterns = [
 ]
 
 # Fake response page for incourse reverification ( software secure )
-if settings.FEATURES.get('ENABLE_SOFTWARE_SECURE_FAKE'):
+if settings.ENABLE_SOFTWARE_SECURE_FAKE:
     from lms.djangoapps.verify_student.tests.fake_software_secure import SoftwareSecureFakeView
     urlpatterns += [
         path('software-secure-fake-response', SoftwareSecureFakeView.as_view()),

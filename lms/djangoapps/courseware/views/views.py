@@ -128,6 +128,7 @@ from openedx.core.djangoapps.zendesk_proxy.utils import create_zendesk_ticket
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.courses import get_course_by_id
 from openedx.core.lib.jwt import unpack_jwt
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.course_duration_limits.access import generate_course_expired_fragment
 from openedx.features.course_experience import course_home_url
@@ -780,7 +781,7 @@ class EnrollStaffView(View):
             add_enrollment(request.user.username, course_id)
             log.info(
                 "User %s enrolled in %s via `enroll_staff` view",
-                request.user.username,
+                get_username_or_pii_safe_user_id_for_log(request.user),
                 course_id
             )
             return redirect(_next)
@@ -889,7 +890,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'studio_url': studio_url,
             'registered': registered,
             'course_target': course_target,
-            'is_cosmetic_price_enabled': settings.FEATURES.get('ENABLE_COSMETIC_DISPLAY_PRICE'),
+            'is_cosmetic_price_enabled': settings.ENABLE_COSMETIC_DISPLAY_PRICE,
             'course_price': course_price,
             'ecommerce_checkout': ecommerce_checkout,
             'ecommerce_checkout_link': ecommerce_checkout_link,
@@ -1088,7 +1089,7 @@ def _downloadable_certificate_message(course, cert_downloadable_status):  # pyli
 
 
 def _missing_required_verification(student, enrollment_mode):
-    return settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT') and (
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and (
         enrollment_mode in CourseMode.VERIFIED_MODES and not IDVerificationService.user_is_verified(student)
     )
 
@@ -1465,20 +1466,21 @@ def generate_user_cert(request, course_id):
     except CertificateGenerationNotAllowed as e:
         log.exception(
             "Certificate generation not allowed for user %s in course %s",
-            str(student),
+            get_username_or_pii_safe_user_id_for_log(student),
             course_key,
         )
         return HttpResponseBadRequest(str(e))
 
     if not is_course_passed(student, course):
-        log.info("User %s has not passed the course: %s", student.username, course_id)
+        user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(student)
+        log.info("User %s has not passed the course: %s", user_identifier_for_log, course_id)
         return HttpResponseBadRequest(_("Your certificate will be available when you pass the course."))
 
     certificate_status = certs_api.certificate_downloadable_status(student, course.id)
 
     log.info(
         "User %s has requested for certificate in %s, current status: is_downloadable: %s, is_generating: %s",
-        student.username,
+        get_username_or_pii_safe_user_id_for_log(student),
         course_id,
         certificate_status["is_downloadable"],
         certificate_status["is_generating"],
@@ -2089,7 +2091,10 @@ def financial_assistance_request(request):
             return HttpResponseForbidden()
         # Require email verification
         if request.user.is_active is not True:
-            logging.warning('FA_v1: User %s tried to submit app without activating their account.', username)
+            logging.warning(
+                'FA_v1: User %s tried to submit app without activating their account.',
+                get_username_or_pii_safe_user_id_for_log(request.user),
+            )
             return HttpResponseForbidden('Please confirm your email before applying for financial assistance.')
 
         course_id = data['course']
@@ -2165,7 +2170,10 @@ def financial_assistance_request_v2(request):
             return HttpResponseForbidden()
         # Require email verification
         if request.user.is_active is not True:
-            logging.warning('FA_v2: User %s tried to submit app without activating their account.', username)
+            logging.warning(
+                'FA_v2: User %s tried to submit app without activating their account.',
+                get_username_or_pii_safe_user_id_for_log(request.user),
+            )
             return HttpResponseForbidden('Please confirm your email before applying for financial assistance.')
 
         course_id = data['course']
@@ -2355,7 +2363,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     else:
         has_required_enrollment = True
 
-    inclusion_date = settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE')
+    inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
     start_date = CourseOverview.get_from_id(course_key).start
     has_valid_inclusion_date = False
 

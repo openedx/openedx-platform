@@ -4,7 +4,6 @@ This file contains celery tasks for course apps.
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 
@@ -16,7 +15,6 @@ log = get_task_logger(__name__)
 
 
 @shared_task(name='openedx.core.djangoapps.course_apps.tasks.cache_all_course_apps_status')
-@set_code_owner_attribute
 def cache_all_course_apps_status():
     """
     Create CourseAppStatus entries for all course apps, across all courses to speed up queries.
@@ -31,7 +29,6 @@ def cache_all_course_apps_status():
 
 
 @shared_task(name='openedx.core.djangoapps.course_apps.tasks.update_course_apps_status')
-@set_code_owner_attribute
 def update_course_apps_status(course_key_str: str):
     """
     Create CourseAppStatus entries for apps available for the specified course.

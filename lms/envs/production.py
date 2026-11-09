@@ -38,6 +38,9 @@ from .common import *  # noqa: F403
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
 
+# Settings moved from common.py
+DATA_DIR = '/edx/var/edxapp/data'
+MEDIA_ROOT = '/edx/var/edxapp/media/'
 
 def get_env_setting(setting):
     """ Get the environment setting or return exception """
@@ -332,7 +335,7 @@ if (
 # TODO: Once we have successfully upgraded to ES7, switch this back to ELASTIC_SEARCH_CONFIG.
 ELASTIC_SEARCH_CONFIG = _YAML_TOKENS.get('ELASTIC_SEARCH_CONFIG_ES7', [{}])
 
-XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = FEATURES["LICENSING"]  # noqa: F405
+XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = LICENSING  # noqa: F405
 XBLOCK_SETTINGS.setdefault("VideoBlock", {})['YOUTUBE_API_KEY'] = YOUTUBE_API_KEY  # noqa: F405
 
 ##### Custom Courses for EdX #####
@@ -422,7 +425,6 @@ derive_settings(__name__)
 #   value rathering than diving into these dicts.
 ENV_TOKENS = _YAML_TOKENS
 AUTH_TOKENS = _YAML_TOKENS
-ENV_FEATURES = _YAML_TOKENS.get("FEATURES", {})
 ENV_CELERY_QUEUES = _YAML_CELERY_QUEUES
 ALTERNATE_QUEUE_ENVS = _YAML_ALTERNATE_WORKER_QUEUES
 
@@ -475,6 +477,8 @@ EXPLICIT_QUEUES = {
     'lms.djangoapps.grades.tasks.recalculate_course_and_subsection_grades_for_user': {
         'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.grades.tasks.recalculate_subsection_grade_v3': {
+        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
+    'lms.djangoapps.grades.tasks.roll_up_competency_statuses_for_user': {
         'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.award_program_certificates': {
         'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405

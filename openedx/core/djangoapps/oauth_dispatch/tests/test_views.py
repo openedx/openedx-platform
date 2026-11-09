@@ -240,7 +240,25 @@ class TestAccessTokenView(AccessTokenLoginMixin, mixins.AccessTokenMixin, _Dispa
             'grant_type': grant_type.replace('-', '_'),
         }
         bad_response = self.client.post(self.url, invalid_body)
+        assert bad_response.status_code == 400
+        assert bad_response.json()['error'] == 'invalid_request'
+        expected_calls = [
+            call('oauth_token_type', 'no_token_type_supplied'),
+            call('oauth_grant_type', 'password'),
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+
+    @patch('edx_django_utils.monitoring.set_custom_attribute')
+    def test_access_token_attributes_for_unauthenticated_client(self, mock_set_custom_attribute):
+        grant_type = dot_models.Application.GRANT_PASSWORD
+        invalid_body = {
+            'grant_type': grant_type.replace('-', '_'),
+            'username': self.user.username,
+            'password': self.TEST_PASSWORD,
+        }
+        bad_response = self.client.post(self.url, invalid_body)
         assert bad_response.status_code == 401
+        assert bad_response.json()['error'] == 'invalid_client'
         expected_calls = [
             call('oauth_token_type', 'no_token_type_supplied'),
             call('oauth_grant_type', 'password'),

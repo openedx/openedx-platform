@@ -26,8 +26,6 @@ from django.core.files import File
 from django.test import RequestFactory
 from django.utils.text import get_valid_filename
 from edx_django_utils.monitoring import (
-    set_code_owner_attribute,
-    set_code_owner_attribute_from_module,
     set_custom_attribute,
     set_custom_attributes_for_course_key,
 )
@@ -49,14 +47,12 @@ from user_tasks.tasks import UserTask
 import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
-    LibrarySearchIndexer,
     SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
 from cms.djangoapps.contentstore.utils import (
     IMPORTABLE_FILE_TYPES,
-    add_instructor,
     contains_course_reference,
     create_course_info_usage_key,
     create_or_update_xblock_upstream_link,
@@ -166,7 +162,6 @@ def clone_instance(instance, field_values):
 
 
 @shared_task
-@set_code_owner_attribute
 def rerun_course(source_course_key_string, destination_course_key_string, user_id, fields=None):
     """
     Reruns a course in a new celery task.
@@ -189,14 +184,7 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         update_unit_discussion_state_from_discussion_blocks(destination_course_key, user_id)
 
         # set initial permissions for the user to access the course.
-        # NOTE: add_instructor is called here (after clone_course) because when
-        # authz.enable_course_authoring is enabled, it cannot be called pre-task
-        # (CourseOverview doesn't exist yet). This is a temporary workaround until
-        # openedx/openedx-authz#352 is implemented. Once resolved, add_instructor
-        # can move back to the pre-task call site unconditionally.
-        user = User.objects.get(id=user_id)
-        add_instructor(destination_course_key, user, user)
-        initialize_permissions(destination_course_key, user)
+        initialize_permissions(destination_course_key, User.objects.get(id=user_id))
 
         # update state: Succeeded
         CourseRerunState.objects.succeeded(course_key=destination_course_key)
@@ -262,7 +250,6 @@ def _parse_time(time_isoformat):
 
 
 @shared_task
-@set_code_owner_attribute
 def update_search_index(course_id, triggered_time_isoformat):
     """ Updates course search index. """
     try:
@@ -293,21 +280,6 @@ def update_search_index(course_id, triggered_time_isoformat):
 
 
 @shared_task
-@set_code_owner_attribute
-def update_library_index(library_id, triggered_time_isoformat):
-    """ Updates course search index. """
-    try:
-        library_key = CourseKey.from_string(library_id)
-        LibrarySearchIndexer.index(modulestore(), library_key, triggered_at=(_parse_time(triggered_time_isoformat)))
-
-    except SearchIndexingError as exc:
-        LOGGER.error('Search indexing error for library %s - %s', library_id, str(exc))
-    else:
-        LOGGER.debug('Search indexing successful for library %s', library_id)
-
-
-@shared_task
-@set_code_owner_attribute
 def update_special_exams_and_publish(course_key_str):
     """
     Registers special exams for a given course and calls publishing flow.
@@ -368,13 +340,10 @@ class CourseExportTask(UserTask):  # pylint: disable=abstract-method
 
 
 @shared_task(base=CourseExportTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
-#   does stack inspection and can't handle additional decorators.
 def export_olx(self, user_id, course_key_string, language):
     """
     Export a course or library to an OLX .tar.gz archive and prepare it for download.
     """
-    set_code_owner_attribute_from_module(__name__)
     courselike_key = CourseKey.from_string(course_key_string)
 
     try:
@@ -545,15 +514,40 @@ def sync_discussion_settings(course_key, user):
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration sync failed: {exc}')
 
 
+def course_import_working_dir(courselike_key, unique_id):
+    """
+    Return a private scratch directory for one course import.
+
+    ``unique_id`` must be unique per import (a task id, an upload id, ...). Every
+    import needs its own directory: they used to share a single directory derived
+    from the course key alone, so two imports of the same course would overwrite
+    each other's archive, and whichever import finished first deleted the other's
+    extracted OLX mid-run.
+
+    The directory sits directly under ``GITHUB_REPO_ROOT`` rather than under a
+    per-course parent, so that no import's cleanup ever removes a directory
+    another import is about to create its own inside.
+    """
+    subdir = base64.urlsafe_b64encode(repr(courselike_key).encode('utf-8')).decode('utf-8')
+    return path(settings.GITHUB_REPO_ROOT) / f'{subdir}-{unique_id}'
+
+
+def remove_course_import_working_dir(course_dir):
+    """
+    Delete a working directory created by :func:`course_import_working_dir`.
+
+    Tolerates the directory already being missing, so that cleanup never masks
+    the error that triggered it.
+    """
+    shutil.rmtree(course_dir, ignore_errors=True)
+
+
 @shared_task(base=CourseImportTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
-#   does stack inspection and can't handle additional decorators.
 # pylint: disable=too-many-statements
 def import_olx(self, user_id, course_key_string, archive_path, archive_name, language):
     """
     Import a course or library from a provided OLX .tar.gz or .zip archive.
     """
-    set_code_owner_attribute_from_module(__name__)
     current_step = 'Unpacking'
     courselike_key = CourseKey.from_string(course_key_string)
     set_custom_attributes_for_course_key(courselike_key)
@@ -561,8 +555,7 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
     self.status.set_state(current_step)
 
     data_root = path(settings.GITHUB_REPO_ROOT)
-    subdir = base64.urlsafe_b64encode(repr(courselike_key).encode('utf-8')).decode('utf-8')
-    course_dir = data_root / subdir
+    course_dir = course_import_working_dir(courselike_key, self.request.id)
 
     def validate_user():
         """Validate if the user exists otherwise log error. """
@@ -670,8 +663,7 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
         LOGGER.info(f'{log_prefix}: unpacking step started')
 
         temp_filepath = course_dir / get_valid_filename(archive_name)
-        if not course_dir.isdir():
-            os.mkdir(course_dir)
+        os.makedirs(course_dir, exist_ok=True)
 
         LOGGER.info(f'{log_prefix}: importing course to {temp_filepath}')
 
@@ -707,9 +699,8 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
                 LOGGER.info(f'{log_prefix}: entrance exam milestone content reference has been removed')
     # Send errors to client with stage at which error occurred.
     except Exception as exception:  # pylint: disable=broad-except
-        if course_dir.isdir():
-            shutil.rmtree(course_dir)
-            LOGGER.info(f'{log_prefix}: Temp data cleared')
+        remove_course_import_working_dir(course_dir)
+        LOGGER.info(f'{log_prefix}: Temp data cleared')
 
         self.status.fail(UserErrors.UNKNOWN_ERROR_IN_UNPACKING)
         LOGGER.exception(f'{log_prefix}: Unknown error while unpacking', exc_info=True)
@@ -765,9 +756,8 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
     except Exception as exception:  # pylint: disable=broad-except
         handle_course_import_exception(courselike_key, exception, self.status, known=False)
     finally:
-        if course_dir.isdir():
-            shutil.rmtree(course_dir)
-            LOGGER.info(f'{log_prefix}: Temp data cleared')
+        remove_course_import_working_dir(course_dir)
+        LOGGER.info(f'{log_prefix}: Temp data cleared')
 
         if self.status.state == 'Updating' and is_course:
             # Reload the course so we have the latest state
@@ -789,7 +779,6 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
 
 
 @shared_task
-@set_code_owner_attribute
 def update_all_outlines_from_modulestore_task():
     """
     Celery task that creates multiple celery tasks - one per learning_sequence course outline
@@ -816,7 +805,6 @@ def update_all_outlines_from_modulestore_task():
 
 
 @shared_task
-@set_code_owner_attribute
 def update_outline_from_modulestore_task(course_key_str: str):
     """
     Celery task that creates a learning_sequence course outline.
@@ -961,7 +949,6 @@ def copy_v1_user_roles_into_v2_library(v2_library_key, v1_library_key):
 
 
 @shared_task(time_limit=30)
-@set_code_owner_attribute
 def delete_v1_library(v1_library_key_string):
     """
     Delete a v1 library index by key string.
@@ -985,149 +972,6 @@ def delete_v1_library(v1_library_key_string):
         "status": "SUCCESS",
         "msg": "SUCCESS"
     }
-
-
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v2 value from the map
-    """
-    course_id = CourseKey.from_string(course_key_string)
-    store = modulestore()
-    with store.bulk_operations(course_id):
-        visited = []
-        for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]:
-            blocks = store.get_items(
-                course_id.for_branch(branch),
-                settings={'source_library_id': {'$exists': True}}
-            )
-            for xblock in blocks:
-                if xblock.source_library_id not in v1_to_v2_lib_map.values():
-                    # pylint: disable=broad-except
-                    raise Exception(
-                        f'{xblock.source_library_id} in {course_id} is not found in mapping. Validation failed'
-                    )
-                visited.append(xblock.source_library_id)
-    # return sucess
-    return visited
-
-
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v2 value from the map.
-
-        This will trigger a publish on the course for every published library source block.
-    """
-    store = modulestore()
-    course_id = CourseKey.from_string(course_key_string)
-
-    with store.bulk_operations(course_id):
-        #for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]:
-        draft_blocks, published_blocks = [
-            store.get_items(
-                course_id.for_branch(branch),
-                settings={'source_library_id': {'$exists': True}}
-            )
-            for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]
-        ]
-
-        published_dict = {block.location: block for block in published_blocks}
-
-        for draft_library_source_block in draft_blocks:
-            try:
-                new_source_id = str(v1_to_v2_lib_map[draft_library_source_block.source_library_id])
-            except KeyError:
-                #skip invalid keys
-                LOGGER.error(
-                    'Key %s not found in mapping. Skipping block for course %s',
-                    str({draft_library_source_block.source_library_id}),
-                    str(course_id)
-                )
-                continue
-
-            # The publsihed branch should be updated as well as the draft branch
-            # This way, if authors "discard changes," they won't be reverted back to the V1 lib.
-            # However, we also don't want to publish the draft branch.
-            try:
-                if published_dict[draft_library_source_block.location] is not None:
-                    #temporarily set the published version to be the draft & publish it.
-                    temp = published_dict[draft_library_source_block.location]
-                    temp.source_library_id = new_source_id
-                    store.update_item(temp, None)
-                    store.publish(temp.location, None)
-                    draft_library_source_block.source_library_id = new_source_id
-                    store.update_item(draft_library_source_block, None)
-            except KeyError:
-                #Warn, but just update the draft block if no published block for draft block.
-                LOGGER.warning(
-                    'No matching published block for draft block %s',
-                    str(draft_library_source_block.location)
-                )
-                draft_library_source_block.source_library_id = new_source_id
-                store.update_item(draft_library_source_block, None)
-    # return success
-    return
-
-
-@shared_task(time_limit=30)
-@set_code_owner_attribute
-def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
-    """Search a Modulestore for all library source blocks in a course by querying mongo.
-        replace all source_library_ids with the corresponding v1 value from the inverted map.
-        This is exists to undo changes made previously.
-    """
-    course_id = CourseKey.from_string(course_key_string)
-
-    v2_to_v1_lib_map = {v: k for k, v in v1_to_v2_lib_map.items()}
-
-    store = modulestore()
-    draft_blocks, published_blocks = [
-        store.get_items(
-            course_id.for_branch(branch),
-            settings={'source_library_id': {'$exists': True}}
-        )
-        for branch in [ModuleStoreEnum.BranchName.draft, ModuleStoreEnum.BranchName.published]
-    ]
-
-    published_dict = {block.location: block for block in published_blocks}
-
-    for draft_library_source_block in draft_blocks:
-        try:
-            new_source_id = str(v2_to_v1_lib_map[draft_library_source_block.source_library_id])
-        except KeyError:
-            #skip invalid keys
-            LOGGER.error(
-                'Key %s not found in mapping. Skipping block for course %s',
-                str({draft_library_source_block.source_library_id}),
-                str(course_id)
-            )
-            continue
-
-        # The publsihed branch should be updated as well as the draft branch
-        # This way, if authors "discard changes," they won't be reverted back to the V1 lib.
-        # However, we also don't want to publish the draft branch.
-        try:
-            if published_dict[draft_library_source_block.location] is not None:
-                #temporarily set the published version to be the draft & publish it.
-                temp = published_dict[draft_library_source_block.location]
-                temp.source_library_id = new_source_id
-                store.update_item(temp, None)
-                store.publish(temp.location, None)
-                draft_library_source_block.source_library_id = new_source_id
-                store.update_item(draft_library_source_block, None)
-        except KeyError:
-            #Warn, but just update the draft block if no published block for draft block.
-            LOGGER.warning(
-                'No matching published block for draft block %s',
-                str(draft_library_source_block.location)
-            )
-            draft_library_source_block.source_library_id = new_source_id
-            store.update_item(draft_library_source_block, None)
-    # return success
-    return
 
 
 class CourseLinkCheckTask(UserTask):  # pylint: disable=abstract-method
@@ -1164,13 +1008,10 @@ class CourseLinkCheckTask(UserTask):  # pylint: disable=abstract-method
 
 
 @shared_task(base=CourseLinkCheckTask, bind=True)
-# Note: The decorator @set_code_owner_attribute cannot be used here because the UserTaskMixin
-#   does stack inspection and can't handle additional decorators.
 def check_broken_links(self, user_id, course_key_string, language):
     """
     Checks for broken links in a course and store the results in a file.
     """
-    set_code_owner_attribute_from_module(__name__)
     return _check_broken_links(self, user_id, course_key_string, language)
 
 
@@ -1638,7 +1479,6 @@ def _write_broken_links_to_file(broken_or_locked_urls, broken_links_file):
 
 
 @shared_task
-@set_code_owner_attribute
 def handle_create_xblock_upstream_link(usage_key):
     """
     Create upstream link for a single xblock.
@@ -1666,7 +1506,6 @@ def handle_create_xblock_upstream_link(usage_key):
 
 
 @shared_task
-@set_code_owner_attribute
 def handle_update_xblock_upstream_link(usage_key):
     """
     Update upstream link for a single xblock.
@@ -1683,7 +1522,6 @@ def handle_update_xblock_upstream_link(usage_key):
 
 
 @shared_task
-@set_code_owner_attribute
 def create_or_update_upstream_links(
     course_key_str: str,
     force: bool = False,
@@ -1724,7 +1562,6 @@ def create_or_update_upstream_links(
 
 
 @shared_task
-@set_code_owner_attribute
 def handle_unlink_upstream_block(upstream_usage_key_string: str) -> None:
     """
     Handle updates needed to downstream blocks when the upstream link is severed.
@@ -1744,7 +1581,6 @@ def handle_unlink_upstream_block(upstream_usage_key_string: str) -> None:
 
 
 @shared_task
-@set_code_owner_attribute
 def handle_unlink_upstream_container(upstream_container_key_string: str) -> None:
     """
     Handle updates needed to downstream blocks when the upstream link is severed.
@@ -1801,7 +1637,6 @@ def update_course_rerun_links(
     """
     Updates course links to point to the latest re-run.
     """
-    set_code_owner_attribute_from_module(__name__)
     return _update_course_rerun_links(
         self, user_id, course_id, action, data, language
     )
@@ -2357,7 +2192,6 @@ def migrate_course_legacy_library_blocks_to_item_bank(
             leaving migrated blocks as drafts.
     """
     ensure_cms("Legacy library content references may only be executed in CMS")
-    set_code_owner_attribute_from_module(__name__)
     _cancel_old_tasks(course_key, self.status.user, [self.status.task_id])
     try:
         key = CourseKey.from_string(course_key)

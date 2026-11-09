@@ -2,7 +2,6 @@
 Test the objecttag_export_helpers module
 """
 import time
-from unittest.mock import patch
 
 from openedx_tagging.models import ObjectTag
 from organizations.models import Organization
@@ -203,11 +202,6 @@ class TaggedCourseMixin(TestGetAllObjectTagsMixin, ModuleStoreTestCase):  # type
 
     def setUp(self):
         super().setUp()
-
-        # Patch modulestore
-        self.patcher = patch("openedx.core.djangoapps.content_tagging.tasks.modulestore", return_value=self.store)
-        self.addCleanup(self.patcher.stop)
-        self.patcher.start()
 
         # Create course
         self.course = CourseFactory.create(

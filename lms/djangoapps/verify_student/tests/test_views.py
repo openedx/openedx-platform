@@ -182,7 +182,6 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         ])
         self._assert_upgrade_session_flag(False)
 
-    @httpretty.activate
     @override_settings(
         ECOMMERCE_API_URL=TEST_API_URL,
         ECOMMERCE_PUBLIC_URL_ROOT=TEST_PUBLIC_URL_ROOT
@@ -190,12 +189,9 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
     def test_start_flow_with_ecommerce(self):
         """Verify user gets redirected to ecommerce checkout when ecommerce checkout is enabled."""
         sku = 'TESTSKU'
-        # When passing a SKU ecommerce api gets called.
-        _mock_payment_processors()
         configuration = CommerceConfiguration.objects.create(checkout_on_ecommerce_service=True)
         checkout_page = configuration.basket_checkout_page
         checkout_page += "?utm_source=test"
-        httpretty.register_uri(httpretty.GET, f"{TEST_PUBLIC_URL_ROOT}{checkout_page}")
 
         course = self._create_course('verified', sku=sku)
         self._enroll(course.id)
@@ -792,7 +788,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         self.assertContains(response, "verification deadline")
         self.assertContains(response, verification_deadline_in_past)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     @ddt.data("verify_student_start_flow", "verify_student_begin_flow")
     def test_embargo_restrict(self, payment_flow):
         course = self._create_course("verified")
@@ -802,7 +798,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             response = self._get_page(payment_flow, course.id, expected_status_code=302)
             self.assertRedirects(response, redirect_url)
 
-    @patch.dict(settings.FEATURES, {'EMBARGO': True})
+    @override_settings(EMBARGO=True)
     @ddt.data("verify_student_start_flow", "verify_student_begin_flow")
     def test_embargo_allow(self, payment_flow):
         course = self._create_course("verified")
@@ -1191,7 +1187,6 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
     Ensures correct behavior in the function `checkout_with_ecommerce_service`.
     """
 
-    @httpretty.activate
     @override_settings(ECOMMERCE_API_URL=TEST_API_URL)
     def test_create_basket(self):
         """
@@ -1202,15 +1197,13 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
         course_id = 'edX/test/test_run'
         course_mode = CourseModeFactory.create(course_id=course_id, sku="test-sku").to_tuple()
         expected_payment_data = {'foo': 'bar'}
-        # mock out the payment processors endpoint
-        httpretty.register_uri(
-            httpretty.POST,
-            f"{TEST_API_URL}/baskets/",
-            body=json.dumps({'payment_data': expected_payment_data}),
-            content_type="application/json",
-        )
+        # mock out the ecommerce API client's response to the baskets endpoint
+        mock_api_client = Mock()
+        mock_api_client.post.return_value.json.return_value = {'payment_data': expected_payment_data}
 
-        with mock.patch('lms.djangoapps.verify_student.views.audit_log') as mock_audit_log:
+        with mock.patch('lms.djangoapps.verify_student.views.audit_log') as mock_audit_log, \
+                mock.patch('lms.djangoapps.verify_student.views.get_ecommerce_api_client',
+                           return_value=mock_api_client):
             # Call the function
             actual_payment_data = checkout_with_ecommerce_service(
                 user,
@@ -1223,8 +1216,10 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
             assert mock_audit_log.called
 
         # Check the api call
-        assert json.loads(httpretty.last_request().body.decode('utf-8')) ==\
-               {'products': [{'sku': 'test-sku'}], 'checkout': True, 'payment_processor_name': 'test-processor'}
+        mock_api_client.post.assert_called_once_with(
+            f"{TEST_API_URL}/baskets/",
+            json={'products': [{'sku': 'test-sku'}], 'checkout': True, 'payment_processor_name': 'test-processor'},
+        )
         # Check the response
         assert actual_payment_data == expected_payment_data
 

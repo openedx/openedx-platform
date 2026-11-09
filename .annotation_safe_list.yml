@@ -380,8 +380,6 @@ openedx_content.ContainerType:
   ".. no_pii:": "No PII"
 openedx_content.ContainerVersion:
   ".. no_pii:": "No PII"
-openedx_content.Draft:
-  ".. no_pii:": "No PII"
 openedx_content.EntityList:
   ".. no_pii:": "No PII"
 openedx_content.EntityListRow:
@@ -398,10 +396,6 @@ openedx_content.PublishLogRecord:
   ".. no_pii:": "No PII"
 openedx_content.PublishableEntity:
   ".. no_pii:": "No PII"
-openedx_content.PublishableEntityVersion:
-  ".. no_pii:": "No PII"
-openedx_content.PublishableEntityVersionDependency:
-  ".. no_pii:": "No PII"
 openedx_content.Published:
   ".. no_pii:": "No PII"
 openedx_content.Section:
@@ -415,6 +409,12 @@ openedx_content.SubsectionVersion:
 openedx_content.Unit:
   ".. no_pii:": "No PII"
 openedx_content.UnitVersion:
+  ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyCriteriaGroup:
+  ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyCriterion:
+  ".. no_pii:": "No PII"
+openedx_learning.HistoricalCompetencyRuleProfile:
   ".. no_pii:": "No PII"
 organizations.HistoricalOrganization:
   ".. no_pii:": "No PII"

@@ -1,14 +1,14 @@
 ## mako
 
-<%namespace name='static' file='/static_content.html'/>
+<%page expression_filter="h"/>
 
-<%page args="disable_fast_preview=True" expression_filter="h"/>
+<%namespace name='static' file='/static_content.html'/>
 
 <%!
 from openedx.core.djangolib.js_utils import js_escaped_string
 %>
 
-<%include file="/mathjax_include.html" args="disable_fast_preview=disable_fast_preview"/>
+<%include file="/mathjax_include.html"/>
 
 <%static:js group='discussion'/>
 

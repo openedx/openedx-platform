@@ -21,13 +21,13 @@ from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 from submissions import api as submissions_api
-from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.testing.codejail import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.testing.response_xml_factory import (
     CodeResponseXMLFactory,
     CustomResponseXMLFactory,
     OptionResponseXMLFactory,
     SchematicResponseXMLFactory,
 )
-from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
 from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 
 from common.djangoapps.course_modes.models import CourseMode

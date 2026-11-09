@@ -23,7 +23,7 @@ from django.test.utils import override_settings
 from edx_django_utils.cache import RequestCache
 from freezegun import freeze_time
 from pytz import UTC
-from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.testing.response_xml_factory import (
     MultipleChoiceResponseXMLFactory,  # pylint: disable=wrong-import-order
 )
 
@@ -518,7 +518,7 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         finally:
             ProblemBlock.generate_report_data = generate_report_data
 
-    @patch.dict('django.conf.settings.FEATURES', {'MAX_PROBLEM_RESPONSES_COUNT': 4})
+    @override_settings(MAX_PROBLEM_RESPONSES_COUNT=4)
     def test_build_student_data_limit(self):
         """
         Ensure that the _build_student_data method respects the global setting for
@@ -1922,7 +1922,7 @@ class TestGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         )
         self.define_option_problem('Unreleased', parent=self.unreleased_section)
 
-    @patch.dict(settings.FEATURES, {'DISABLE_START_DATES': False})
+    @override_settings(DISABLE_START_DATES=False)
     def test_grade_report(self):
         self.submit_student_answer(self.student.username, 'Problem1', ['Option 1'])
 

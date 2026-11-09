@@ -33,8 +33,7 @@ class _HtmlBlockCourseApiTestCaseBase(TestCase):
 
     @ddt.data(
         {},
-        dict(FEATURES={}),
-        dict(FEATURES=dict(ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA=False))
+        dict(ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA=False),
     )
     def test_disabled(self, settings):
         """
@@ -58,7 +57,7 @@ class _HtmlBlockCourseApiTestCaseBase(TestCase):
         '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">',  # Images allowed
         'short string ' * 100,  # May contain long strings
     )
-    @override_settings(FEATURES=dict(ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA=True))
+    @override_settings(ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA=True)
     def test_common_values(self, html):
         """
         Ensure that student_view_data will return HTML data when enabled,

@@ -7,7 +7,6 @@ from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.cache import cache
 from django.db import connection
@@ -912,9 +911,7 @@ class TestUserPostSaveCallback(SharedModuleStoreTestCase):
         course_overview.save()
 
         if feature_enabled:
-            with override_settings(
-                FEATURES={**settings.FEATURES, 'DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED': True}
-            ):
+            with override_settings(DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED=True):
                 assert register_and_enroll_student() is None
         else:
             assert register_and_enroll_student() is not None

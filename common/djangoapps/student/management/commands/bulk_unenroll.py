@@ -9,6 +9,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import BulkUnenrollConfiguration, CourseEnrollment
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -85,6 +86,6 @@ class Command(BaseCommand):
                 enrollment.update_enrollment(is_active=False, skip_refund=True)
                 logger.info(
                     "User [{}] have been successfully unenrolled from the course: {}".format(  # noqa: UP032
-                        enrollment.user.username, course_key
+                        get_username_or_pii_safe_user_id_for_log(enrollment.user), course_key
                     )
                 )

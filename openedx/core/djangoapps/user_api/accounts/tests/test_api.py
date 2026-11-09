@@ -50,7 +50,6 @@ from openedx.core.djangoapps.user_api.errors import (
     UserNotFound,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 
 
 def mock_render_to_string(template_name, context):
@@ -263,16 +262,6 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         ]
         with pytest.raises(AccountValidationError):
             update_account_settings(self.user, {"social_links": social_links})
-
-    def test_update_success_for_enterprise(self):
-        EnterpriseCustomerUserFactory(user_id=self.user.id)
-        level_of_education = "m"
-        successful_update = {
-            "level_of_education": level_of_education,
-        }
-        update_account_settings(self.user, successful_update)
-        account_settings = get_account_settings(self.default_request)[0]
-        assert level_of_education == account_settings['level_of_education']
 
     @patch(
         'openedx.core.djangoapps.user_api.accounts.api.AccountSettingsReadOnlyFieldsRequested.run_filter',

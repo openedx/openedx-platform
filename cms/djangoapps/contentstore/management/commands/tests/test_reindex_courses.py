@@ -6,6 +6,7 @@ from unittest import mock
 
 import ddt
 from django.core.management import CommandError, call_command
+from django.test import override_settings
 
 from cms.djangoapps.contentstore.management.commands.reindex_course import Command as ReindexCommand
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -111,6 +112,27 @@ class TestReindexCourse(ModuleStoreTestCase):
             expected_calls = self._build_calls(self.first_course, self.second_course)
             self.assertEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
+    def test_reindex_wraps_each_course_in_bulk_operations(self):
+        """
+        Each course reindex must run inside modulestore().bulk_operations(course_key)
+        so the course structure is fetched from the modulestore once and cached for
+        the whole reindex instead of being re-fetched on every block access.
+        Regression guard for https://github.com/openedx/edx-platform/issues/36868
+        """
+        with mock.patch(self.REINDEX_PATH_LOCATION), \
+                mock.patch(self.MODULESTORE_PATCH_LOCATION, mock.Mock(return_value=self.store)), \
+                mock.patch.object(
+                    self.store, 'bulk_operations', wraps=self.store.bulk_operations
+                ) as patched_bulk:
+            call_command(
+                'reindex_course',
+                str(self.first_course.id),
+                str(self.second_course.id),
+            )
+            bulk_keys = [c.args[0] for c in patched_bulk.call_args_list]
+            self.assertIn(self.first_course.id, bulk_keys)  # noqa: PT009
+            self.assertIn(self.second_course.id, bulk_keys)  # noqa: PT009
+
     def test_given_all_key_prompts_and_reindexes_all_courses(self):
         """ Test that reindexes all courses when --all key is given and confirmed """
         with mock.patch(self.YESNO_PATCH_LOCATION) as patched_yes_no:
@@ -148,9 +170,8 @@ class TestReindexCourse(ModuleStoreTestCase):
             expected_calls = self._build_calls(self.first_course, self.fourth_course)
             self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
-    @mock.patch.dict(
-        'django.conf.settings.FEATURES',
-        {'COURSEWARE_SEARCH_INCLUSION_DATE': (datetime.min.today() - timedelta(weeks=52)).strftime('%Y-%m-%d')}
+    @override_settings(
+        COURSEWARE_SEARCH_INCLUSION_DATE=(datetime.min.today() - timedelta(weeks=52)).strftime('%Y-%m-%d')
     )
     def test_given_from_inclusion_date_key_prompt(self):
         """
@@ -163,3 +184,19 @@ class TestReindexCourse(ModuleStoreTestCase):
 
             expected_calls = self._build_calls(self.first_course, self.second_course)
             self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
+
+    @override_settings(COURSEWARE_SEARCH_INCLUSION_DATE=None)
+    def test_from_inclusion_date_warns_and_defaults_when_unset(self):
+        """
+            Test that --from_inclusion_date logs a warning and falls back to the 2020-01-01
+            floor (reindexing every course that starts on or after that date) when
+            COURSEWARE_SEARCH_INCLUSION_DATE is not configured.
+        """
+        with mock.patch(self.REINDEX_PATH_LOCATION) as patched_index, \
+                mock.patch(self.MODULESTORE_PATCH_LOCATION, mock.Mock(return_value=self.store)), \
+                self.assertLogs(level='WARNING') as logs:
+            call_command('reindex_course', from_inclusion_date=True)
+
+        assert any('COURSEWARE_SEARCH_INCLUSION_DATE is not set' in message for message in logs.output)
+        expected_calls = self._build_calls(self.first_course, self.second_course, self.fourth_course)
+        self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009

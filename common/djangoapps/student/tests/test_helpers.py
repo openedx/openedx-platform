@@ -126,7 +126,7 @@ class TestLoginHelper(TestCase):
             next_page = get_next_url_for_login_page(req)
             assert next_page == expected_url
 
-        with override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT=tpa_hint)):
+        with override_settings(THIRD_PARTY_AUTH_HINT=tpa_hint):
             validate_login()
 
         with with_site_configuration_context(configuration=dict(THIRD_PARTY_AUTH_HINT=tpa_hint)):

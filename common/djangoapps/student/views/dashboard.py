@@ -56,6 +56,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from openedx.core.djangoapps.user_api.accounts.utils import is_secondary_email_feature_enabled
 from openedx.core.djangoapps.util.maintenance_banner import add_maintenance_banner
 from openedx.core.djangolib.markup import HTML, Text
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
@@ -173,7 +174,7 @@ def get_course_enrollments(user, org_whitelist, org_blacklist, course_limit=None
         if not course_overview:
             log.error(
                 "User %s enrolled in broken or non-existent course %s",
-                user.username,
+                get_username_or_pii_safe_user_id_for_log(user),
                 enrollment.course_id
             )
             continue
@@ -545,7 +546,7 @@ def student_dashboard(request):  # pylint: disable=too-many-statements
     ) or settings.SUPPORT_SITE_LINK
     hide_dashboard_courses_until_activated = configuration_helpers.get_value(
         'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED',
-        settings.FEATURES.get('HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED', False)
+        settings.HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED
     )
     empty_dashboard_message = configuration_helpers.get_value(
         'EMPTY_DASHBOARD_MESSAGE', None

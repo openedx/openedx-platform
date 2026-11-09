@@ -31,6 +31,7 @@ from openedx.core.djangoapps.catalog.utils import get_course_runs_for_course, ge
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.cors_csrf.authentication import SessionAuthenticationCrossDomainCsrf
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 
 User = get_user_model()
 log = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def _process_revoke_and_unenroll_entitlement(course_entitlement, is_refund=False
         _unenroll_entitlement(course_entitlement, course_id)
         log.info(
             'Unenrolled user [%s] from course run [%s] as part of revocation of course entitlement [%s]',
-            course_entitlement.user.username,
+            get_username_or_pii_safe_user_id_for_log(course_entitlement.user),
             course_id,
             course_entitlement.uuid
         )
@@ -205,7 +206,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
                     enrollment,
                     enrollment.mode,
                     serializer.data.get('mode'),
-                    user.username,
+                    get_username_or_pii_safe_user_id_for_log(user),
                     serializer.data.get('course_uuid')
                 )
                 enrollment.update_enrollment(mode=entitlement.mode)
@@ -213,7 +214,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
             else:
                 log.info(
                     'No enrollment upgraded while adding entitlement for user [%s] for course [%s] ',
-                    user.username,
+                    get_username_or_pii_safe_user_id_for_log(user),
                     serializer.data.get('course_uuid')
                 )
 

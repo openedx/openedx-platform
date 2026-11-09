@@ -86,7 +86,7 @@ from openedx.core.djangoapps.user_authn.utils import generate_username_suggestio
 from openedx.core.djangoapps.user_authn.views.registration_form import (
     AccountCreationForm,
     RegistrationFormFactory,
-    get_registration_extension_form,
+    get_profile_extension_form,
 )
 from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 
@@ -205,7 +205,7 @@ def create_account_with_params(request, params):  # pylint: disable=too-many-sta
         do_third_party_auth=False,
         tos_required=tos_required,
     )
-    custom_form = get_registration_extension_form(data=params)
+    custom_form = get_profile_extension_form(data=params)
     is_marketable = params.get('marketing_emails_opt_in') in ['true', '1']
 
     # Perform operations within a transaction that are critical to account creation
@@ -475,7 +475,7 @@ def _skip_activation_email(user, running_pipeline, third_party_provider):
         )
 
     return (
-        settings.FEATURES.get('SKIP_EMAIL_VALIDATION', None) or
+        getattr(settings, 'SKIP_EMAIL_VALIDATION', False) or
         settings.AUTOMATIC_AUTH_FOR_TESTING or
         (third_party_provider and third_party_provider.skip_email_verification and valid_email)
     )

@@ -3,7 +3,6 @@
 
 import json
 
-from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -90,10 +89,7 @@ class TestOrganizationsForLibraries(TestCase):
 
     @override_settings(
         ENABLE_CREATOR_GROUP=False,
-        FEATURES={
-            **settings.FEATURES,
-            'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': False,
-        },
+        ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=False,
     )
     def test_both_toggles_disabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
@@ -101,10 +97,7 @@ class TestOrganizationsForLibraries(TestCase):
 
     @override_settings(
         ENABLE_CREATOR_GROUP=True,
-        FEATURES={
-            **settings.FEATURES,
-            'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': True,
-        },
+        ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=True,
     )
     def test_both_toggles_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
@@ -112,10 +105,7 @@ class TestOrganizationsForLibraries(TestCase):
 
     @override_settings(
         ENABLE_CREATOR_GROUP=False,
-        FEATURES={
-            **settings.FEATURES,
-            'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': True,
-        },
+        ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=True,
     )
     def test_org_staff_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)
@@ -123,10 +113,7 @@ class TestOrganizationsForLibraries(TestCase):
 
     @override_settings(
         ENABLE_CREATOR_GROUP=True,
-        FEATURES={
-            **settings.FEATURES,
-            'ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES': False,
-        },
+        ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES=False,
     )
     def test_creator_group_enabled(self):
         allowed_orgs = get_allowed_organizations_for_libraries(self.library_author)

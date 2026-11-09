@@ -335,11 +335,11 @@ if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):  # noqa: F405
     from .private import *  # pylint: disable=import-error,wildcard-import  # noqa: F403
 
 ############## Authoring API drf-spectacular openapi settings ##############
-# These fields override the spectacular settings default values.
-# Any fields not included here will use the default values.
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Authoring API',
-    'DESCRIPTION': f'''Experimental API to edit xblocks and course content.
+# The rest of SPECTACULAR_SETTINGS, the hooks included, is defined once in
+# common.py. DESCRIPTION and SERVERS are set again here because production.py
+# built them from its own CMS_BASE and LMS_ROOT_URL, which this module changes.
+SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
+    f'''Experimental API to edit xblocks and course content.
     \n\nDanger: Do not use on running courses!
     \n\n - How to gain access: Please email the owners of this openedx service.
     \n - How to use: This API uses oauth2 authentication with the
@@ -351,17 +351,9 @@ SPECTACULAR_SETTINGS = {
     \n - Public vs. Local servers: The "Public" server is where you can reach the API externally. The "Local" server is
     for development with a local edx-platform version,  and for use via the
     [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
-    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)''',
-    'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    # restrict spectacular to CMS API endpoints (cms/lib/spectacular.py):
-    'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
-    # remove the default schema path prefix to replace it with server-specific base paths:
-    'SCHEMA_PATH_PREFIX': '/api/contentstore',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
-    'SERVERS': [
-        {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
-        {'url': f'http://{CMS_BASE}', 'description': 'Local'},
-        {'url': f'http://{CMS_BASE}/api/contentstore', 'description': 'CMS-contentstore'}
-    ],
-}
+    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)'''
+)
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
+    {'url': f'http://{CMS_BASE}', 'description': 'Local'},
+]

@@ -104,7 +104,7 @@ class SubsectionGradeFactory:
             )
             self._update_saved_subsection_grade(subsection.location, grade_model)
 
-            if settings.FEATURES.get('ENABLE_COURSE_ASSESSMENT_GRADE_CHANGE_SIGNAL'):
+            if settings.ENABLE_COURSE_ASSESSMENT_GRADE_CHANGE_SIGNAL:
                 COURSE_ASSESSMENT_GRADE_CHANGED.send(
                     sender=self,
                     course_id=self.course_data.course_key,

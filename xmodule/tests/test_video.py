@@ -899,9 +899,7 @@ class VideoExportTestCase(VideoBlockTestBase):
 
 
 @ddt.ddt
-@patch.object(settings, 'FEATURES', create=True, new={
-    'FALLBACK_TO_ENGLISH_TRANSCRIPTS': False,
-})
+@patch.object(settings, 'FALLBACK_TO_ENGLISH_TRANSCRIPTS', False)
 class VideoBlockStudentViewDataTestCase(unittest.TestCase):
     """
     Make sure that VideoBlock returns the expected student_view_data.
@@ -1023,10 +1021,8 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
         }
     }
 })
-@patch.object(settings, 'FEATURES', create=True, new={
-    # The default value in {lms,cms}/envs/common.py and xmodule/tests/test_video.py should be consistent.
-    'FALLBACK_TO_ENGLISH_TRANSCRIPTS': True,
-})
+# The default value in openedx/envs/common.py and xmodule/tests/test_video.py should be consistent.
+@patch.object(settings, 'FALLBACK_TO_ENGLISH_TRANSCRIPTS', True)
 class VideoBlockIndexingTestCase(unittest.TestCase):
     """
     Make sure that VideoBlock can format data for indexing as expected.

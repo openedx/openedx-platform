@@ -577,11 +577,10 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         assert len(items_in_tree) == expected_items_in_tree
 
     # split:
-    #    mysql: SplitModulestoreCourseIndex - select 2x (by course_id, by objectid), update, update historical record,
-    #           check CONTENT_TAGGING_AUTO CourseWaffleFlag
+    #    mysql: SplitModulestoreCourseIndex - select 2x (by course_id, by objectid), update, update historical record
     #    find: definitions (calculator field), structures
     #    sends: 2 sends to update index & structure (note, it would also be definition if a content field changed)
-    @ddt.data((ModuleStoreEnum.Type.split, 4, 2, 2))
+    @ddt.data((ModuleStoreEnum.Type.split, 3, 2, 2))
     @ddt.unpack
     def test_update_item(self, default_ms, num_mysql, max_find, max_send):
         """
@@ -1110,10 +1109,11 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
     # Split
     #   mysql: SplitModulestoreCourseIndex - select 2x (by course_id, by objectid), update, update historical record,
-    #          check CONTENT_TAGGING_AUTO CourseWaffleFlag
+    #          delete tags (+ BEGIN + COMMIT), check LTI consumer config (+ BEGIN + COMMIT), check LTI passport
+    #          (+ BEGIN + COMMIT)
     #   Find: active_versions, 2 structures (published & draft), definition (unnecessary)
     #   Sends: updated draft and published structures and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 11, 2, 3))
+    @ddt.data((ModuleStoreEnum.Type.split, 13, 2, 3))
     @ddt.unpack
     def test_delete_item(self, default_ms, num_mysql, max_find, max_send):
         """
@@ -1133,10 +1133,11 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
     # Split:
     #    mysql: SplitModulestoreCourseIndex - select 2x (by course_id, by objectid), update, update historical record,
-    #           check CONTENT_TAGGING_AUTO CourseWaffleFlag
+    #           delete tags (+ BEGIN + COMMIT), check LTI consumer config (+ BEGIN + COMMIT), check LTI passport
+    #           (+ BEGIN + COMMIT)
     #    find: draft and published structures, definition (unnecessary)
     #    sends: update published (why?), draft, and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 11, 3, 3))
+    @ddt.data((ModuleStoreEnum.Type.split, 13, 3, 3))
     @ddt.unpack
     def test_delete_private_vertical(self, default_ms, num_mysql, max_find, max_send):
         """
@@ -1183,10 +1184,11 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
     # Split:
     #   mysql: SplitModulestoreCourseIndex - select 2x (by course_id, by objectid), update, update historical record,
-    #          check CONTENT_TAGGING_AUTO CourseWaffleFlag
+    #          delete tags (+ BEGIN + COMMIT), check LTI consumer config (+ BEGIN + COMMIT), check LTI passport
+    #          (+ BEGIN + COMMIT)
     #   find: structure (cached)
     #   send: update structure and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 11, 1, 2))
+    @ddt.data((ModuleStoreEnum.Type.split, 13, 1, 2))
     @ddt.unpack
     def test_delete_draft_vertical(self, default_ms, num_mysql, max_find, max_send):
         """

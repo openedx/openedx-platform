@@ -58,6 +58,14 @@ Tutor also features a `development mode`_ which will also help you modify,
 test, and extend openedx-platform. We recommend this method for all Open edX
 developers.
 
+.. note::
+
+   **Experimental:** We are trialing a new bare-metal development workflow based
+   on a dedicated ``development.py`` settings module that builds directly on
+   ``common.py`` and uses ``local.openedx.io`` domains. It is not yet the
+   recommended default, but you can try it by following `Using the development.py
+   settings`_.
+
 Bare Metal (Advanced)
 =====================
 
@@ -99,12 +107,12 @@ Language Packages:
 
 * Backend build:
 
-  - ``pip install -r requirements/edx/assets.txt``
+  - ``uv sync --no-default-groups --only-group assets``
 
 * Backend application:
 
-  - ``pip install -r requirements/edx/base.txt`` (production)
-  - ``pip install -r requirements/edx/development.txt`` (development)
+  - ``uv sync --no-default-groups --group bundled`` (production)
+  - ``uv sync --group development --group ci`` (development, i.e. ``make dev-requirements``)
 
   Some Python packages have system dependencies. For example, installing these packages on Debian or Ubuntu will require first running ``sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config`` to satisfy the requirements of the ``mysqlclient`` Python package.
 
@@ -200,6 +208,7 @@ A full list of the MFEs expected to run by default are listed below.
 .. _Learner Home MFE: https://github.com/openedx/frontend-app-learner-dashboard
 .. _Learning MFE: https://github.com/openedx/frontend-app-learning/
 .. _Authoring MFE: https://github.com/openedx/frontend-app-authoring/
+.. _Using the development.py settings: ./docs/how-tos/using_development_settings.rst
 
 Expected MFEs and Default Ports
 -------------------------------

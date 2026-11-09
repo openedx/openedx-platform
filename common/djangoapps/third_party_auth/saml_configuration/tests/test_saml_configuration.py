@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.models import SAMLConfiguration
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 SAML_CONFIGURATIONS = [
     {
@@ -43,7 +43,7 @@ PRIV_CONFIGURATIONS = [
 TEST_PASSWORD = 'testpwd'
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 class SAMLConfigurationTests(APITestCase):
     """
     API Tests for SAMLConfiguration objects retrieval.

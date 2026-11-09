@@ -27,4 +27,5 @@ class ReportType(StrEnum):
     ORA2_SUBMISSION_FILES = "ora2_submission_files"
     ISSUED_CERTIFICATES = "issued_certificates"
     COHORT_RESULTS = "cohort_results"
+    PROCTORED_EXAM_RESULTS = "proctored_exam_results"
     UNKNOWN = "unknown"

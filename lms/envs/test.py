@@ -400,7 +400,6 @@ LOGIN_AND_REGISTER_FORM_RATELIMIT = '5/5m'
 CORS_ORIGIN_WHITELIST = ['https://sandbox.edx.org']
 
 ################## MFE API ####################
-ENABLE_MFE_CONFIG_API = True
 MFE_CONFIG = {
     "BASE_URL": "https://name_of_mfe.example.com",
     "LANGUAGE_PREFERENCE_COOKIE_NAME": "example-language-preference",

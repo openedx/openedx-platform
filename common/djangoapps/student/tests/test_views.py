@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import ddt
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
 from django.conf import settings
+from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
@@ -27,7 +28,7 @@ from common.djangoapps.entitlements.tests.factories import CourseEntitlementFact
 from common.djangoapps.student.helpers import DISABLE_UNENROLL_CERT_STATES
 from common.djangoapps.student.models import CourseEnrollment, UserProfile
 from common.djangoapps.student.signals import REFUND_ORDER
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from common.djangoapps.student.tests.factories import TEST_PASSWORD, CourseEnrollmentFactory, UserFactory
 from common.djangoapps.student.views.dashboard import check_for_unacknowledged_notices
 from common.djangoapps.util.milestones_helpers import (
     get_course_milestones,
@@ -192,10 +193,8 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
     EMAIL_SETTINGS_ELEMENT_ID = "#actions-item-email-settings-0"
     ENABLED_SIGNALS = ['course_published']
     MOCK_SETTINGS = {
-        'FEATURES': {
-            'DISABLE_START_DATES': False,
-            'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
-        },
+        'DISABLE_START_DATES': False,
+        'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
         'SOCIAL_SHARING_SETTINGS': {
             'CUSTOM_COURSE_URLS': True,
             'DASHBOARD_FACEBOOK': True,
@@ -203,10 +202,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         },
     }
     MOCK_SETTINGS_HIDE_COURSES = {
-        'FEATURES': {
-            'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED': True,
-            'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
-        }
+        'DISABLE_SET_JWT_COOKIES_FOR_TESTS': True,
     }
 
     def setUp(self):
@@ -599,6 +595,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         response = self.client.get(self.path)
         assert pq(response.content)(self.EMAIL_SETTINGS_ELEMENT_ID).length == 0
 
+    @override_settings(HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED=True)
     @patch.multiple('django.conf.settings', **MOCK_SETTINGS_HIDE_COURSES)
     def test_hide_dashboard_courses_until_activated(self):
         """
@@ -1013,7 +1010,11 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
 
 
 @skip_unless_lms
-@unittest.skipUnless(settings.FEATURES.get("ENABLE_NOTICES"), 'Notices plugin is not enabled')
+# TODO: It seems like ENABLE_NOTICES does not exist on the backend at all. There's a
+# frontend config flag called ENABLE_NOTICES, but it's unaffected by anything on the
+# backend. We should remove this skipUnless and the override_settings calls, and get
+# then get these tests to pass as-is.
+@unittest.skipUnless(getattr(settings, "ENABLE_NOTICES", False), 'Notices plugin is not enabled')
 class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
     """
     Tests for the Dashboard redirect functionality introduced via the Notices plugin.
@@ -1088,7 +1089,7 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = reverse("root")
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
+        with override_settings(ENABLE_NOTICES=True):
             response = self.client.get(self.path)
 
         assert response.status_code == 302
@@ -1103,7 +1104,7 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = None
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': True}):
+        with override_settings(ENABLE_NOTICES=True):
             response = self.client.get(self.path)
 
         assert response.status_code == 200
@@ -1116,8 +1117,43 @@ class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
         """
         mock_notices.return_value = None
 
-        with override_settings(FEATURES={**settings.FEATURES, 'ENABLE_NOTICES': False}):
+        with override_settings(ENABLE_NOTICES=False):
             response = self.client.get(self.path)
 
         assert response.status_code == 200
         mock_notices.assert_not_called()
+
+
+@ddt.ddt
+@skip_unless_lms
+@patch('common.djangoapps.student.views.management.log')
+class ChangeEmailSettingsLogTest(TestCase):
+    """
+    The change_email_settings logs identify the user by id, without username or email, when
+    SQUELCH_PII_IN_LOGS is enabled.
+    """
+
+    COURSE_ID = 'course-v1:edX+Demo+2026'
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        assert self.client.login(username=self.user.username, password=TEST_PASSWORD)
+
+    @ddt.data(
+        (True, True, 'User %s opted in to receive emails from course %s'),
+        (False, True, 'User %s opted in to receive emails from course %s'),
+        (True, False, 'User %s opted out of receiving emails from course %s'),
+        (False, False, 'User %s opted out of receiving emails from course %s'),
+    )
+    @ddt.unpack
+    def test_log_squelches_pii(self, squelch_pii, receive_emails, message, mock_log):
+        data = {'course_id': self.COURSE_ID}
+        if receive_emails:
+            data['receive_emails'] = 'on'
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            response = self.client.post(reverse('change_email_settings'), data)
+
+        assert response.status_code == 200
+        expected_identifier = self.user.id if squelch_pii else f'{self.user.username} ({self.user.email})'
+        mock_log.info.assert_called_once_with(message, expected_identifier, self.COURSE_ID)

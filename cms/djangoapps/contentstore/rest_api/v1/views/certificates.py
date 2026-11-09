@@ -1,8 +1,9 @@
 """ API Views for course certificates """
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES
+from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES, COURSES_VIEW_CERTIFICATES
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,17 +22,17 @@ class CourseCertificatesView(DeveloperErrorViewMixin, APIView):
     View for course certificate page.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                "course_id", apidocs.ParameterLocation.PATH, description="Course ID"
+            OpenApiParameter(
+                "course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"
             ),
         ],
         responses={
             200: CourseCertificatesSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
@@ -85,7 +86,8 @@ class CourseCertificatesView(DeveloperErrorViewMixin, APIView):
             "mfe_proctored_exam_settings_url": "",
             "course_number": "DemoX",
             "course_title": "Demonstration Course",
-            "course_number_override": "Course Number Display String"
+            "course_number_override": "Course Number Display String",
+            "can_manage": true
         }
         ```
         """
@@ -94,14 +96,22 @@ class CourseCertificatesView(DeveloperErrorViewMixin, APIView):
 
         if not user_has_course_permission(
             request.user,
+            COURSES_VIEW_CERTIFICATES.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ
+        ):
+            self.permission_denied(request)
+
+        can_manage = user_has_course_permission(
+            request.user,
             COURSES_MANAGE_CERTIFICATES.identifier,
             course_key,
             LegacyAuthoringPermission.WRITE
-        ):
-            self.permission_denied(request)
+        )
 
         with store.bulk_operations(course_key):
             course = modulestore().get_course(course_key)
             certificates_context = get_certificates_context(course, request.user)
+            certificates_context['can_manage'] = can_manage
             serializer = CourseCertificatesSerializer(certificates_context)
             return Response(serializer.data)

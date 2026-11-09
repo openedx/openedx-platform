@@ -23,6 +23,7 @@ from common.djangoapps.student.models import (
     UNENROLLED_TO_UNENROLLED,
     EnrollStatusChange,
 )
+from common.djangoapps.student.models.course_enrollment import EnrollmentNotAllowed
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.instructor.enrollment import EmailEnrollmentState
 from lms.djangoapps.instructor.utils import (
@@ -234,6 +235,56 @@ class TestProcessSingleStudentEnrollment(TestCase):
         self.assertEqual(  # noqa: PT009
             result["error_message"],
             "Something went wrong while processing this learner. Please try again or contact support.",
+        )
+
+    @patch("lms.djangoapps.instructor.utils.enroll_email")
+    def test_process_single_student_enrollment_not_allowed(self, mock_enroll_email: Mock):
+        """Test enrollment blocked by a pipeline filter that raises EnrollmentNotAllowed."""
+        mock_enroll_email.side_effect = EnrollmentNotAllowed("Enrollment requires NIF verification.")
+
+        result = process_single_student_enrollment(
+            request_user=self.request_user,
+            course_key=self.course_key,
+            action=EnrollStatusChange.enroll,
+            identifier=self.user.email,
+            auto_enroll=False,
+            email_students=True,
+            reason="Test enrollment",
+            email_params=self.email_params,
+        )
+
+        self.assertFalse(result["success"])  # noqa: PT009
+        self.assertEqual(result["identifier"], self.user.email)  # noqa: PT009
+        self.assertTrue(result["error"])  # noqa: PT009
+        self.assertEqual(result["error_type"], "enrollment_not_allowed")  # noqa: PT009
+        self.assertEqual(result["error_message"], "Enrollment requires NIF verification.")  # noqa: PT009
+
+    @patch("lms.djangoapps.instructor.utils.enroll_email")
+    def test_process_single_student_enrollment_validation_error_during_enrollment(
+        self, mock_enroll_email: Mock
+    ):
+        """Test enrollment blocked by ValidationError raised during enrollment (not email format)."""
+        error = ValidationError(["This email is not allowed to enroll in this course."])
+        mock_enroll_email.side_effect = error
+
+        result = process_single_student_enrollment(
+            request_user=self.request_user,
+            course_key=self.course_key,
+            action=EnrollStatusChange.enroll,
+            identifier=self.user.email,
+            auto_enroll=False,
+            email_students=True,
+            reason="Test enrollment",
+            email_params=self.email_params,
+        )
+
+        self.assertFalse(result["success"])  # noqa: PT009
+        self.assertEqual(result["identifier"], self.user.email)  # noqa: PT009
+        self.assertTrue(result["error"])  # noqa: PT009
+        self.assertEqual(result["error_type"], "validation_error")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
+            result["error_message"],
+            "This email is not allowed to enroll in this course.",
         )
 
 

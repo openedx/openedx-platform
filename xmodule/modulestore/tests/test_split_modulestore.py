@@ -18,6 +18,7 @@ from django.core.cache import InvalidCacheBackendError, caches
 from opaque_keys.edx.locator import BlockUsageLocator, CourseKey, CourseLocator, LocalId
 from xblock.fields import Date, Reference, ReferenceList, ReferenceValueDict, Timedelta
 
+from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin
 from openedx.core.lib import tempdir
 from openedx.core.lib.tests import attr
@@ -1642,6 +1643,52 @@ class TestCourseCreation(SplitModuleTest):
         assert new_course.edited_by == TEST_USER_ID
         assert len(new_course.grading_policy['GRADER']) == 4
         self.assertDictEqual(new_course.grade_cutoffs, {"Pass": 0.5})  # noqa: PT009
+
+    def test_creation_recovers_from_orphaned_mongo_index(self):
+        """
+        Creating a course must succeed even if MongoDB's active_versions still holds a doc for that
+        org/course/run while MySQL has no SplitModulestoreCourseIndex row.
+
+        This state arises whenever an earlier attempt to create the course wrote the MongoDB doc and then
+        had its MySQL transaction rolled back -- MongoDB writes are not covered by ATOMIC_REQUESTS. MySQL is
+        the source of truth for which courses exist, so `has_course()` reports the course as absent and
+        creation is attempted again. Before this was fixed, the follower write to MongoDB used insert_one()
+        and raised DuplicateKeyError against the UNIQUE(org, course, run) index on active_versions, so the
+        course could never be created again -- every retry failed identically, and the rollback left no
+        MySQL trace to explain why.
+        """
+        store = modulestore()
+        # Provision the UNIQUE(org, course, run) index on active_versions that deployments get from the
+        # `ensure_indexes` management command. Without it MongoDB silently accepts a second doc for the
+        # same course instead of raising, which is not the behaviour we need to guard against here.
+        store.ensure_indexes()
+        org, course, run = 'orphan_org', 'orphan_course', 'orphan_run'
+        created = store.create_course(org, course, run, TEST_USER_ID, BRANCH_NAME_DRAFT)
+        course_key = created.location.course_key
+
+        # Simulate the rolled-back request: drop only the MySQL row, leaving the MongoDB doc orphaned.
+        # Deliberately bypasses delete_course_index(), which would clear both stores.
+        SplitModulestoreCourseIndex.objects.filter(
+            course_id=course_key.for_branch(None).version_agnostic()
+        ).delete()
+        db_connection = store.db_connection
+        mongo_query = {'org': org, 'course': course, 'run': run}
+        assert db_connection.course_index.count_documents(mongo_query) == 1, "expected an orphaned Mongo doc"
+        assert store.has_course(CourseLocator(org, course, run)) is None, "MySQL should report absence"
+
+        # Creating the course again must now succeed rather than raising DuplicateKeyError.
+        recreated = store.create_course(org, course, run, TEST_USER_ID, BRANCH_NAME_DRAFT)
+        recreated_key = recreated.location.course_key
+
+        # The stale doc is replaced, not duplicated, and the two stores agree again.
+        assert db_connection.course_index.count_documents(mongo_query) == 1
+        mongo_doc = db_connection.course_index.find_one(mongo_query)
+        mysql_row = SplitModulestoreCourseIndex.objects.get(
+            course_id=recreated_key.for_branch(None).version_agnostic()
+        )
+        assert str(mongo_doc['_id']) == mysql_row.objectid
+        assert mongo_doc['versions'][BRANCH_NAME_DRAFT] == \
+            store.get_course_index_info(recreated_key)['versions'][BRANCH_NAME_DRAFT]
 
     def test_cloned_course(self):
         """

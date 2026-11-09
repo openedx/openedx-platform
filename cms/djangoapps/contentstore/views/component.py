@@ -15,6 +15,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_GET
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from xblock.core import XBlock
 from xblock.django.request import django_to_webob_request, webob_to_django_response
 from xblock.exceptions import NoSuchHandlerError
@@ -22,12 +23,14 @@ from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
 from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
-from cms.djangoapps.contentstore.toggles import libraries_v1_enabled, libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.toggles import libraries_v2_enabled, use_new_unit_page
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.xblock_django.api import authorable_xblocks, disabled_xblocks
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content_tagging.api import get_object_tags
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
@@ -49,7 +52,6 @@ COMPONENT_TYPES = [
     'problem',
     'itembank',
     'library_v2',  # Not an XBlock
-    'library',
     'discussion',
     'openassessment',
     'drag-and-drop-v2',
@@ -275,7 +277,6 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
         'problem': _("Problem"),
         'video': _("Video"),
         'openassessment': _("Open Response"),
-        'library': _("Legacy Library"),
         'library_v2': _("Library Content"),
         'itembank': _("Problem Bank"),
         'drag-and-drop-v2': _("Drag and Drop"),
@@ -287,10 +288,9 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
     # by the components in the order listed in COMPONENT_TYPES.
     component_types = COMPONENT_TYPES[:]
 
-    # Libraries do not support discussions, drag-and-drop, and openassessment and other libraries
+    # Libraries do not support discussions, drag-and-drop, openassessment, and library_v2/itembank
     component_not_supported_by_library = [
         'discussion',
-        'library',
         'openassessment',
         'drag-and-drop-v2',
         'library_v2',
@@ -314,7 +314,7 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
         templates_for_category = []
         component_class = _load_mixed_class(category)
 
-        if support_level_without_template and category not in ['library']:
+        if support_level_without_template:
             # add the default template with localized display name
             # TODO: Once mixins are defined per-application, rather than per-runtime,
             # this should use a cms mixed-in class. (cpennington)
@@ -394,37 +394,6 @@ def get_component_templates(courselike, library=False):  # pylint: disable=too-m
                                 advanced_component_support_level,
                                 boilerplate_name,
                                 'advanced'
-                            )
-                        )
-                        categories.add(component)
-
-        # Add library block types.
-        if category == 'library' and not library:
-            disabled_block_names = [block.name for block in disabled_xblocks()]
-            library_block_types = [problem_type for problem_type in LIBRARY_BLOCK_TYPES
-                                   if problem_type['component'] not in disabled_block_names]
-            for library_block_type in library_block_types:
-                component = library_block_type['component']
-                boilerplate_name = library_block_type['boilerplate_name']
-                authorable_variations = authorable_xblocks(allow_unsupported=allow_unsupported, name=component)
-                library_component_support_level = component_support_level(
-                    authorable_variations, component, boilerplate_name
-                )
-                if library_component_support_level:
-                    try:
-                        component_display_name = xblock_type_display_name(component, default_display_name=component)
-                    except PluginMissingError:
-                        log.warning(
-                            "Unable to load xblock type %s to read display_name",
-                            component
-                        )
-                    else:
-                        templates_for_category.append(
-                            create_template_dict(
-                                component_display_name,
-                                component,
-                                library_component_support_level,
-                                boilerplate_name
                             )
                         )
                         categories.add(component)
@@ -513,8 +482,6 @@ def _filter_disabled_blocks(all_blocks):
     Filter out disabled xblocks from the provided list of xblock names.
     """
     disabled_block_names = [block.name for block in disabled_xblocks()]
-    if not libraries_v1_enabled():
-        disabled_block_names.append('library')
     if not libraries_v2_enabled():
         disabled_block_names.append('library_v2')
         disabled_block_names.append('itembank')
@@ -527,7 +494,11 @@ def _get_item_in_course(request, usage_key):
     Helper method for getting the old location, containing course,
     item, lms_link, and preview_lms_link for a given locator.
 
-    Verifies that the caller has permission to access this item.
+    Verifies that the caller has permission to view this item. All current callers
+    (container_handler, container_embed_handler, xblock_edit_view, and the REST API v1
+    ContainerHandlerView) are read-only, so this only requires view access, not write
+    access — actual mutations are gated separately (e.g. component_handler's own
+    has_course_author_access check before persisting).
     """
 
     from ..utils import get_lms_link_for_item
@@ -537,7 +508,12 @@ def _get_item_in_course(request, usage_key):
 
     course_key = usage_key.course_key
 
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        request.user,
+        COURSES_VIEW_COURSE.identifier,
+        course_key,
+        LegacyAuthoringPermission.READ,
+    ):
         raise PermissionDenied()
 
     course = modulestore().get_course(course_key)

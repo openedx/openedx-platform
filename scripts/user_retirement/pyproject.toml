@@ -1,0 +1,52 @@
+[project]
+name = "edx-platform-user-retirement-scripts"
+version = "0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3",
+    "click",
+    "pyyaml",
+    "backoff",
+    "requests",
+    "edx-rest-api-client",
+    "jenkinsapi",
+    "unicodecsv",
+    "simplejson",
+    "simple-salesforce",
+    "google-api-python-client",
+]
+
+[dependency-groups]
+test = [
+    "moto",
+    "pytest",
+    "requests_mock",
+    "responses",
+    "mock",
+    "ddt",
+    "urllib3",
+]
+
+[tool.uv]
+# This isn't installed as a package itself -- it's just a locked dependency
+# set for running the standalone scripts in this directory.
+package = false
+#  DO NOT EDIT constraint-dependencies DIRECTLY.
+#  This list is managed by `edx_lint write_uv_constraints`
+#  and will be overwritten the next time `make upgrade` is run.
+#  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
+#  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+    "lxml==5.3.2",
+]
+[tool.edx_lint]
+# Adding pin to avoid any major upgrade -- see the root pyproject.toml's
+# [tool.edx_lint].uv_constraints for the full rationale.
+uv_constraints = [
+    "lxml==5.3.2",
+]

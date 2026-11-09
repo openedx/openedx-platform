@@ -131,7 +131,7 @@ class CourseTeamIndexer:
         """
         Return boolean of whether course team indexing is enabled.
         """
-        return settings.FEATURES.get(cls.ENABLE_SEARCH_KEY, False)
+        return getattr(settings, cls.ENABLE_SEARCH_KEY, False)
 
 
 @receiver(post_save, sender=CourseTeam, dispatch_uid='teams.signals.course_team_post_save_callback')

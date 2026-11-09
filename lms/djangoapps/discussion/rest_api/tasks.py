@@ -5,7 +5,6 @@ import logging
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
-from edx_django_utils.monitoring import set_code_owner_attribute
 from eventtracking import tracker
 from forum import api as forum_api
 from opaque_keys.edx.locator import CourseKey
@@ -25,7 +24,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task
-@set_code_owner_attribute
 def send_thread_created_notification(thread_id, course_key_str, user_id, notify_all_learners=False):
     """
     Send notification when a new thread is created
@@ -49,7 +47,6 @@ def send_thread_created_notification(thread_id, course_key_str, user_id, notify_
 
 
 @shared_task
-@set_code_owner_attribute
 def send_response_notifications(thread_id, course_key_str, user_id, comment_id, parent_id=None):
     """
     Send notifications to users who are subscribed to the thread.
@@ -68,7 +65,6 @@ def send_response_notifications(thread_id, course_key_str, user_id, comment_id, 
 
 
 @shared_task
-@set_code_owner_attribute
 def send_response_endorsed_notifications(thread_id, response_id, course_key_str, endorsed_by):
     """
     Send notifications when a response is marked answered/ endorsed
@@ -93,7 +89,6 @@ def send_response_endorsed_notifications(thread_id, response_id, course_key_str,
 
 
 @shared_task
-@set_code_owner_attribute
 def delete_course_post_for_user(user_id, username, course_ids, event_data=None):
     """
     Deletes all posts for user in a course.

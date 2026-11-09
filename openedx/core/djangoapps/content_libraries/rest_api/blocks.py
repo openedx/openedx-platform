@@ -3,13 +3,13 @@ Content Library REST APIs related to XBlocks/Components and their static assets
 """
 from uuid import UUID
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission_for_upstream
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.rest_api import serializers
 from openedx.core.djangoapps.xblock import api as xblock_api
@@ -40,17 +41,19 @@ class LibraryBlocksView(GenericAPIView):
     """
     serializer_class = serializers.LibraryXBlockMetadataSerializer
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
             *LibraryApiPaginationDocs.apidoc_params,
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'text_search',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The string used to filter libraries by searching in title, id, org, or description",
             ),
-            apidocs.query_parameter(
+            OpenApiParameter(
                 'block_type',
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="The block type to search for. If omitted or blank, searches for all types. "
                             "May be specified multiple times to match multiple types."
             )
@@ -76,9 +79,9 @@ class LibraryBlocksView(GenericAPIView):
         return self.get_paginated_response(serializer.data)
 
     @convert_exceptions
-    @swagger_auto_schema(
-        request_body=serializers.LibraryXBlockCreationSerializer,
-        responses={200: serializers.LibraryXBlockMetadataSerializer}
+    @extend_schema(
+        request=serializers.LibraryXBlockCreationSerializer,
+        responses={200: serializers.LibraryXBlockMetadataSerializer},
     )
     def post(self, request, lib_key_str):
         """
@@ -120,7 +123,10 @@ class LibraryBlockView(APIView):
         versioning.
         """
         key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        if not user_has_course_permission_for_upstream(
+            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, key
+        ):
+            api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
         result = api.get_library_block(key, include_collections=True)
 
         return Response(self.serializer_class(result).data)

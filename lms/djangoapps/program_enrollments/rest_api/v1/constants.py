@@ -12,10 +12,6 @@ MAX_ENROLLMENT_RECORDS = 25
 # The name of the key that identifies students for POST/PATCH requests
 REQUEST_STUDENT_KEY = 'student_key'
 
-# This flag should only be enabled on sandboxes.
-# It enables the endpoint that wipes all program enrollments.
-ENABLE_ENROLLMENT_RESET_FLAG = 'ENABLE_ENROLLMENT_RESET'
-
 
 class CourseRunProgressStatuses:
     """

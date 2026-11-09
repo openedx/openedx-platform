@@ -4,6 +4,7 @@ from tempfile import NamedTemporaryFile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.test import override_settings
 from testfixtures import LogCapture
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -135,3 +136,24 @@ class BulkUnenrollTests(SharedModuleStoreTestCase):
                     )
                 ),
             )
+
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
+    def test_users_unenroll_logged_with_user_id_when_squelching_pii(self):
+        """Verify unenrolled users are logged by user id, not username, when PII is squelched."""
+        user = self.enrollments[0].user
+        lines = "username,course_id\n"
+        lines += user.username + "," + str(self.enrollments[0].course.id) + "\n"
+        csv_file = SimpleUploadedFile(name='test.csv', content=lines.encode('utf-8'), content_type='text/csv')
+        BulkUnenrollConfiguration.objects.create(enabled=True, csv_file=csv_file)
+
+        with LogCapture(LOGGER_NAME) as log:
+            call_command("bulk_unenroll", "--commit")
+            log.check_present(
+                (
+                    LOGGER_NAME,
+                    'INFO',
+                    f'User [{user.id}] have been successfully unenrolled from the course: '
+                    f'{self.enrollments[0].course.id}',
+                ),
+            )
+            assert all(user.username not in record.getMessage() for record in log.records)
