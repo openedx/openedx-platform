@@ -295,23 +295,16 @@ def set_exported_object_tags(
     exported_tags: TagValuesByTaxonomyIdDict,
 ) -> None:
     """
-    Replaces the tags of the given content object with the tags from an export, keeping what archiving hides.
+    Replace the object's tags with the tags from an export, keeping what archiving hides.
 
-    ``exported_tags`` maps a taxonomy export id to the list of tag values for that taxonomy.
-
-    This clears only the associations that ``ObjectTag.objects.unarchived()`` returns. An archived association, and an
-    association whose tag or taxonomy is archived, is kept. A deletion-locked association is archived instead of
-    deleted. To clear every association of the object, archiving the deletion-locked ones, call
-    ``delete_object_tags`` instead.
-
-    For a live or disabled taxonomy, the object is tagged with the given values. An archived taxonomy is skipped and
-    logged, with no placeholder association and no event. A taxonomy that does not exist on this instance gets
-    placeholder associations, which a later import of that taxonomy can link to it.
+    ``exported_tags`` maps a taxonomy export id to that taxonomy's tag values. Only the associations that
+    ``ObjectTag.objects.unarchived()`` returns are cleared, and a deletion-locked one is archived instead of deleted.
+    Tags from an archived taxonomy are skipped and logged. Tags from a taxonomy that does not exist on this instance
+    become placeholder associations, as before. ``delete_object_tags`` clears everything.
     """
     content_key_str = str(content_key)
 
-    # Clear the associations that archiving does not hide. An archived association, or one under an archived tag
-    # or taxonomy, is left alone. The queryset delete archives a deletion-locked row instead of deleting it.
+    # A queryset delete, so that a deletion-locked association is archived rather than deleted.
     ObjectTag.objects.filter(object_id=content_key_str).unarchived().delete()
 
     for taxonomy_export_id, tags_values in exported_tags.items():
@@ -319,17 +312,15 @@ def set_exported_object_tags(
             continue
 
         export_id = str(taxonomy_export_id)
-        # get_taxonomy_by_export_id() returns None for an archived taxonomy and a missing one alike. The two are
-        # handled differently below, so look the taxonomy up through the unfiltered manager to tell them apart.
+        # Unfiltered on purpose: get_taxonomy_by_export_id() hides archived taxonomies, which are handled below.
         taxonomy = Taxonomy.objects.filter(export_id=export_id).first()
         if taxonomy is not None and taxonomy.archived:
-            # A placeholder would be wrong here, because ObjectTag.resync() looks taxonomies up unfiltered and
-            # would re-link the placeholder to the archived taxonomy.
+            # No placeholder either: ObjectTag.resync() would re-link it to the archived taxonomy.
             log.info("Skipping tags %s for %s: taxonomy %s is archived", tags_values, content_key_str, export_id)
             continue
         oel_tagging.tag_object(
             object_id=content_key_str,
-            taxonomy=taxonomy,  # None for a missing taxonomy, so tag_object() creates placeholders.
+            taxonomy=taxonomy,
             tags=tags_values,
             create_invalid=True,
             taxonomy_export_id=export_id,
