@@ -1,9 +1,14 @@
 """
 Deprecated. Kept so deployments that still list CountryMiddleware in MIDDLEWARE keep starting.
 """
+import logging
 import warnings
 
 from django.core.exceptions import MiddlewareNotUsed
+
+log = logging.getLogger(__name__)
+
+_MIDDLEWARE_PATH = "openedx.core.djangoapps.geoinfo.middleware.CountryMiddleware"
 
 
 class CountryMiddleware:
@@ -18,4 +23,5 @@ class CountryMiddleware:
             DeprecationWarning,
             stacklevel=2,
         )
+        log.warning("%s is a deprecated no-op; remove it from MIDDLEWARE.", _MIDDLEWARE_PATH)
         raise MiddlewareNotUsed()
