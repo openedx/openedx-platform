@@ -548,6 +548,7 @@ function($, _, Backbone, gettext, BasePage,
                 if((blockType === 'html')
                         || (blockType === 'video')
                         || (blockType === 'problem')
+                        || (blockType === 'invideoquiz')
                         || (useNewPdfEditor === 'True' && blockType === 'pdf')
                 ) {
                     var destinationUrl = primaryHeader.attr('authoring_MFE_base_url')
