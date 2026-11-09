@@ -104,6 +104,8 @@ class CourseMetadataViewAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTes
             response = self._get(instructor)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data["error_code"] == "permission_denied"
+        assert response.data["developer_message"]
 
     @ddt.data(*constants.INSTRUCTOR_DASHBOARD_PERMISSIONS)
     def test_authz_any_dashboard_permission_grants_access(self, permission):
