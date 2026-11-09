@@ -266,6 +266,16 @@ def add_mailing_address_field(is_field_required=False):
     }
 
 
+def add_phone_number_field(is_field_required=False):
+    """Return the phone number field description."""
+    return {
+        'name': 'phone_number',
+        'type': SUPPORTED_FIELDS_TYPES['TEXT'],
+        'label': _("Phone number"),
+        'error_message': _("Enter your phone number") if is_field_required else '',
+    }
+
+
 def add_state_field(is_field_required=False):
     """
     Returns a State/Province/Region field description
