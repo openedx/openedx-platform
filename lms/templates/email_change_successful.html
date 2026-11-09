@@ -1,9 +1,10 @@
 <%page expression_filter="h"/>
 <%inherit file="main.html" />
 <%!
+from django.conf import settings
 from django.utils.translation import gettext as _
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.markup import HTML, Text
-from django.urls import reverse
 %>
 
 <section class="container activation">
@@ -12,8 +13,10 @@ from django.urls import reverse
     <h1 class="valid">${_("E-mail change successful!")}</h1>
     <hr class="horizontal-divider">
 
-    <p>${Text(_('You should see your new email in your {link_start}dashboard{link_end}.')).format(
-        link_start=HTML('<a href="{url}">').format(url=reverse('dashboard')),
+    <p>${Text(_('You should see your new email in your {link_start}account settings{link_end}.')).format(
+        link_start=HTML('<a href="{url}">').format(
+            url=configuration_helpers.get_value('ACCOUNT_MICROFRONTEND_URL', settings.ACCOUNT_MICROFRONTEND_URL),
+        ),
         link_end=HTML('</a>'),
       )}</p>
   </section>

@@ -3,7 +3,6 @@ Base integration test for provider implementations.
 """
 
 import json
-import unittest
 from contextlib import contextmanager
 from unittest import mock
 
@@ -31,6 +30,7 @@ from openedx.core.djangoapps.site_configuration.tests.factories import SiteFacto
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.core.djangoapps.user_authn.views.login_form import login_and_registration_form
 from openedx.core.djangoapps.user_authn.views.register import RegistrationView
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 def create_account(request):
@@ -575,9 +575,7 @@ class IntegrationTestMixin(testutil.TestCase, test.TestCase, HelperMixin):
         return reverse("social:complete", kwargs={"backend": self.PROVIDER_BACKEND})
 
 
-@unittest.skipUnless(
-    testutil.AUTH_FEATURES_KEY in django_settings.FEATURES, testutil.AUTH_FEATURES_KEY + " not in settings.FEATURES"
-)
+@skip_unless_lms
 @django_utils.override_settings()  # For settings reversion on a method-by-method basis.
 class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
     """Abstract base class for provider integration tests."""

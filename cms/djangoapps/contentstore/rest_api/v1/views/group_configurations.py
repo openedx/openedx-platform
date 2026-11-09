@@ -1,8 +1,9 @@
 """ API Views for course's settings group configurations """
 
-import edx_api_doc_tools as apidocs
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS
+from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS, COURSES_VIEW_GROUP_CONFIGURATIONS
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +11,7 @@ from rest_framework.views import APIView
 from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseGroupConfigurationsSerializer
 from cms.djangoapps.contentstore.utils import get_group_configurations_context
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import authz_permission_required
+from openedx.core.djangoapps.authz.decorators import authz_permission_required, user_has_course_permission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
@@ -21,22 +22,22 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
     View for course's settings group configurations.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                "course_id", apidocs.ParameterLocation.PATH, description="Course ID"
+            OpenApiParameter(
+                "course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"
             ),
         ],
         responses={
             200: CourseGroupConfigurationsSerializer,
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     @verify_course_exists()
     @authz_permission_required(
-        authz_permission=COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+        authz_permission=COURSES_VIEW_GROUP_CONFIGURATIONS.identifier,
         legacy_permission=LegacyAuthoringPermission.READ
     )
     def get(self, request: Request, course_key: CourseKey):
@@ -144,5 +145,11 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
         with store.bulk_operations(course_key):
             course = modulestore().get_course(course_key)
             group_configurations_context = get_group_configurations_context(course, store)
+            group_configurations_context['can_manage'] = user_has_course_permission(
+                request.user,
+                COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+                course_key,
+                LegacyAuthoringPermission.WRITE
+            )
             serializer = CourseGroupConfigurationsSerializer(group_configurations_context)
             return Response(serializer.data)

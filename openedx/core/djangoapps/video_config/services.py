@@ -175,7 +175,7 @@ class VideoConfigService:
         """
         translations = []
         if verify_assets is None:
-            verify_assets = not settings.FEATURES.get('FALLBACK_TO_ENGLISH_TRANSCRIPTS')
+            verify_assets = not settings.FALLBACK_TO_ENGLISH_TRANSCRIPTS
 
         sub, other_langs = transcripts["sub"], transcripts["transcripts"]
 

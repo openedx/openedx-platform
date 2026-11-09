@@ -6,13 +6,15 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
+from django.core import exceptions
 from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
-from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
-from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_learning.api import create_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging import rules as oel_tagging_rules
+from openedx_tagging.api import TagDoesNotExist, TaxonomyType
+from openedx_tagging.models import Taxonomy
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
 from rest_framework.decorators import action
@@ -24,13 +26,14 @@ from rest_framework.views import APIView
 from openedx.core.types.http import RestRequest
 
 from ...api import (
-    create_taxonomy,
+    InvalidOrgException,
     generate_csv_rows,
     get_taxonomies,
     get_taxonomies_for_org,
     get_taxonomy,
     get_unassigned_taxonomies,
     set_taxonomy_orgs,
+    tag_object,
 )
 from ...auth import has_view_object_tags_access, should_use_course_authz_for_object
 from ...rules import get_admin_orgs
@@ -50,7 +53,13 @@ if TYPE_CHECKING:
 class TaxonomyOrgView(TaxonomyView):
     """
     View to list, create, retrieve, update, delete, export or import Taxonomies.
-    This view extends the TaxonomyView to add Organization filters.
+
+    This view extends TaxonomyView in two ways: it adds Organization filters, and it owns the
+    choice of which kind of Taxonomy to create. perform_create() and the import path both
+    dispatch on the request's taxonomy_type -- "competency" creates a CompetencyTaxonomy
+    alongside the base Taxonomy, anything else creates a plain one -- since this is the layer
+    that can see both the tagging and competency-taxonomy domains, which TaxonomyView itself
+    cannot.
 
     Refer to TaxonomyView docstring for usage details.
 
@@ -97,14 +106,42 @@ class TaxonomyOrgView(TaxonomyView):
         # Annotate with tags_count to avoid selecting all the tags
         queryset = queryset.annotate(tags_count=Count("tag", distinct=True))
 
+        # Select the competency taxonomy relation (if any) so is_competency_taxonomy()
+        # costs no extra query per row when serializing taxonomy_type.
+        queryset = select_competency_taxonomies(queryset)
+
         return queryset
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer) -> None:
         """
-        Create a new taxonomy.
+        Create a new taxonomy (competency or tags).
         """
+        taxonomy_type = serializer.validated_data.pop("taxonomy_type", TaxonomyType.TAGS.value)
+        if taxonomy_type == TaxonomyType.COMPETENCY.value:
+            try:
+                serializer.instance = create_competency_taxonomy(**serializer.validated_data)
+            except exceptions.ValidationError as e:
+                raise ValidationError() from e
+        else:
+            super().perform_create(serializer)
         user_admin_orgs = get_admin_orgs(self.request.user)
-        serializer.instance = create_taxonomy(**serializer.validated_data, orgs=user_admin_orgs)
+        set_taxonomy_orgs(taxonomy=serializer.instance, all_orgs=False, orgs=user_admin_orgs)
+
+    def _create_taxonomy_for_import(self, validated_data: dict) -> Taxonomy:
+        """
+        Create a competency taxonomy if requested, otherwise defer to the base implementation.
+        """
+        taxonomy_type = validated_data.get("taxonomy_type", TaxonomyType.TAGS.value)
+        if taxonomy_type == TaxonomyType.COMPETENCY.value:
+            try:
+                return create_competency_taxonomy(
+                    name=validated_data["taxonomy_name"],
+                    description=validated_data["taxonomy_description"],
+                    export_id=validated_data.get("taxonomy_export_id"),
+                )
+            except exceptions.ValidationError as e:
+                raise ValidationError() from e
+        return super()._create_taxonomy_for_import(validated_data)
 
     @action(detail=False, url_path="import", methods=["post"])
     def create_import(self, request: RestRequest, **kwargs) -> Response:  # type: ignore
@@ -207,49 +244,25 @@ class ObjectTagOrgView(ObjectTagView):
             # Fall back to parent implementation
             super().ensure_has_view_object_tag_permission(user, taxonomy, object_id)
 
-    def ensure_user_has_can_tag_object_permissions(self, user, tags_data, object_id):
+    def _apply_updated_tags(self, data: dict, object_id: str):
         """
-        Check if user has permission to tag object for each taxonomy in tags_data.
-
-        This method is overridden to conditionally use openedx-authz when the toggle is enabled.
-
-        When using openedx-authz, if the user has manage tags permission for the course,
-        they can tag the object regardless of the taxonomy.
+        This overrides the helper method used by ObjectTagView.update() so that the tags are applied using this
+        platform's ``tag_object`` API, which only allows tagging with taxonomies that are enabled for the object's
+        organization, and which fires the CONTENT_OBJECT_ASSOCIATIONS_CHANGED / CONTENT_OBJECT_TAGS_CHANGED events.
         """
-        should_use_authz, course_key = self._authz_check
-        if should_use_authz and not authz_api.is_user_allowed(
-            user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
-        ):
-            raise PermissionDenied("You do not have permission to manage object tags.")
-        if not should_use_authz:
-            # Fall back to parent implementation
-            super().ensure_user_has_can_tag_object_permissions(user, tags_data, object_id)
-
-    def update(self, request, *args, **kwargs) -> Response:
-        """
-        Extend the update method to fire CONTENT_OBJECT_ASSOCIATIONS_CHANGED event
-        """
-        response = super().update(request, *args, **kwargs)
-        if response.status_code == 200:
-            object_id = kwargs.get('object_id')
-
-            # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-            # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-            CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-                content_object=ContentObjectChangedData(
-                    object_id=object_id,
-                    changes=["tags"],
-                )
-            )
-
-            # Emit a (deprecated) CONTENT_OBJECT_TAGS_CHANGED event too
-            # .. event_implemented_name: CONTENT_OBJECT_TAGS_CHANGED
-            # .. event_type: org.openedx.content_authoring.content.object.tags.changed.v1
-            CONTENT_OBJECT_TAGS_CHANGED.send_event(
-                content_object=ContentObjectData(object_id=object_id)
-            )
-
-        return response
+        # Tag object_id per taxonomy
+        for tag_data in data:
+            taxonomy = tag_data.get("taxonomy")
+            tags = tag_data.get("tags", [])
+            try:
+                # Call our `tag_object`, not oel_tagging's `tag_object`
+                tag_object(object_id, taxonomy, tags)
+            except InvalidOrgException as e:
+                raise ValidationError(e.messages) from e
+            except TagDoesNotExist as e:
+                raise ValidationError from e
+            except ValueError as e:
+                raise ValidationError from e
 
 
 class ObjectTagExportView(APIView):

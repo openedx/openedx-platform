@@ -14,7 +14,6 @@ from django.utils.translation import gettext as _
 from django.utils.translation import override as translation_override
 from edx_ace import ace
 from edx_ace.recipient import Recipient
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.models import (
@@ -338,7 +337,6 @@ def schedule_bulk_digest_emails(user_cadence_map):
 
 
 @shared_task(bind=True, ignore_result=True, max_retries=3, default_retry_delay=300)
-@set_code_owner_attribute
 def send_user_digest_email_task(self, user_id, cadence_type):
     """
     Delayed Celery task to send a digest email to a single user.
@@ -719,7 +717,6 @@ def add_to_existing_buffer(notification: Notification) -> None:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-@set_code_owner_attribute
 def send_buffered_digest(
     self,
     user_id: int,

@@ -9,7 +9,6 @@ from unittest.mock import patch
 import ddt
 import pytz
 from config_models.models import cache
-from django.conf import settings
 from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -553,7 +552,7 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
 
         with mock.patch(PASSING_GRADE_METHOD, return_value=True):
             with mock.patch(ID_VERIFIED_METHOD, return_value=False):
-                with mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
+                with override_settings(ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
                     generate_certificate_task(self.user, self.course_run_key)
 
                     cert = get_certificate_for_user_id(self.user.id, self.course_run_key)

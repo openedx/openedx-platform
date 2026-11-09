@@ -43,7 +43,7 @@ def auto_auth(request):  # pylint: disable=too-many-statements
     Create or configure a user account, then log in as that user.
 
     Enabled only when
-    settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING'] is true.
+    settings.AUTOMATIC_AUTH_FOR_TESTING is true.
 
     Accepts the following querystring parameters:
     * `username`, `email`, and `password` for the user account
@@ -90,7 +90,7 @@ def auto_auth(request):  # pylint: disable=too-many-statements
     redirect_when_done = _str2bool(request.GET.get('redirect', '')) or redirect_to
     login_when_done = 'no_login' not in request.GET
 
-    restricted = settings.FEATURES.get('RESTRICT_AUTOMATIC_AUTH', True)
+    restricted = settings.RESTRICT_AUTOMATIC_AUTH
     if is_superuser and restricted:
         return HttpResponseForbidden(_('Superuser creation not allowed'))
 

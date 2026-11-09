@@ -4,6 +4,7 @@ Unit tests for instructor API v2 report endpoints.
 from unittest.mock import Mock, patch
 
 import ddt
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -195,6 +196,11 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
             'course-v1_edX_ReportTestX_Report_Test_Course_cohort_results_2024-09-15-1400.csv',
             'cohort_results',
             '2024-09-15T14:00:00Z'
+        ),
+        (
+            'course-v1_edX_ReportTestX_Report_Test_Course_proctored_exam_results_report_2024-09-28-1314.csv',
+            'proctored_exam_results',
+            '2024-09-28T13:14:00Z'
         ),
     )
     @ddt.unpack
@@ -467,6 +473,54 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.assertIn('status', response.data)  # noqa: PT009
         mock_issued_certs.assert_called_once()
         mock_upload.assert_called_once()
+
+    @override_settings(ENABLE_SPECIAL_EXAMS=True)
+    @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_proctored_exam_results_report')
+    def test_generate_proctored_exam_results_report(self, mock_submit):
+        """
+        Test generating a proctored exam results report for a course with proctored exams.
+        Note: This report uses the EXAM_RESULTS (staff) permission, mirroring v1.
+        """
+        course = CourseFactory.create(enable_proctored_exams=True)
+        self.client.force_authenticate(user=StaffFactory.create(course_key=course.id))
+        response = self.client.post(self._get_url(course_id=str(course.id), report_type='proctored_exam_results'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
+        mock_submit.assert_called_once()
+
+    @ddt.data(
+        (True, False),
+        (False, True),
+    )
+    @ddt.unpack
+    @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_proctored_exam_results_report')
+    def test_generate_proctored_exam_results_report_not_enabled(
+        self, enable_special_exams, enable_proctored_exams, mock_submit
+    ):
+        """
+        Test that the proctored exam results report is rejected unless both special exams
+        and proctored exams are enabled, matching the legacy dashboard gate.
+        """
+        course = CourseFactory.create(enable_proctored_exams=enable_proctored_exams)
+        self.client.force_authenticate(user=StaffFactory.create(course_key=course.id))
+        with override_settings(ENABLE_SPECIAL_EXAMS=enable_special_exams):
+            response = self.client.post(
+                self._get_url(course_id=str(course.id), report_type='proctored_exam_results')
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertIn('error', response.data)  # noqa: PT009
+        mock_submit.assert_not_called()
+
+    def test_generate_proctored_exam_results_report_unauthorized_student(self):
+        """
+        Test that students cannot generate the proctored exam results report.
+        """
+        self.client.force_authenticate(user=self.student)
+        response = self.client.post(self._get_url(report_type='proctored_exam_results'))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_generate_report_invalid_type(self):
         """

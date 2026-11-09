@@ -21,6 +21,7 @@ from xsslint.linters import (
 # Define the directories that should be ignored by the script.
 SKIP_DIRS = (
     '.git',
+    '.venv',
     '.pycharm_helpers',
     'common/static/xmodule/modules',
     'common/static/bundles',

@@ -127,6 +127,20 @@ class VerificationStatusViewTestsMixin(VerificationViewTestsMixinBase):
         path = reverse(self.VIEW_NAME, kwargs={'username': 'abc123'})
         self.assert_path_not_found(path)
 
+    def test_anonymous_with_empty_username_query_param(self):
+        """ An anonymous caller must not pass the check by sending an empty `?username=`. """
+        self.client.logout()
+        response = self.client.get(self.path, {'username': ''})
+        assert response.status_code == 401
+
+    def test_non_owner_with_own_username_query_param(self):
+        """ A caller must not pass by sending their own name in `?username=` when the path names someone else. """
+        other_user = UserFactory(password=self.PASSWORD)
+        self.client.logout()
+        self.client.login(username=other_user.username, password=self.PASSWORD)
+        response = self.client.get(self.path, {'username': other_user.username})
+        assert response.status_code == 403
+
 
 @override_settings(VERIFY_STUDENT=VERIFY_STUDENT)
 class PhotoVerificationStatusViewTests(VerificationStatusViewTestsMixin, TestCase):

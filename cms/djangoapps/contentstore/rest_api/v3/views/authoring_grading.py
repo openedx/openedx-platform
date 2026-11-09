@@ -57,6 +57,8 @@ Permission model note:
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
 from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -70,7 +72,6 @@ from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 
 _COURSE_KEY_PARAMETER = OpenApiParameter(
     name="course_key",
@@ -108,7 +109,7 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     # DefaultRouter lookup: matches course-v1:org+course+run (+ or / separators).
     # OEP-68: the kwarg name is ``course_key`` (not the legacy ``course_id``).
     lookup_field = "course_key"
-    lookup_value_regex = r"[^/+]+(?:/|\+)[^/+]+(?:/|\+)[^/?]+"
+    lookup_value_regex = COURSE_KEY_LOOKUP_REGEX
 
     def get_serializer(self, *args, **kwargs):
         """Instantiate and return the configured serializer class."""

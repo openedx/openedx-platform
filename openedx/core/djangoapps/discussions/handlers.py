@@ -17,6 +17,10 @@ from openedx.core.djangoapps.discussions.models import (
 
 log = logging.getLogger(__name__)
 
+# Titles are built from course content (unit names, or "section|subsection|unit" for removed units)
+# and can exceed the column; one oversized title would otherwise fail the whole sync transaction.
+TITLE_MAX_LENGTH = DiscussionTopicLink._meta.get_field("title").max_length
+
 
 # pylint: disable=unused-argument
 def handle_course_discussion_config_update(sender, configuration: CourseDiscussionConfigurationData, **kwargs):
@@ -65,14 +69,14 @@ def update_course_discussion_config(configuration: CourseDiscussionConfiguration
                 topic_link.enabled_in_context = False
                 try:
                     # If the section/subsection/unit a topic is in is deleted, add that context to title.
-                    topic_link.title = "{section}|{subsection}|{unit}".format(**topic_link.context)
+                    topic_link.title = "{section}|{subsection}|{unit}".format(**topic_link.context)[:TITLE_MAX_LENGTH]
                 except KeyError:
                     # It's possible the context is empty if the link was created before the context field was added.
                     pass
             else:
                 topic_link.enabled_in_context = True
                 topic_link.ordering = topic_context.ordering
-                topic_link.title = topic_context.title
+                topic_link.title = topic_context.title[:TITLE_MAX_LENGTH]
                 if topic_context.external_id:
                     topic_link.external_id = topic_context.external_id
                 topic_link.context = topic_context.context
@@ -83,7 +87,7 @@ def update_course_discussion_config(configuration: CourseDiscussionConfiguration
             DiscussionTopicLink(
                 context_key=course_key,
                 usage_key=topic_context.usage_key,
-                title=topic_context.title,
+                title=topic_context.title[:TITLE_MAX_LENGTH],
                 provider_id=provider_id,
                 external_id=topic_context.external_id or uuid4(),
                 ordering=topic_context.ordering,

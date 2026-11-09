@@ -45,7 +45,7 @@ class TestFooter(CacheIsolationTestCase):
         assert resp['Content-Type'] == content_type
         self.assertContains(resp, content)
 
-    @mock.patch.dict(settings.FEATURES, {'ENABLE_FOOTER_MOBILE_APP_LINKS': True})
+    @override_settings(ENABLE_FOOTER_MOBILE_APP_LINKS=True)
     def test_footer_json(self):
         self._set_feature_flag(True)
         with with_comprehensive_theme_context(None):

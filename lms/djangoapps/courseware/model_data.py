@@ -37,6 +37,7 @@ from xblock.fields import Scope, UserScope
 from xblock.runtime import KeyValueStore
 
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .models import StudentModule, XModuleStudentInfoField, XModuleStudentPrefsField, XModuleUserStateSummaryField
@@ -404,9 +405,10 @@ class UserStateCache:
                 self.user.username,
                 pending_updates
             )
-        except DatabaseError:
-            log.exception("Saving user state failed for %s", self.user.username)
-            raise KeyValueMultiSaveError([])  # pylint: disable=raise-missing-from  # noqa: B904
+        except DatabaseError as err:
+            user_identifier_for_log = get_username_or_pii_safe_user_id_for_log(self.user)
+            log.exception("Saving user state failed for %s", user_identifier_for_log)
+            raise KeyValueMultiSaveError([]) from err
         finally:
             self._cache.update(pending_updates)
 

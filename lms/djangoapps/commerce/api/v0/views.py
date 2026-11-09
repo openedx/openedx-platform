@@ -24,6 +24,7 @@ from openedx.core.djangoapps.enrollments.errors import InvalidEnrollmentAttribut
 from openedx.core.djangoapps.enrollments.views import EnrollmentCrossDomainSessionAuth
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 
 from ...constants import Messages
@@ -82,7 +83,9 @@ class BasketsView(APIView):
             except Exception:  # pylint: disable=broad-except
                 # log the error, return silently
                 log.exception(
-                    'Failed to handle marketing opt-in flag: user="%s", course="%s"', user.username, course_key
+                    'Failed to handle marketing opt-in flag: user="%s", course="%s"',
+                    get_username_or_pii_safe_user_id_for_log(user),
+                    course_key,
                 )
 
     def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument

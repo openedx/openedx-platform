@@ -34,7 +34,6 @@ from pytz import UTC
 from cms.djangoapps.contentstore.courseware_index import (
     CourseAboutSearchIndexer,
     CoursewareSearchIndexer,
-    LibrarySearchIndexer,
 )
 from common.djangoapps.track.event_transaction_utils import get_event_transaction_id, get_event_transaction_type
 from common.djangoapps.util.block_utils import yield_dynamic_block_descendants
@@ -174,19 +173,6 @@ def listen_for_course_delete(sender, course_key, **kwargs):  # pylint: disable=u
     and removes its entry from the Course About Search index.
     """
     CourseAboutSearchIndexer.remove_deleted_items(course_key)
-
-
-@receiver(SignalHandler.library_updated)
-def listen_for_library_update(sender, library_key, **kwargs):  # pylint: disable=unused-argument
-    """
-    Receives signal and kicks off celery task to update search index
-    """
-
-    if LibrarySearchIndexer.indexing_is_enabled():
-        # import here, because signal is registered at startup, but items in tasks are not yet able to be loaded
-        from cms.djangoapps.contentstore.tasks import update_library_index
-
-        update_library_index.delay(str(library_key), datetime.now(UTC).isoformat())
 
 
 @receiver(SignalHandler.pre_item_delete)

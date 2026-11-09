@@ -644,6 +644,7 @@ def _import_xml_node_to_parent(
             content_tagging_api.set_all_object_tags(
                 content_key=new_xblock.location,
                 object_tags=object_tags,
+                ignore_invalid_orgs=True,
             )
 
     return new_xblock

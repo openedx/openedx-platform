@@ -244,3 +244,47 @@ class LogoutTests(TestCase):
             'target': nh3.clean(urllib.parse.unquote(redirect_url)),
         }
         assert_dict_contains_subset(self, expected, response.context_data)
+
+
+@skip_unless_lms
+@ddt.ddt
+class EnterpriseLogoutTests(TestCase):
+    """
+    Tests for LogoutView._is_enterprise_target.
+
+    Relocated here from ``openedx/features/enterprise_support/tests/`` when that package
+    moved to edx-enterprise (ENT-11576). The behaviour is the LMS's own: the target is
+    matched by a regex over the redirect path, and ``logout.html`` branches on the
+    result. Nothing in this path consults the enterprise app, so the original's enterprise
+    API mocks, customer fixtures and learner factory are not reproduced.
+    """
+
+    def setUp(self):
+        """ Create a user, then log in. """
+        super().setUp()
+        self.user = UserFactory()
+        self.client.login(username=self.user.username, password='test')
+
+    @ddt.data(
+        ('https%3A%2F%2Ftest.edx.org%2Fcourses', False),
+        ('/courses/course-v1:ARTS+D1+2018_T/course/', False),
+        ('invalid-url', False),
+        ('/enterprise/c5dad9a7-741c-4841-868f-850aca3ff848/course/Microsoft+DAT206x/enroll/', True),
+        ('%2Fenterprise%2Fc5dad9a7-741c-4841-868f-850aca3ff848%2Fcourse%2FMicrosoft%2BDAT206x%2Fenroll%2F', True),
+        ('/enterprise/handle_consent_enrollment/efd91463-dc40-4882-aeb9-38202131e7b2/course', True),
+        ('%2Fenterprise%2Fhandle_consent_enrollment%2Fefd91463-dc40-4882-aeb9-38202131e7b2%2Fcourse', True),
+    )
+    @ddt.unpack
+    def test_logout_enterprise_target(self, redirect_url, enterprise_target):
+        url = '{logout_path}?redirect_url={redirect_url}'.format(
+            logout_path=reverse('logout'),
+            redirect_url=redirect_url
+        )
+        response = self.client.get(url, HTTP_HOST='testserver')
+        expected = {
+            'enterprise_target': enterprise_target,
+        }
+        assert_dict_contains_subset(self, expected, response.context_data)
+
+        if enterprise_target:
+            self.assertContains(response, 'We are signing you in.')

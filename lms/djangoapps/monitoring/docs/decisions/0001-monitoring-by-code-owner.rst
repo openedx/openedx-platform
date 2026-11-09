@@ -4,7 +4,7 @@ Monitoring by Code Owner
 Status
 ======
 
-Accepted
+Superseded (DEPR: https://github.com/openedx/edx-django-utils/issues/469)
 
 Context
 =======

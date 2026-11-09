@@ -8,15 +8,11 @@ import csv
 import io
 import json
 import logging
-import os
-import pathlib
-import shutil
+import mimetypes
 import zipfile
 from contextlib import closing
 from datetime import datetime, timedelta
-from tempfile import NamedTemporaryFile, mkdtemp
 from uuid import uuid4
-from wsgiref.util import FileWrapper
 
 import boto3
 import requests
@@ -42,10 +38,8 @@ from edxval.api import (
     update_video_image,
     update_video_status,
 )
-from fs.osfs import OSFS
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from path import Path as path
 from pytz import UTC
 from rest_framework import status as rest_status
 from rest_framework.exceptions import ValidationError
@@ -227,17 +221,6 @@ def handle_videos(request, course_key_string, edx_video_id=None):
         return JsonResponse(data, status=status)
 
 
-def send_zip(zip_file, size=None):
-    """
-    Generates a streaming http response for the zip file
-    """
-    wrapper = FileWrapper(zip_file, settings.COURSE_EXPORT_DOWNLOAD_CHUNK_SIZE)
-    response = StreamingHttpResponse(wrapper, content_type='application/zip')
-    response['Content-Dispositon'] = 'attachment; filename=%s' % os.path.basename(zip_file.name)  # noqa: UP031
-    response['Content-Length'] = size
-    return response
-
-
 def get_course_video_download_urls(course_key_string):
     """
     Return the set of encoded-video URLs that legitimately belong to the given
@@ -261,18 +244,86 @@ def get_course_video_download_urls(course_key_string):
     }
 
 
+class _ZipStreamBuffer(io.RawIOBase):
+    """
+    File-like sink for ``zipfile.ZipFile`` output that lets the writer drain
+    bytes incrementally. Used so we can emit a zip archive directly into a
+    streaming HTTP response without staging anything to disk or holding the
+    whole archive in memory.
+    """
+
+    def __init__(self):
+        self._buf = bytearray()
+
+    def writable(self):
+        return True
+
+    def write(self, data):
+        self._buf.extend(data)
+        return len(data)
+
+    def drain(self):
+        chunk = bytes(self._buf)
+        self._buf.clear()
+        return chunk
+
+
+def _stream_video_zip(files):
+    """
+    Yield bytes of a zip archive containing the requested videos.
+
+    Each video is fetched with ``stream=True`` and piped into its zip entry
+    chunk-by-chunk, so peak memory is roughly the chunk size rather than the
+    file size, and no temp files are written to disk. ``ZIP_STORED`` (no
+    compression) is used because the underlying video files are already
+    compressed; running them through DEFLATE just burns CPU.
+    """
+    buf = _ZipStreamBuffer()
+    with zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_STORED) as zf:
+        for file in files:
+            response = requests.get(file['url'], stream=True, allow_redirects=True)
+            response.raise_for_status()
+            try:
+                # If the caller's name lacks an extension, derive one from
+                # the upstream Content-Type so the entry in the zip has a
+                # sensible filename. mimetypes handles the unknown-type
+                # case (returns None) cleanly.
+                file_name = file['name']
+                content_type = response.headers.get('Content-Type', '').split(';', 1)[0].strip()
+                extension = mimetypes.guess_extension(content_type) if content_type else None
+                if extension and not file_name.endswith(extension):
+                    file_name += extension
+                # force_zip64=True so a single >4 GiB video doesn't trip
+                # ZIP32 size limits.
+                with zf.open(zipfile.ZipInfo(file_name), mode='w', force_zip64=True) as entry:
+                    for chunk in response.iter_content(chunk_size=64 * 1024):
+                        entry.write(chunk)
+                        drained = buf.drain()
+                        if drained:
+                            yield drained
+            finally:
+                response.close()
+            drained = buf.drain()
+            if drained:
+                yield drained
+    # ZipFile.__exit__ writes the central directory; emit the trailing bytes.
+    final = buf.drain()
+    if final:
+        yield final
+
+
 def create_video_zip(course_key_string, files):
     """
-    Generates the video zip, or returns None if there was an error.
+    Return a streaming HTTP response that delivers the requested course
+    videos as a single zip archive.
 
-    Updates the context with any error information if applicable.
+    Validates that each file URL belongs to the course (SSRF protection via
+    ``get_course_video_download_urls``). The zip is then streamed directly
+    to the response without buffering anything to disk. Per-request
+    wall-clock is bounded by the WSGI server's request timeout and per-user
+    frequency by the ``VideoDownloadThrottle`` on the view; no explicit
+    batch-size limit is enforced here.
     """
-    name = course_key_string + '_videos'
-    video_folder_zip = NamedTemporaryFile(prefix=name + '_',
-                                          suffix=".zip")  # pylint: disable=consider-using-with
-    root_dir = path(mkdtemp())
-    video_dir = root_dir + '/' + name
-    zip_folder = None
     # Only allow fetching URLs that belong to this course's videos. Anything
     # else (internal services, cloud metadata endpoints, arbitrary hosts) is a
     # potential SSRF target and is rejected before any request is made.
@@ -280,28 +331,15 @@ def create_video_zip(course_key_string, files):
     for file in files:
         if file['url'] not in allowed_urls:
             raise ValidationError(f"Invalid video download url: {file['url']}")
-    try:
-        for file in files:
-            url = file['url']
-            file_name = file['name']
-            response = requests.get(url, allow_redirects=True)
-            file_type = '.' + response.headers['Content-Type'][6:]
-            if file_type not in file_name:
-                file_name = file['name'] + file_type
-            if not os.path.isdir(video_dir):
-                os.makedirs(video_dir)
-            with OSFS(video_dir).open(file_name, mode="wb") as f:
-                f.write(response.content)
-        directory = pathlib.Path(video_dir)
-        with zipfile.ZipFile(video_folder_zip, mode="w") as archive:
-            for file_path in directory.iterdir():
-                archive.write(file_path, arcname=file_path.name)
-        zip_folder = open(video_folder_zip.name, '+rb')
 
-        return send_zip(zip_folder, video_folder_zip.tell())
-    finally:
-        if os.path.exists(root_dir / name):
-            shutil.rmtree(root_dir / name)
+    response = StreamingHttpResponse(
+        _stream_video_zip(files),
+        content_type='application/zip',
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename={course_key_string}_videos.zip'
+    )
+    return response
 
 
 def get_video_usage_path(course_key, edx_video_id):

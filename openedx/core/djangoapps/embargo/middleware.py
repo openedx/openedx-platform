@@ -16,7 +16,7 @@ Embargo can restrict by states and whitelist/blacklist (IP Addresses
 
 Usage:
 
-1) Enable embargo by setting `settings.FEATURES['EMBARGO']` to True.
+1) Enable embargo by setting `settings.EMBARGO` to True.
 
 2) In Django admin, create a new `IPFilter` model to block or whitelist
     an IP address from accessing the site.

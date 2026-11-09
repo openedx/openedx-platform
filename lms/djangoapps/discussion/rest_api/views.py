@@ -4,11 +4,11 @@ Discussion API views
 import logging
 import uuid
 
-import edx_api_doc_tools as apidocs
 from django.contrib.auth import get_user_model
 from django.core.exceptions import BadRequest, ValidationError
 from django.shortcuts import get_object_or_404
-from drf_yasg import openapi
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from forum import api as forum_api
@@ -102,15 +102,15 @@ class CourseView(DeveloperErrorViewMixin, APIView):
     General discussion metadata API.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID")
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID")
         ],
         responses={
             200: CourseMetadataSerailizer(read_only=True, required=False),
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         }
     )
     def get(self, request, course_id):
@@ -133,15 +133,15 @@ class CourseViewV2(DeveloperErrorViewMixin, APIView):
     General discussion metadata API v2.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID")
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID")
         ],
         responses={
             200: CourseMetadataSerailizer(read_only=True, required=False),
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         }
     )
     def get(self, request, course_id):
@@ -298,32 +298,34 @@ class CourseTopicsViewV2(DeveloperErrorViewMixin, APIView):
     [API Documentation](/api-docs/?filter=discussion#/discussion/discussion_v2_course_topics_read)
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'course_id',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Course ID",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'topic_id',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Comma-separated list of topic ids to filter",
             ),
-            openapi.Parameter(
+            OpenApiParameter(
                 'order_by',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 required=False,
-                type=openapi.TYPE_STRING,
                 enum=list(TopicOrdering),
                 description="Sort ordering for topics",
             ),
         ],
         responses={
             200: DiscussionTopicSerializerV2(read_only=True, required=False),
-            401: "The requester is not authenticated.",
-            403: "The requester cannot access the specified course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester cannot access the specified course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         }
     )
     def get(self, request, course_id):

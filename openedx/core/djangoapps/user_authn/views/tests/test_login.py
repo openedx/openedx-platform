@@ -7,7 +7,6 @@ import datetime
 import hashlib
 import json
 import unicodedata
-import urllib.parse
 from unittest.mock import Mock, patch
 
 import ddt
@@ -45,7 +44,6 @@ from openedx.core.djangoapps.user_authn.views.login import (
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import ApiTestCase
-from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
 
 
 @ddt.ddt
@@ -113,9 +111,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             mock_audit_log, 'warning', ['Login failed - Account not active for user.id: 1, resending activation']
         )
 
-    @patch.dict(settings.FEATURES, {
-        "ENABLE_THIRD_PARTY_AUTH": True
-    })
+    @override_settings(ENABLE_THIRD_PARTY_AUTH=True)
     @patch(
         'openedx.core.djangoapps.user_authn.views.login.is_require_third_party_auth_enabled',
         Mock(return_value=True)
@@ -205,114 +201,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         self._assert_response(response, success=True)
         self._assert_redirect_url(response, expected_redirect)
 
-    @ddt.data(('/dashboard', False), ('/enterprise/select/active/?success_url=/dashboard', True))
-    @ddt.unpack
-    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
-    @override_settings(LOGIN_REDIRECT_WHITELIST=['openedx.service'])
-    @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
-    @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
-    @skip_unless_lms
-    def test_login_success_for_multiple_enterprises(
-        self, expected_redirect, user_has_multiple_enterprises, reverse_mock, mock_api_client_class
-    ):
-        """
-        Test that if multiple enterprise feature is enabled, user is redirected
-        to correct page
-        """
-        api_response = {'results': []}
-        enterprise = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        api_response['results'].append(
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise.uuid,
-                    "name": enterprise.name,
-                    "active": enterprise.active,
-                }
-            }
-        )
-
-        if user_has_multiple_enterprises:
-            enterprise = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-            api_response['results'].append(
-                {
-                    "enterprise_customer": {
-                        "uuid": enterprise.uuid,
-                        "name": enterprise.name,
-                        "active": enterprise.active,
-                    }
-                }
-            )
-
-        mock_client = mock_api_client_class.return_value
-        mock_client.fetch_enterprise_learner_data.return_value = api_response
-        reverse_mock.return_value = '/enterprise/select/active'
-
-        response, _ = self._login_response(
-            self.user.email,
-            self.password,
-            HTTP_ACCEPT='*/*',
-        )
-        self._assert_response(response, success=True)
-        self._assert_redirect_url(response, settings.LMS_ROOT_URL + expected_redirect)
-
-    @ddt.data(('', True), ('/enterprise/select/active/?success_url=', False))
-    @ddt.unpack
-    @override_settings(ENABLE_AUTHN_MICROFRONTEND=True, ENABLE_ENTERPRISE_INTEGRATION=True)
-    @patch('openedx.features.enterprise_support.api.EnterpriseApiClient')
-    @patch('openedx.core.djangoapps.user_authn.views.login.activate_learner_enterprise')
-    @patch('openedx.core.djangoapps.user_authn.views.login.reverse')
-    @skip_unless_lms
-    def test_enterprise_in_url(
-        self, expected_redirect, is_activated, reverse_mock, mock_activate_learner_enterprise, mock_api_client_class
-    ):
-        """
-        If user has multiple enterprises and the enterprise is present in url,
-        activate that url
-        """
-        api_response = {}
-        enterprise_1 = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        enterprise_2 = EnterpriseCustomerUserFactory(user_id=self.user.id).enterprise_customer
-        api_response['results'] = [
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise_1.uuid,
-                    "name": enterprise_1.name,
-                    "active": enterprise_1.active,
-                }
-            },
-            {
-                "enterprise_customer": {
-                    "uuid": enterprise_2.uuid,
-                    "name": enterprise_2.name,
-                    "active": enterprise_2.active,
-                }
-            }
-        ]
-
-        next_url = '/enterprise/{}/course/{}/enroll/?catalog=catalog_uuid&utm_medium=enterprise'.format(
-            enterprise_1.uuid,
-            'course-v1:testX+test101+2T2020'
-        )
-
-        mock_client = mock_api_client_class.return_value
-        mock_client.fetch_enterprise_learner_data.return_value = api_response
-        mock_activate_learner_enterprise.return_value = is_activated
-        reverse_mock.return_value = '/enterprise/select/active'
-
-        response, _ = self._login_response(
-            self.user.email,
-            self.password,
-            extra_post_params={'next': next_url},
-            HTTP_ACCEPT='*/*',
-        )
-
-        if not is_activated:
-            next_url = urllib.parse.quote(next_url)
-
-        self._assert_response(response, success=True)
-        self._assert_redirect_url(response, settings.LMS_ROOT_URL + expected_redirect + next_url)
-
-    @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
     def test_login_success_no_pii(self):
         response, mock_audit_log = self._login_response(
             self.user_email, self.password, patched_audit_log='common.djangoapps.student.models.user.AUDIT_LOG'
@@ -344,7 +233,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         )
         self._assert_audit_log(mock_audit_log, 'warning', ['Login failed', 'Unknown user email', email_hash])
 
-    @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
     def test_login_fail_no_user_exists_no_pii(self):
         nonexistent_email = 'not_a_user@edx.org'
         response, mock_audit_log = self._login_response(
@@ -364,7 +253,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         self._assert_audit_log(mock_audit_log, 'warning',
                                ['Login failed', 'password for', str(self.user.id), 'invalid'])
 
-    @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
     def test_login_fail_wrong_password_no_pii(self):
         response, mock_audit_log = self._login_response(self.user_email, 'wrong_password')
         self._assert_response(response, success=False, value=self.LOGIN_FAILED_WARNING)
@@ -534,7 +423,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         }
         assert_dict_contains_subset(self, expected, response.context_data)
 
-    @patch.dict("django.conf.settings.FEATURES", {'SQUELCH_PII_IN_LOGS': True})
+    @override_settings(SQUELCH_PII_IN_LOGS=True)
     def test_logout_logging_no_pii(self):
         response, _ = self._login_response(self.user_email, self.password)
         self._assert_response(response, success=True)
@@ -630,7 +519,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         assert response.status_code == 401
         assert jwt_cookies.jwt_cookie_header_payload_name() not in self.client.cookies
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session(self):
         creds = {'email': self.user_email, 'password': self.password}
         client1 = Client()
@@ -659,7 +548,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         # client1 will be logged out
         assert response.status_code == 302
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_exempt_user(self):
         """
         A user whose username is in SINGLE_LOGIN_EXEMPT_USERNAMES is not subject
@@ -688,7 +577,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             # so it stays valid independent of what profile meta records.
             assert Session.objects.filter(session_key=client1.session.session_key).exists()
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_exempt_group(self):
         """
         A user in a group listed in SINGLE_LOGIN_EXEMPT_GROUPS is not subject
@@ -715,7 +604,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             # session is ever deleted.
             assert 'session_id' not in self.user.profile.get_meta()
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_with_no_user_profile(self):
         """
         Assert that user login with cas (Central Authentication Service) is
@@ -757,7 +646,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
         # client1 will be logged out
         assert response.status_code == 302
 
-    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    @override_settings(PREVENT_CONCURRENT_LOGINS=True)
     def test_single_session_with_url_not_having_login_required_decorator(self):
         # accessing logout url as it does not have login-required decorator it will avoid redirect
         # and go inside the enforce_single_login
@@ -795,7 +684,7 @@ class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
             response_content = json.loads(response.content.decode('utf-8'))
         assert response_content.get('success')
 
-    @patch.dict(settings.FEATURES, {"ENABLE_MAX_FAILED_LOGIN_ATTEMPTS": True})
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True)
     @override_settings(PASSWORD_POLICY_COMPLIANCE_ROLLOUT_CONFIG={'ENFORCE_COMPLIANCE_ON_LOGIN': True})
     def test_check_password_policy_compliance_exception(self):
         """

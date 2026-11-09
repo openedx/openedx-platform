@@ -32,6 +32,7 @@ from common.djangoapps.third_party_auth.views import inactive_user_view
 from common.djangoapps.util.testing import EventTestMixin
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin, CacheIsolationTestCase, skip_unless_lms
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
@@ -704,3 +705,31 @@ class SecondaryEmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, Ca
         for fragment in body_fragments:
             assert fragment in text
             assert escape(fragment) in html
+
+
+@skip_unless_lms
+@override_settings(ACCOUNT_MICROFRONTEND_URL='http://account-mfe.example/')
+class EmailChangeSuccessfulPageTests(CacheIsolationTestCase):
+    """
+    The page shown once a learner confirms an email change.
+    """
+
+    def confirm_email_change(self):
+        pending = PendingEmailChangeFactory.create(user=UserFactory.create())
+        response = self.client.get(reverse('confirm_email_change', args=[pending.activation_key]))
+        assert response.status_code == 200
+        return response.content.decode('utf-8')
+
+    def test_points_to_account_settings(self):
+        """
+        The new email is shown in the account settings, not on the learner dashboard.
+        """
+        assert 'your <a href="http://account-mfe.example/">account settings</a>' in self.confirm_email_change()
+
+    def test_account_url_follows_site_configuration(self):
+        with with_site_configuration_context(configuration={
+            'ACCOUNT_MICROFRONTEND_URL': 'http://site-account.example/',
+        }):
+            html = self.confirm_email_change()
+
+        assert '<a href="http://site-account.example/">account settings</a>' in html

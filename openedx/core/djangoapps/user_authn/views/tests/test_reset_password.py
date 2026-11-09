@@ -694,7 +694,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,  # noqa: PT027  # pylint: disable=line-too-long
                           token=self.token)
 
-    @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True}, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
     def test_password_reset_with_login_failures_feature_enabled(self):
         """
         Tests that user's login failures lockout counter is reset upon successful password reset.
@@ -1013,7 +1013,7 @@ class ResetPasswordAPITests(EventTestMixin, CacheIsolationTestCase):
         response = self.client.post(path, request_param)
         assert response.status_code == 429
 
-    @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True}, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
+    @override_settings(ENABLE_MAX_FAILED_LOGIN_ATTEMPTS=True, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
     def test_password_reset_request_with_login_failures_feature_enabled(self):
         """
         Tests that user's login failures lockout counter is reset upon successful password reset.

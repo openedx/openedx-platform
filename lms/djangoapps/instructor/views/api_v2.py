@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Tuple  # noqa: UP035
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -28,6 +27,8 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_proctoring.api import (
     add_allowance_for_user,
     does_backend_support_onboarding,
@@ -167,12 +168,39 @@ from .serializers_v2 import (
     UnitExtensionSerializer,
     derive_exam_type,
 )
-from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
+from .tools import (
+    find_unit,
+    get_units_with_due_date,
+    keep_field_private,
+    proctored_exams_enabled,
+    set_due_date_extension,
+    title_or_url,
+)
 
 User = get_user_model()
 log = logging.getLogger(__name__)
 
 VALID_TEAM_ROLES = frozenset(ROLES.keys()) | frozenset(FORUM_ROLES)
+
+# Shared OpenAPI parameters, each used identically by several endpoints below.
+COURSE_ID_PATH_PARAMETER = OpenApiParameter(
+    'course_id',
+    OpenApiTypes.STR,
+    OpenApiParameter.PATH,
+    description="Course key for the course.",
+)
+PROBLEM_PATH_PARAMETER = OpenApiParameter(
+    'problem',
+    OpenApiTypes.STR,
+    OpenApiParameter.PATH,
+    description="Problem block usage key.",
+)
+EXAM_ID_PATH_PARAMETER = OpenApiParameter(
+    'exam_id',
+    OpenApiTypes.STR,
+    OpenApiParameter.PATH,
+    description="Exam identifier.",
+)
 
 
 class CourseMetadataView(DeveloperErrorViewMixin, APIView):
@@ -186,19 +214,15 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
             200: CourseInformationSerializerV2,
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request, course_id):
@@ -264,6 +288,7 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
                     },
                 ],
                 "disable_buttons": false,
+                "proctored_exams_enabled": false,
                 "analytics_dashboard_message": "To gain insights into student enrollment and participation..."
             }
 
@@ -354,30 +379,28 @@ class InstructorTaskListView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.SHOW_TASKS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'problem_location_str',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Optional: Filter tasks to a specific problem location.",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'unique_student_identifier',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Optional: Filter tasks to a specific student (requires problem_location_str).",
             ),
         ],
         responses={
             200: InstructorTaskListSerializer,
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request, course_id):
@@ -767,19 +790,15 @@ class ReportDownloadsView(DeveloperErrorViewMixin, APIView):
     # to view generated reports, aligning with the intended audience of instructors/course staff
     permission_name = permissions.ENROLLMENT_REPORT
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
-            200: "Returns list of available report downloads.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Returns list of available report downloads."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request, course_id):
@@ -826,6 +845,8 @@ class ReportDownloadsView(DeveloperErrorViewMixin, APIView):
         # Match exact report names from the filename format: {course_prefix}_{csv_name}_{timestamp}.csv
         if 'inactive_enrolled' in name_lower:
             return ReportType.PENDING_ACTIVATIONS.value
+        elif 'proctored_exam_results' in name_lower:
+            return ReportType.PROCTORED_EXAM_RESULTS.value
         elif 'problem_grade_report' in name_lower:
             return ReportType.PROBLEM_GRADE.value
         elif 'ora2_submission' in name_lower or 'submission_files' in name_lower or 'ora_submission' in name_lower:
@@ -908,6 +929,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             - ora2_data: ORA Data Report
             - ora2_submission_files: ORA Submission Files Report
             - issued_certificates: Issued Certificates Report
+            - proctored_exam_results: Proctored Exam Results Report (only for courses with proctored exams)
 
     **Returns**
 
@@ -925,38 +947,39 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
         """
         Return the appropriate permission name based on the requested report type.
         For the issued certificates report, mirror the v1 behavior by using
-        VIEW_ISSUED_CERTIFICATES (course-level staff access). For all other reports,
+        VIEW_ISSUED_CERTIFICATES (course-level staff access). For the proctored exam
+        results report, mirror v1 by using EXAM_RESULTS. For all other reports,
         require CAN_RESEARCH.
         """
         report_type = self.kwargs.get('report_type')
         if report_type == ReportType.ISSUED_CERTIFICATES.value:
             return permissions.VIEW_ISSUED_CERTIFICATES
+        if report_type == ReportType.PROCTORED_EXAM_RESULTS.value:
+            return permissions.EXAM_RESULTS
         return permissions.CAN_RESEARCH
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'report_type',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description=(
                     "Type of report to generate. Valid values: "
                     "enrolled_students, pending_enrollments, pending_activations, "
                     "anonymized_student_ids, grade, problem_grade, problem_responses, "
-                    "ora2_summary, ora2_data, ora2_submission_files, issued_certificates"
+                    "ora2_summary, ora2_data, ora2_submission_files, issued_certificates, "
+                    "proctored_exam_results"
                 ),
             ),
         ],
         responses={
-            200: "Report generation task has been submitted successfully.",
-            400: "The requested task is already running or invalid report type.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Report generation task has been submitted successfully."),
+            400: OpenApiResponse(description="The requested task is already running or invalid report type."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def post(self, request, course_id, report_type):
@@ -978,6 +1001,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             ReportType.ORA2_DATA.value: self._generate_ora2_data_report,
             ReportType.ORA2_SUBMISSION_FILES.value: self._generate_ora2_submission_files_report,
             ReportType.ISSUED_CERTIFICATES.value: self._generate_issued_certificates_report,
+            ReportType.PROCTORED_EXAM_RESULTS.value: self._generate_proctored_exam_results_report,
         }
 
         handler = report_handlers.get(report_type)
@@ -1153,6 +1177,13 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
         """Generate ORA2 submission files archive."""
         task_api.submit_export_ora2_submission_files(request, course_key)
         return _('The ORA2 submission files archive is being created.')
+
+    def _generate_proctored_exam_results_report(self, request, course_key):
+        """Generate proctored exam results report."""
+        if not proctored_exams_enabled(get_course_by_id(course_key)):
+            raise ValueError(_('Proctored exams are not enabled for this course.'))
+        task_api.submit_proctored_exam_results_report(request, course_key)
+        return _('The proctored exam results report is being created.')
 
     def _generate_issued_certificates_report(self, request, course_key):
         """Generate issued certificates report."""
@@ -1658,21 +1689,17 @@ class RegenerateCertificatesView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.START_CERTIFICATE_REGENERATION
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
-        body=RegenerateCertificatesSerializer,
+        request=RegenerateCertificatesSerializer,
         responses={
-            200: "Certificate regeneration task started successfully",
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Certificate regeneration task started successfully"),
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def post(self, request, course_id):
@@ -1763,19 +1790,15 @@ class CertificateConfigView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_ISSUED_CERTIFICATES
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
-            200: "Returns certificate configuration.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "The requested course does not exist.",
+            200: OpenApiResponse(description="Returns certificate configuration."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="The requested course does not exist."),
         },
     )
     def get(self, request, course_id):
@@ -2519,25 +2542,22 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'email_or_username',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Learner's username or email address",
             ),
         ],
         responses={
-            200: 'Learner information retrieved successfully',
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "Learner not found or course does not exist.",
+            200: OpenApiResponse(description='Learner information retrieved successfully'),
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="Learner not found or course does not exist."),
         },
     )
     def get(self, request, course_id, email_or_username):
@@ -2620,25 +2640,22 @@ class ProblemView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'location',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Problem block usage key",
             ),
         ],
         responses={
-            200: 'Problem information retrieved successfully',
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "Problem not found or course does not exist.",
+            200: OpenApiResponse(description='Problem information retrieved successfully'),
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="Problem not found or course does not exist."),
         },
     )
     def get(self, request, course_id, location):
@@ -2749,25 +2766,22 @@ class TaskStatusView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.SHOW_TASKS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'task_id',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Task identifier returned from async operation",
             ),
         ],
         responses={
-            200: 'Task status retrieved successfully',
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "Task not found.",
+            200: OpenApiResponse(description='Task status retrieved successfully'),
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="Task not found."),
         },
     )
     def get(self, request, course_id, task_id):
@@ -2859,20 +2873,16 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
-            200: 'HTML-formatted grading configuration summary',
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks instructor access to the course.",
-            404: "Course does not exist.",
+            200: OpenApiResponse(description='HTML-formatted grading configuration summary'),
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks instructor access to the course."),
+            404: OpenApiResponse(description="Course does not exist."),
         },
     )
     def get(self, request, course_id):
@@ -3040,12 +3050,12 @@ class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
             'after': after.to_dict(),
         }
 
-    @apidocs.schema(
-        body=EnrollmentModifyRequestSerializerV2,
+    @extend_schema(
+        request=EnrollmentModifyRequestSerializerV2,
         responses={
             200: EnrollmentModifyResponseSerializerV2,
-            400: "Invalid parameters",
-            403: "User does not have permission",
+            400: OpenApiResponse(description="Invalid parameters"),
+            403: OpenApiResponse(description="User does not have permission"),
         },
     )
     def post(self, request, course_id):
@@ -3157,12 +3167,12 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
             'is_active': user_active,
         }
 
-    @apidocs.schema(
-        body=BetaTesterModifyRequestSerializerV2,
+    @extend_schema(
+        request=BetaTesterModifyRequestSerializerV2,
         responses={
             200: BetaTesterModifyResponseSerializerV2,
-            400: "Invalid parameters",
-            403: "User does not have permission",
+            400: OpenApiResponse(description="Invalid parameters"),
+            403: OpenApiResponse(description="User does not have permission"),
         },
     )
     def post(self, request, course_id):
@@ -3702,31 +3712,24 @@ class ResetAttemptsView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.GIVE_STUDENT_EXTENSION
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'problem',
-                apidocs.ParameterLocation.PATH,
-                description="Problem block usage key.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            PROBLEM_PATH_PARAMETER,
+            OpenApiParameter(
                 'learner',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Optional: Learner username or email. If omitted, resets all learners (async).",
             ),
         ],
         responses={
             200: SyncOperationResultSerializer,
             202: AsyncOperationResultSerializer,
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks permission.",
-            404: "Learner not found.",
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks permission."),
+            404: OpenApiResponse(description="Learner not found."),
         },
     )
     def post(self, request, course_id, problem):
@@ -3808,30 +3811,23 @@ class DeleteStateView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.GIVE_STUDENT_EXTENSION
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'problem',
-                apidocs.ParameterLocation.PATH,
-                description="Problem block usage key.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            PROBLEM_PATH_PARAMETER,
+            OpenApiParameter(
                 'learner',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Learner username or email (required).",
             ),
         ],
         responses={
             200: SyncOperationResultSerializer,
-            400: "Invalid parameters or missing learner.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks permission.",
-            404: "Learner not found.",
+            400: OpenApiResponse(description="Invalid parameters or missing learner."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks permission."),
+            404: OpenApiResponse(description="Learner not found."),
         },
     )
     def delete(self, request, course_id, problem):
@@ -3895,26 +3891,20 @@ class RescoreView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.OVERRIDE_GRADES
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'problem',
-                apidocs.ParameterLocation.PATH,
-                description="Problem block usage key.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            PROBLEM_PATH_PARAMETER,
+            OpenApiParameter(
                 'learner',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Optional: Learner username or email. If omitted, rescores all learners.",
             ),
-            apidocs.string_parameter(
+            OpenApiParameter(
                 'only_if_higher',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Optional: If 'true', only update scores that are higher than current. "
                             "May be provided as a query parameter or in the request body "
                             "(JSON boolean or string).",
@@ -3922,10 +3912,10 @@ class RescoreView(DeveloperErrorViewMixin, APIView):
         ],
         responses={
             202: AsyncOperationResultSerializer,
-            400: "Invalid parameters provided.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks permission.",
-            404: "Learner not found.",
+            400: OpenApiResponse(description="Invalid parameters provided."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks permission."),
+            404: OpenApiResponse(description="Learner not found."),
         },
     )
     def post(self, request, course_id, problem):
@@ -4008,30 +3998,23 @@ class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.OVERRIDE_GRADES
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'problem',
-                apidocs.ParameterLocation.PATH,
-                description="Problem block usage key.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            PROBLEM_PATH_PARAMETER,
+            OpenApiParameter(
                 'learner',
-                apidocs.ParameterLocation.QUERY,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Learner username or email (required).",
             ),
         ],
         responses={
             202: AsyncOperationResultSerializer,
-            400: "Invalid parameters or invalid score.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks permission.",
-            404: "Learner not found.",
+            400: OpenApiResponse(description="Invalid parameters or invalid score."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks permission."),
+            404: OpenApiResponse(description="Learner not found."),
         },
     )
     def put(self, request, course_id, problem):
@@ -4120,18 +4103,14 @@ class SpecialExamsListView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
             200: SpecialExamSerializer(many=True),
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
         },
     )
     def get(self, request, course_id):
@@ -4161,24 +4140,16 @@ class SpecialExamDetailView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'exam_id',
-                apidocs.ParameterLocation.PATH,
-                description="Exam identifier.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
+            EXAM_ID_PATH_PARAMETER,
         ],
         responses={
             200: SpecialExamSerializer,
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Exam not found.",
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Exam not found."),
         },
     )
     def get(self, request, course_id, exam_id):
@@ -4211,29 +4182,22 @@ class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'exam_id',
-                apidocs.ParameterLocation.PATH,
-                description="Exam identifier.",
-            ),
-            apidocs.string_parameter(
+            COURSE_ID_PATH_PARAMETER,
+            EXAM_ID_PATH_PARAMETER,
+            OpenApiParameter(
                 'username',
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Student's username.",
             ),
         ],
         responses={
-            200: "Attempt reset successfully.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Exam or user not found.",
+            200: OpenApiResponse(description="Attempt reset successfully."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Exam or user not found."),
         },
     )
     def post(self, request, course_id, exam_id, username):
@@ -4270,8 +4234,19 @@ class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        for attempt in user_attempts:
-            remove_exam_attempt(attempt['id'], requesting_user=request.user)
+        try:
+            for attempt in user_attempts:
+                remove_exam_attempt(attempt['id'], requesting_user=request.user)
+        except ProctoredBaseException as err:
+            # The proctoring provider (or another proctoring-layer error) prevented the
+            # attempt from being removed. Surface the typed exception's status and message
+            # (e.g. a 502 when the provider is unavailable) so the instructor dashboard can
+            # display a descriptive error instead of a generic 500.
+            # Return the message under both ``detail`` (DRF convention, and what the
+            # instructor-dashboard MFE reads) and ``error`` (the key used by the other
+            # error branches in this view), so it is surfaced regardless of which the
+            # consumer looks at.
+            return Response({'detail': str(err), 'error': str(err)}, status=err.http_status)
 
         return Response(
             {'success': True, 'message': f'Exam attempt reset for user {username}'},
@@ -4336,19 +4311,15 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
             200: ProctoringSettingsSerializer,
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Course not found.",
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Course not found."),
         },
     )
     def get(self, request, course_id):
@@ -4359,20 +4330,16 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
         serializer = ProctoringSettingsSerializer(settings_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
         ],
         responses={
             200: ProctoringSettingsSerializer,
-            400: "Invalid parameters.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Course not found.",
+            400: OpenApiResponse(description="Invalid parameters."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Course not found."),
         },
     )
     def patch(self, request, course_id):
@@ -4429,25 +4396,17 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'exam_id',
-                apidocs.ParameterLocation.PATH,
-                description="Exam identifier.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
+            EXAM_ID_PATH_PARAMETER,
         ],
         responses={
-            200: "Allowance granted successfully.",
-            400: "Invalid parameters.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Exam not found.",
+            200: OpenApiResponse(description="Allowance granted successfully."),
+            400: OpenApiResponse(description="Invalid parameters."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Exam not found."),
         },
     )
     def post(self, request, course_id, exam_id):
@@ -4489,25 +4448,17 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
             status=status.HTTP_200_OK,
         )
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'exam_id',
-                apidocs.ParameterLocation.PATH,
-                description="Exam identifier.",
-            ),
+            COURSE_ID_PATH_PARAMETER,
+            EXAM_ID_PATH_PARAMETER,
         ],
         responses={
-            200: "Allowance removed successfully.",
-            400: "Invalid parameters.",
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-            404: "Exam not found.",
+            200: OpenApiResponse(description="Allowance removed successfully."),
+            400: OpenApiResponse(description="Invalid parameters."),
+            401: OpenApiResponse(description="The requesting user is not authenticated."),
+            403: OpenApiResponse(description="The requesting user lacks access."),
+            404: OpenApiResponse(description="Exam not found."),
         },
     )
     def delete(self, request, course_id, exam_id):

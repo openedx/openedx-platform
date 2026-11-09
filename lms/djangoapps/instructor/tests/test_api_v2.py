@@ -67,11 +67,11 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
             self_paced=False,
             enable_proctored_exams=True,
         )
-        cls.proctored_course = CourseFactory.create(
+        cls.other_course = CourseFactory.create(
             org='edX',
             number='Proctored',
             run='2024',
-            display_name='Demonstration Proctored Course',
+            display_name='Demonstration Other Course',
         )
 
         cls.course_key = cls.course.id
@@ -85,7 +85,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         self.django_staff_user = UserFactory.create(is_staff=True)
         self.data_researcher = UserFactory.create()
         CourseDataResearcherRole(self.course_key).add_users(self.data_researcher)
-        CourseInstructorRole(self.proctored_course.id).add_users(self.instructor)
+        CourseInstructorRole(self.other_course.id).add_users(self.instructor)
         self.student = UserFactory.create()
 
         # Create some enrollments for testing
@@ -109,7 +109,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         )
         CourseEnrollmentFactory.create(
             user=UserFactory.create(),
-            course_id=self.proctored_course.id,
+            course_id=self.other_course.id,
             mode='verified',
             is_active=True
         )
@@ -180,6 +180,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         assert 'course_errors' in data
         assert 'studio_url' in data
         assert 'disable_buttons' in data
+        assert 'proctored_exams_enabled' in data
         assert 'has_started' in data
         assert 'has_ended' in data
         assert 'analytics_dashboard_message' in data
@@ -597,6 +598,25 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase, MasqueradeMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         # With only 3 enrollments, buttons should not be disabled
         self.assertFalse(response.data['disable_buttons'])  # noqa: PT009
+
+    @ddt.data(
+        (True, 'course', True),
+        (False, 'course', False),
+        (True, 'other_course', False),
+    )
+    @ddt.unpack
+    def test_proctored_exams_enabled(self, enable_special_exams, course_attr, expected):
+        """
+        Test that proctored_exams_enabled requires both ENABLE_SPECIAL_EXAMS and the
+        course's enable_proctored_exams setting (only self.course has it enabled).
+        """
+        course = getattr(self, course_attr)
+        self.client.force_authenticate(user=self.instructor)
+        with override_settings(ENABLE_SPECIAL_EXAMS=enable_special_exams):
+            response = self.client.get(self._get_url(course_id=str(course.id)))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['proctored_exams_enabled'], expected)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.serializers_v2.modulestore')
     def test_course_errors_from_modulestore(self, mock_modulestore):

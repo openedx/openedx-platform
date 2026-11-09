@@ -60,7 +60,7 @@ from xmodule.tabs import CourseTab  # pylint: disable=wrong-import-order
 
 from .. import permissions
 from ..toggles import data_download_v2_is_enabled, legacy_instructor_dashboard
-from .tools import get_units_with_due_date, title_or_url
+from .tools import get_units_with_due_date, proctored_exams_enabled, title_or_url
 
 log = logging.getLogger(__name__)
 
@@ -659,10 +659,7 @@ def _section_data_download(course, access):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
 
-    show_proctored_report_button = (
-        settings.ENABLE_SPECIAL_EXAMS and
-        course.enable_proctored_exams
-    )
+    show_proctored_report_button = proctored_exams_enabled(course)
     section_key = 'data_download_2' if data_download_v2_is_enabled() else 'data_download'
     section_data = {
         'section_key': section_key,
@@ -759,7 +756,7 @@ def _section_send_email(course, access):
             'list_email_content', kwargs={'course_id': str(course_key)}
         ),
     }
-    if settings.FEATURES.get("ENABLE_NEW_BULK_EMAIL_EXPERIENCE", False) is not False:
+    if settings.ENABLE_NEW_BULK_EMAIL_EXPERIENCE is not False:
         section_data[
             "communications_mfe_url"
         ] = f"{settings.COMMUNICATIONS_MICROFRONTEND_URL}/courses/{str(course_key)}/bulk_email"
@@ -824,7 +821,7 @@ def _section_open_response_assessment(request, course, openassessment_blocks, ac
     section_data = {
         'fragment': block.render('ora_blocks_listing_view', context={
             'ora_items': ora_items,
-            'ora_item_view_enabled': settings.FEATURES.get('ENABLE_XBLOCK_VIEW_ENDPOINT', False)
+            'ora_item_view_enabled': settings.ENABLE_XBLOCK_VIEW_ENDPOINT
         }),
         'section_key': 'open_response_assessment',
         'section_display_name': _('Open Responses'),

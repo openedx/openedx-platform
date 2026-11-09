@@ -116,7 +116,7 @@ class _BuiltinHtmlBlockMixin(  # pylint: disable=abstract-method
         """
         Return a JSON representation of the student_view of this XBlock.
         """
-        if getattr(settings, 'FEATURES', {}).get(self.ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA, False):
+        if getattr(settings, self.ENABLE_HTML_XBLOCK_STUDENT_VIEW_DATA, False):
             return {'enabled': True, 'html': self.get_html()}
         else:
             return {

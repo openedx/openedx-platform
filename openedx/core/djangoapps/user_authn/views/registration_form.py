@@ -10,14 +10,15 @@ from importlib import import_module
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
-from django.core.exceptions import ImproperlyConfigured
-from django.core.validators import RegexValidator, ValidationError, slug_re
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import RegexValidator, slug_re
 from django.db.models import Model
 from django.forms import widgets
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django_countries import countries
 from eventtracking import tracker
+from openedx_filters.authentication.filters import RegistrationFormGenerated
 
 from common.djangoapps import third_party_auth
 from common.djangoapps.edxmako.shortcuts import marketing_link
@@ -34,9 +35,11 @@ from openedx.core.djangoapps.user_api import accounts
 from openedx.core.djangoapps.user_api.helpers import FormDescription
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangoapps.user_authn.utils import is_registration_api_v1 as is_api_v1
-from openedx.core.djangoapps.user_authn.views.utils import remove_disabled_country_from_list
+from openedx.core.djangoapps.user_authn.views.utils import (
+    get_running_third_party_auth_state,
+    remove_disabled_country_from_list,
+)
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.features.enterprise_support.api import enterprise_customer_for_request
 
 log = logging.getLogger(__name__)
 
@@ -317,36 +320,25 @@ class AccountCreationForm(forms.Form):
         return self.cleaned_data.get("country")
 
 
-def get_registration_extension_form(*args, **kwargs) -> forms.Form | None:
+def get_profile_extension_form(*args, **kwargs) -> forms.Form | None:
     """
-    Convenience function for getting the custom form set in settings.PROFILE_EXTENSION_FORM
-    or settings.REGISTRATION_EXTENSION_FORM (deprecated).
+    Get an instance of the custom profile extension form.
 
-    Returns an instance of the configured profile extension form.
+    This form is configured via the `PROFILE_EXTENSION_FORM` Django setting
 
-    The function first checks for PROFILE_EXTENSION_FORM (recommended), then falls back to
-    REGISTRATION_EXTENSION_FORM for backwards compatibility. When REGISTRATION_EXTENSION_FORM
-    is used, a deprecation warning is logged.
-
-    An example form app for this can be found at http://github.com/open-craft/custom-form-app
+    Args:
+        *args: Variable length argument list passed to the form's __init__ method.
+        **kwargs: Arbitrary keyword arguments passed to the form's __init__ method.
 
     Returns:
-        Form instance or None if no form is configured
-    """
-    # Check for the new setting first
-    setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
-    setting_name = "PROFILE_EXTENSION_FORM"
+        forms.Form | None: An initialized form instance, or None if the setting
+        is not configured or the form fails to load.
 
-    # Fall back to the deprecated setting
-    if not setting_value:
-        setting_value = getattr(settings, "REGISTRATION_EXTENSION_FORM", None)
-        if setting_value:
-            setting_name = "REGISTRATION_EXTENSION_FORM"
-            log.warning(
-                "REGISTRATION_EXTENSION_FORM is deprecated and will be removed in a future release. "
-                "Please use PROFILE_EXTENSION_FORM instead. Current value: %s",
-                setting_value,
-            )
+    References:
+        An example form app for this can be found at:
+        http://github.com/open-craft/custom-form-app
+    """
+    setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
 
     if not setting_value:
         return None
@@ -356,44 +348,25 @@ def get_registration_extension_form(*args, **kwargs) -> forms.Form | None:
         module = import_module(module)
         return getattr(module, klass)(*args, **kwargs)
     except (ValueError, ImportError, AttributeError) as e:
-        log.error("Could not load form from %s='%s': %s", setting_name, setting_value, str(e))
+        log.error("Could not load form from PROFILE_EXTENSION_FORM='%s': %s", setting_value, str(e))
         return None
 
 
-def get_extended_profile_model() -> type[Model] | None:
+def get_profile_extension_model() -> type[Model] | None:
     """
-    Get the model class for the extended profile form.
+    Get the model class associated with the custom profile extension form.
 
-    Returns the Django model class associated with the form specified in
-    the `PROFILE_EXTENSION_FORM` setting.
-
-    IMPORTANT: This function only works with PROFILE_EXTENSION_FORM. If you're using
-    the deprecated REGISTRATION_EXTENSION_FORM, this will return None to maintain
-    backward compatibility. The new profile extension capabilities (loading/saving
-    to a custom model) are only available when using PROFILE_EXTENSION_FORM.
-
-    Migration path:
-    - Old behavior (REGISTRATION_EXTENSION_FORM): Custom fields only for registration,
-      data stored in UserProfile.meta field
-    - New behavior (PROFILE_EXTENSION_FORM): Custom fields for registration and profile,
-      data stored in dedicated model with ability to load/update via account settings API
+    This extracts the model from the Meta class of the form specified in
+    the `PROFILE_EXTENSION_FORM` Django setting.
 
     Returns:
-        type[Model] | None: The model class if PROFILE_EXTENSION_FORM is configured
-            and valid, None otherwise (including when using the deprecated
-            REGISTRATION_EXTENSION_FORM).
+        type[Model] | None: The Django model class if the setting is configured
+        and valid, None otherwise.
 
     Examples:
-        # New setting with model support:
-        # In settings.py: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
-        model_class = get_extended_profile_model()  # Returns the model
-
-        # Deprecated setting - maintains old behavior:
-        # In settings.py: REGISTRATION_EXTENSION_FORM = 'myapp.forms.ExtendedForm'
-        model_class = get_extended_profile_model()  # Returns None (no model support)
+        # In settings.py: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtensionForm'
+        model_class = get_profile_extension_model()
     """
-    # Only check for the new setting - do NOT fall back to REGISTRATION_EXTENSION_FORM
-    # This ensures backward compatibility: users of the old setting keep the old behavior
     setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
 
     if not setting_value:
@@ -491,7 +464,7 @@ class RegistrationFormFactory:
             handler = getattr(self, f"_add_{field_name}_field")
             self.field_handlers[field_name] = handler
 
-        custom_form = get_registration_extension_form()
+        custom_form = get_profile_extension_form()
         if custom_form:
             custom_form_field_names = [field_name for field_name, field in custom_form.fields.items()]
             valid_fields.extend(custom_form_field_names)
@@ -581,11 +554,24 @@ class RegistrationFormFactory:
         """
         self.request = request
         form_desc = FormDescription("post", self._get_registration_submit_url(request))
-        self._apply_third_party_auth_overrides(request, form_desc)
+
+        # Field property overrides applied below take effect when the fields are added in
+        # the loop, so they must be applied before the field loop. The platform's own
+        # third-party-auth overrides are applied first; the filter runs afterwards so its
+        # pipeline steps can further adjust the form description.
+        running_pipeline, current_provider = get_running_third_party_auth_state(request)
+        form_desc = self._apply_third_party_auth_overrides(form_desc, running_pipeline, current_provider)
+
+        # .. filter_implemented_name: RegistrationFormGenerated
+        # .. filter_type: org.openedx.authentication.registration.form.generated.v1
+        form_desc, running_pipeline, current_provider = RegistrationFormGenerated.run_filter(
+            form_desc=form_desc,
+            running_pipeline=running_pipeline,
+            current_provider=current_provider,
+        )
 
         # Custom form fields can be added via the form set in settings.PROFILE_EXTENSION_FORM
-        # (or deprecated settings.REGISTRATION_EXTENSION_FORM)
-        custom_form = get_registration_extension_form()
+        custom_form = get_profile_extension_form()
         if custom_form:
             custom_form_field_names = [field_name for field_name, field in custom_form.fields.items()]
         else:
@@ -1289,7 +1275,7 @@ class RegistrationFormFactory:
             },
         )
 
-    def _apply_third_party_auth_overrides(self, request, form_desc):
+    def _apply_third_party_auth_overrides(self, form_desc, running_pipeline, current_provider):
         """Modify the registration form if the user has authenticated with a third-party provider.
         If a user has successfully authenticated with a third-party provider,
         but does not yet have an account with EdX, we want to fill in
@@ -1299,96 +1285,87 @@ class RegistrationFormFactory:
         (random) password on the assumption that they will be using
         third-party auth to log in.
         Arguments:
-            request (HttpRequest): The request for the registration form, used
-                to determine if the user has successfully authenticated
-                with a third-party provider.
             form_desc (FormDescription): The registration form description
+            running_pipeline (dict): The third party auth pipeline running for the request,
+                or None if there is none.
+            current_provider (ProviderConfig): The provider of the running pipeline, or None
+                if there is no running pipeline or its provider could not be determined.
+        Returns:
+            FormDescription: the (possibly modified) registration form description
         """
-        # pylint: disable=too-many-nested-blocks
-        if third_party_auth.is_enabled():
-            running_pipeline = third_party_auth.pipeline.get(request)
-            if running_pipeline:
-                current_provider = third_party_auth.provider.Registry.get_from_pipeline(running_pipeline)
+        if current_provider:
+            # Override username / email / full name
+            field_overrides = current_provider.get_register_form_data(
+                running_pipeline.get('kwargs')
+            )
 
-                if current_provider:
-                    # Override username / email / full name
-                    field_overrides = current_provider.get_register_form_data(
-                        running_pipeline.get('kwargs')
-                    )
+            hide_registration_fields_except_tos = current_provider.sync_learner_profile_data
 
-                    # When the TPA Provider is configured to skip the registration form and we are in an
-                    # enterprise context, we need to hide all fields except for terms of service and
-                    # ensure that the user explicitly checks that field.
-                    # pylint: disable=consider-using-ternary
-                    hide_registration_fields_except_tos = (
-                        (
-                            current_provider.skip_registration_form and enterprise_customer_for_request(request)
-                        ) or current_provider.sync_learner_profile_data
-                    )
+            for field_name in self.DEFAULT_FIELDS + self.EXTRA_FIELDS:
+                if field_name not in field_overrides:
+                    continue
 
-                    for field_name in self.DEFAULT_FIELDS + self.EXTRA_FIELDS:
-                        if field_name not in field_overrides:
-                            continue
+                # Special handling for marketing_emails_opt_in:
+                # If SAML provider config has skip_registration_optional_checkboxes=True,
+                # don't let the provider's get_register_form_data override the default
+                skip_override = False
+                if field_name == 'marketing_emails_opt_in':
+                    saml_config = self._get_saml_provider_config()
+                    if saml_config and saml_config.skip_registration_optional_checkboxes:
+                        log.debug(
+                            "Skipping provider override for marketing_emails_opt_in "
+                            "due to SAML config for provider: %s",
+                            saml_config.slug
+                        )
+                        skip_override = True
 
-                        # Special handling for marketing_emails_opt_in:
-                        # If SAML provider config has skip_registration_optional_checkboxes=True,
-                        # don't let the provider's get_register_form_data override the default
-                        skip_override = False
-                        if field_name == 'marketing_emails_opt_in':
-                            saml_config = self._get_saml_provider_config()
-                            if saml_config and saml_config.skip_registration_optional_checkboxes:
-                                log.debug(
-                                    "Skipping provider override for marketing_emails_opt_in "
-                                    "due to SAML config for provider: %s",
-                                    saml_config.slug
-                                )
-                                skip_override = True
-
-                        if not skip_override:
-                            form_desc.override_field_properties(
-                                field_name, default=field_overrides[field_name]
-                            )
-
-                            if (
-                                field_name not in ['terms_of_service', 'honor_code'] and
-                                field_overrides[field_name] and
-                                hide_registration_fields_except_tos
-                            ):
-                                field_default = field_overrides[field_name]
-                                form_desc.override_field_properties(
-                                    field_name,
-                                    field_type="hidden",
-                                    default=field_default,
-                                    label="",
-                                    instructions="",
-                                )
-
-                    # Hide the confirm_email field
+                if not skip_override:
                     form_desc.override_field_properties(
-                        "confirm_email",
-                        default="",
-                        field_type="hidden",
-                        required=False,
-                        label="",
-                        instructions="",
-                        restrictions={}
+                        field_name, default=field_overrides[field_name]
                     )
 
-                    # Hide the password field
-                    form_desc.override_field_properties(
-                        "password",
-                        default="",
-                        field_type="hidden",
-                        required=False,
-                        label="",
-                        instructions="",
-                        restrictions={}
-                    )
-                    # used to identify that request is running third party social auth
-                    form_desc.add_field(
-                        "social_auth_provider",
-                        field_type="hidden",
-                        label="",
-                        default=current_provider.name if current_provider.name else "Third Party",
-                        required=False,
-                    )
+                    if (
+                        field_name not in ['terms_of_service', 'honor_code'] and
+                        field_overrides[field_name] and
+                        hide_registration_fields_except_tos
+                    ):
+                        field_default = field_overrides[field_name]
+                        form_desc.override_field_properties(
+                            field_name,
+                            field_type="hidden",
+                            default=field_default,
+                            label="",
+                            instructions="",
+                        )
+
+            # Hide the confirm_email field
+            form_desc.override_field_properties(
+                "confirm_email",
+                default="",
+                field_type="hidden",
+                required=False,
+                label="",
+                instructions="",
+                restrictions={}
+            )
+
+            # Hide the password field
+            form_desc.override_field_properties(
+                "password",
+                default="",
+                field_type="hidden",
+                required=False,
+                label="",
+                instructions="",
+                restrictions={}
+            )
+            # used to identify that request is running third party social auth
+            form_desc.add_field(
+                "social_auth_provider",
+                field_type="hidden",
+                label="",
+                default=current_provider.name if current_provider.name else "Third Party",
+                required=False,
+            )
+
+        return form_desc

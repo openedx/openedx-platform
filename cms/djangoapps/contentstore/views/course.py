@@ -7,6 +7,7 @@ import logging
 import random
 import re
 import string
+from collections.abc import Iterable
 from typing import Dict  # noqa: UP035
 
 import django.utils
@@ -29,12 +30,6 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator
 from openedx_authz.api import get_scopes_for_user_and_permission
-from openedx_authz.api.data import (
-    CourseOverviewData,
-    OrgCourseOverviewGlobData,
-    PlatformCourseOverviewGlobData,
-    ScopeData,
-)
 from openedx_authz.constants.permissions import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
@@ -42,6 +37,7 @@ from openedx_authz.constants.permissions import (
     COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
+    COURSES_VIEW_GROUP_CONFIGURATIONS,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )
 from organizations.api import add_organization_course, ensure_organization
@@ -50,7 +46,7 @@ from organizations.models import Organization
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 
-from cms.djangoapps.contentstore.api.views.utils import get_bool_param
+from cms.djangoapps.contentstore.api.views.utils import get_bool_param, get_datetime_param
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
@@ -74,7 +70,6 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgStaffRole,
     UserBasedRole,
-    enable_authz_course_authoring,
     strict_role_checking,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
@@ -82,12 +77,14 @@ from common.djangoapps.util.string_utils import _has_non_ascii_characters
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
+from openedx.core.djangoapps.authz.scopes import get_authz_course_keys_from_scopes
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.lib.course_tabs import CourseTabPluginManager
+from openedx.core.lib.log_utils import get_username_or_pii_safe_user_id_for_log
 from xmodule.course_block import CourseBlock, CourseFields  # pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
 from xmodule.modulestore import EdxJSONEncoder  # pylint: disable=wrong-import-order
@@ -185,16 +182,33 @@ def get_course_and_check_manage_group_configurations_access(course_key, user, de
     return _get_course_block(course_key, depth)
 
 
-def reindex_course_and_check_access(course_key, user):
+def user_can_reindex_course(course_key, user):
     """
-    Internal method used to restart indexing on a course.
+    Returns True if `user` is allowed to trigger a search reindex for `course_key`.
+
+    Mirrors the access rules enforced by `course_search_index_handler`, so callers that only
+    need to know whether the action is allowed (e.g. to decide whether to show a reindex link)
+    stay in sync with the rules enforced when the reindex is actually triggered.
     """
-    if not user_has_course_permission(
+    is_authz_enabled = core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
+    if not is_authz_enabled and not GlobalStaff().has_user(user):
+        # When AuthZ is disabled, restrict to global staff (legacy behavior).
+        # When AuthZ is enabled, access control is enforced by the AuthZ layer,
+        # which includes staff/superuser checks and course-level permissions.
+        return False
+    return user_has_course_permission(
         user=user,
         authz_permission=COURSES_PUBLISH_COURSE_CONTENT.identifier,
         course_key=course_key,
         legacy_permission=LegacyAuthoringPermission.WRITE
-    ):
+    )
+
+
+def reindex_course_and_check_access(course_key, user):
+    """
+    Internal method used to restart indexing on a course.
+    """
+    if not user_can_reindex_course(course_key, user):
         raise PermissionDenied()
     return CoursewareSearchIndexer.do_course_reindex(modulestore(), course_key)
 
@@ -371,12 +385,6 @@ def course_search_index_handler(request, course_key_string):
         json: return status of indexing task
     """
     course_key = CourseKey.from_string(course_key_string)
-    is_authz_enabled = core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
-    if not is_authz_enabled and not GlobalStaff().has_user(request.user):
-        # When AuthZ is disabled, restrict to global staff (legacy behavior).
-        # When AuthZ is enabled, access control is enforced by the AuthZ layer,
-        # which includes staff/superuser checks and course-level permissions.
-        raise PermissionDenied()
     content_type = request.META.get('CONTENT_TYPE', None)
     if content_type is None:
         content_type = "application/json; charset=utf-8"
@@ -420,19 +428,8 @@ def get_in_process_course_actions(request):
             exclude_args={'state': CourseRerunUIStateManager.State.SUCCEEDED},
             should_display=True,
         )
-        if (
-            # The user who initiated the rerun can always see its status.
-            # This is needed because when the authz flag is enabled, permission
-            # checks require a CourseOverview which doesn't exist until the
-            # rerun task clones the course.
-            # TODO: This created_user fallback is a temporary workaround until
-            # openedx/openedx-authz#352 is implemented. Once authz supports
-            # pre-assigning roles without a CourseOverview, this check can be removed
-            # and the standard permission check will suffice.
-            course.created_user == request.user
-            or user_has_course_permission(
-                request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
-            )
+        if user_has_course_permission(
+            request.user, COURSES_VIEW_COURSE.identifier, course.course_key, LegacyAuthoringPermission.READ
         )
     ]
 
@@ -470,7 +467,7 @@ def _accessible_courses_summary_iter(request):
     return courses_summary, in_process_course_actions
 
 
-def get_query_params_if_present(request):
+def get_query_params_if_present(request) -> tuple[str | None, str | None, bool | None, bool | None]:
     """
     Returns the query params from request if present.
 
@@ -488,8 +485,14 @@ def get_query_params_if_present(request):
             The default value is None.
         archived_only (str): if not None, this value will limit the courses returned to archived courses.
             The default value is None.
+
+    Note: ``start_date_on_or_after``/``start_date_on_or_before`` are listed below for consistency
+    with the other recognized filter params; they have no effect on this function's return value.
     """
-    allowed_query_params = ['search', 'ordering', 'order', 'active_only', 'archived_only']
+    allowed_query_params = [
+        'search', 'ordering', 'order', 'active_only', 'archived_only',
+        'start_date_on_or_after', 'start_date_on_or_before',
+    ]
     if not any(param in request.GET for param in allowed_query_params):
         return None, None, None, None
     search_query = request.GET.get('search')
@@ -838,75 +841,6 @@ def _apply_course_query_filters(request, courses):
     return filter(filter_course, filtered_courses)
 
 
-def _get_course_keys_for_org_scope(org_keys: set[str]):
-    """
-    Convert a set of organization keys into specific course keys.
-    """
-
-    return CourseOverview.get_all_courses(orgs=org_keys).values_list('id', flat=True)
-
-
-def _get_course_keys_from_platform_scope() -> set[CourseKey]:
-    """
-    Resolve course keys for a platform-wide Authz scope.
-
-    When the AuthZ course authoring feature flag is globally enabled, all courses
-    are returned without per-course validation. Otherwise, only courses with the
-    per-course toggle enabled are included.
-
-    Returns:
-        set[CourseKey]: Course keys accessible on the platform.
-    """
-    course_keys = CourseOverview.get_all_courses().values_list("id", flat=True)
-
-    if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
-        return set(course_keys)
-
-    return {course_key for course_key in course_keys if enable_authz_course_authoring(course_key)}
-
-
-def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]) -> set[CourseKey]:
-    """
-    Convert authorization scopes into a set of accessible course keys.
-
-    This function processes authorization scopes with the following precedence:
-    1. Platform-wide access (PlatformCourseOverviewGlobData): Returns all courses
-       when the AuthZ course authoring toggle is globally enabled; otherwise only
-       courses with the per-course toggle enabled
-    2. Course-specific access (CourseOverviewData): Returns individual course keys
-    3. Organization-wide access (OrgCourseOverviewGlobData): Returns all courses in specified orgs
-
-    For non-platform scopes, only courses with the authz course authoring toggle
-    enabled are included.
-
-    Args:
-        authz_scopes: List of authorization scope data objects from the authz system.
-
-    Returns:
-        set[CourseKey]: Set of course keys the user has access to based on their scopes.
-    """
-    if any(isinstance(access, PlatformCourseOverviewGlobData) for access in authz_scopes):
-        return _get_course_keys_from_platform_scope()
-
-    course_keys = set()
-    org_keys = set()
-
-    for access in authz_scopes:
-        if isinstance(access, CourseOverviewData) and access.course_key:
-            if enable_authz_course_authoring(access.course_key):
-                course_keys.add(access.course_key)
-        elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
-            org_keys.add(access.org)
-
-    if org_keys:
-        course_keys.update(
-            key for key in _get_course_keys_for_org_scope(org_keys)
-            if enable_authz_course_authoring(key)
-        )
-
-    return course_keys
-
-
 def _get_authz_accessible_courses_list(request):
     """
     List all courses available to the logged in user by
@@ -918,7 +852,7 @@ def _get_authz_accessible_courses_list(request):
         COURSES_VIEW_COURSE.identifier
     )
 
-    return _get_course_keys_from_scopes(authz_scopes)
+    return get_authz_course_keys_from_scopes(authz_scopes)
 
 
 def _get_legacy_accessible_courses_list(request: HttpRequest) -> set[CourseKey]:
@@ -1011,7 +945,7 @@ def _get_candidate_course_keys(request):
     return authz_keys | group_keys
 
 @function_trace('get_courses_accessible_to_user')
-def get_courses_accessible_to_user(request):
+def get_courses_accessible_to_user(request) -> tuple[Iterable[CourseOverview], list]:
     """
     Return courses accessible to the user using a hybrid AuthZ + legacy approach.
 
@@ -1031,9 +965,13 @@ def get_courses_accessible_to_user(request):
 
     Returns:
         tuple:
-            - list[CourseOverview]: Accessible courses.
+            - Iterable[CourseOverview]: Accessible courses.
             - list: In-process course actions (staff only).
     """
+    # Validate params before any early return so validity doesn't depend on the user's course access.
+    start_date_on_or_after = get_datetime_param(request, 'start_date_on_or_after', None)
+    start_date_on_or_before = get_datetime_param(request, 'start_date_on_or_before', None)
+
     user = request.user
     is_staff_user = GlobalStaff().has_user(user) or user.is_superuser
     in_process_actions = []
@@ -1069,7 +1007,9 @@ def get_courses_accessible_to_user(request):
 
     # Step 3: Batch fetch valid courses with a single query, ordered by creation date
     courses = CourseOverview.get_all_courses(
-        filter_={'id__in': list(valid_course_keys)}
+        filter_={'id__in': list(valid_course_keys)},
+        start_date_on_or_after=start_date_on_or_after,
+        start_date_on_or_before=start_date_on_or_before,
     ).order_by('created')  # default ordering is by created date
 
     # Step 4: Apply filters (e.g. search, active/archived status, ordering)
@@ -1340,17 +1280,8 @@ def rerun_course(user, source_course_key, org, number, run, fields, background=T
             raise PermissionDenied()
 
     # Make sure user has instructor and staff access to the destination course
-    # so the user can see the updated status for that course.
-    # When authz is enabled, we skip this because the authz layer requires a
-    # CourseOverview (which doesn't exist until the course is cloned in the task).
-    # In that case, visibility of the rerun status is granted by checking
-    # created_user on CourseRerunState instead.
-    # TODO: This conditional is a temporary workaround until openedx/openedx-authz#352
-    # is implemented (pre-assigning roles without a CourseOverview). Once resolved,
-    # add_instructor can be called unconditionally here and the created_user fallback
-    # in get_in_process_course_actions can be removed.
-    if not enable_authz_course_authoring(destination_course_key):
-        add_instructor(destination_course_key, user, user)
+    # so the user can see the updated status for that course
+    add_instructor(destination_course_key, user, user)
 
     # Mark the action as initiated
     CourseRerunState.objects.initiated(source_course_key, destination_course_key, user, fields['display_name'])
@@ -1933,13 +1864,25 @@ def group_configurations_list_handler(request, course_key_string):
         json: create new group configuration
     """
     course_key = CourseKey.from_string(course_key_string)
+
+    if request.method == 'GET':
+        # GET only redirects to the MFE (html) or returns 406 (json)
+        if not user_has_course_permission(
+            user=request.user,
+            authz_permission=COURSES_VIEW_GROUP_CONFIGURATIONS.identifier,
+            course_key=course_key,
+            legacy_permission=LegacyAuthoringPermission.READ,
+        ):
+            raise PermissionDenied()
+        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
+            return redirect(get_group_configurations_url(course_key))
+        return HttpResponse(status=406)
+
     store = modulestore()
     with store.bulk_operations(course_key):
         course = get_course_and_check_manage_group_configurations_access(course_key, request.user)
 
-        if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
-            return redirect(get_group_configurations_url(course_key))
-        elif "application/json" in request.META.get('HTTP_ACCEPT'):
+        if "application/json" in request.META.get('HTTP_ACCEPT'):
             if request.method == 'POST':
                 # create a new group configuration for the course
                 try:
@@ -2070,7 +2013,7 @@ def bulk_enable_disable_discussions(request, course_key_string):
     discussion_enabled = request.json['discussion_enabled']
     log.info(
         "User %s is attempting to %s discussions for all verticals in course %s",
-        user.username,
+        get_username_or_pii_safe_user_id_for_log(user),
         "enable" if discussion_enabled else "disable",
         course_key
     )
@@ -2150,7 +2093,7 @@ def get_allowed_organizations_for_libraries(user):
     # This allows org-level staff to create libraries. We should re-evaluate
     # whether this is necessary and try to normalize course and library creation
     # authorization behavior.
-    if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
+    if settings.ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES:
         organizations_set.update(get_organizations_for_non_course_creators(user))
 
     # This allows people in the course creator group for an org to create

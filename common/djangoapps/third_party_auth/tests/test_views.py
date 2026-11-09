@@ -3,7 +3,6 @@ Test the views served by third_party_auth.
 """
 
 
-import unittest
 from unittest.mock import patch
 
 import ddt
@@ -22,13 +21,14 @@ from common.djangoapps.third_party_auth import pipeline
 # Define some XML namespaces:
 from common.djangoapps.third_party_auth.utils import SAML_XML_NS
 from common.djangoapps.third_party_auth.views import inactive_user_view
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from .testutil import AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY, SAMLTestCase
+from .testutil import SAMLTestCase
 
 XMLDSIG_XML_NS = 'http://www.w3.org/2000/09/xmldsig#'
 
 
-@unittest.skipUnless(AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY + ' not enabled')
+@skip_unless_lms
 @ddt.ddt
 class SAMLMetadataTest(SAMLTestCase):
     """
@@ -146,7 +146,7 @@ class SAMLMetadataTest(SAMLTestCase):
         assert support_email_node.text == support_email
 
 
-@unittest.skipUnless(AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY + ' not enabled')
+@skip_unless_lms
 class SAMLAuthTest(SAMLTestCase):
     """
     Test the SAML auth views
@@ -166,7 +166,7 @@ class SAMLAuthTest(SAMLTestCase):
         assert response.status_code == 404
 
 
-@unittest.skipUnless(AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY + ' not enabled')
+@skip_unless_lms
 class IdPRedirectViewTest(SAMLTestCase):
     """
         Test IdPRedirectView.
@@ -206,7 +206,7 @@ class IdPRedirectViewTest(SAMLTestCase):
         )
 
 
-@unittest.skipUnless(AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY + ' not enabled')
+@skip_unless_lms
 class InactiveUserViewTests(TestCase):
     """Test inactive user view """
     @patch('common.djangoapps.third_party_auth.views.redirect')

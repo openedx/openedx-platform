@@ -10,6 +10,20 @@ class UnsignedBigIntAutoField(AutoField):
     """
     An unsigned 8-byte integer for auto-incrementing primary keys.
     """
+    def get_internal_type(self):
+        # Django 5.2's IntegerFieldOverflow lookup checks connection.ops.integer_field_range()
+        # keyed by get_internal_type() before building SQL for exact-match lookups (e.g.
+        # StudentModule.objects.get(id=...)), and silently excludes out-of-range values
+        # (EmptyResultSet) instead of querying. The inherited 'AutoField' type maps to a 32-bit
+        # signed range on MySQL, so on any instance whose ids grow past 2147483647, lookups and
+        # updates by id would silently match no rows. Report 'BigAutoField' instead to get its
+        # 64-bit signed range — wrong sign for an unsigned column, but wide enough to never clip
+        # a real value. Deliberately a hardcoded string, not
+        # `class UnsignedBigIntAutoField(BigAutoField)`: subclassing would also change
+        # issubclass(_, AutoField) to False (BigAutoField doesn't inherit AutoField) and pull in
+        # BigIntegerField's validators — a bigger, less auditable change than this override.
+        return 'BigAutoField'
+
     def db_type(self, connection):
         if connection.settings_dict['ENGINE'] == 'django.db.backends.mysql':
             return "bigint UNSIGNED AUTO_INCREMENT"

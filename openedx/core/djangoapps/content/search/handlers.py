@@ -47,9 +47,10 @@ from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import SignalHandler
 
 from .api import (
+    SYNC_INDEX_WAIT_TIMEOUT,
     is_meilisearch_enabled,
     only_if_meilisearch_enabled,
-    reconcile_index,
+    reconcile_indexes,
     upsert_content_object_tags_index_doc,
     upsert_item_collections_index_docs,
     upsert_item_containers_index_docs,
@@ -86,7 +87,7 @@ def handle_post_migrate(sender, **kwargs):
         return
 
     try:
-        reconcile_index(status_cb=log.info, warn_cb=log.warning)
+        reconcile_indexes(status_cb=log.info, warn_cb=log.warning)
     except ConnectionError as exc:
         log.warning(
             "Meilisearch reconciliation skipped during post_migrate: %s. "
@@ -174,9 +175,14 @@ def library_block_updated_handler(**kwargs) -> None:
         log.error("Received null or incorrect data for event")
         return
 
-    # Update content library index synchronously to make sure that search index is updated before
-    # the frontend invalidates/refetches results. This is only a single document update so is very fast.
-    upsert_library_block_index_doc.apply(args=[str(library_block_data.usage_key)])
+    # Update the content library index synchronously so that the search index is usually fresh before
+    # the frontend invalidates/refetches results. The wait is *bounded*: when the search backend is
+    # slow we return without it rather than holding the response open, and Meilisearch still applies
+    # the update in the background. See SYNC_INDEX_WAIT_TIMEOUT.
+    upsert_library_block_index_doc.apply(
+        args=[str(library_block_data.usage_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(LIBRARY_BLOCK_PUBLISHED)
@@ -200,9 +206,14 @@ def library_block_published_handler(**kwargs) -> None:
         # via the DELETED handler, so there's nothing to do now.
         return
 
-    # Update content library index synchronously to make sure that search index is updated before
-    # the frontend invalidates/refetches results. This is only a single document update so is very fast.
-    upsert_library_block_index_doc.apply(args=[str(library_block_data.usage_key)])
+    # Update the content library index synchronously so that the search index is usually fresh before
+    # the frontend invalidates/refetches results. The wait is *bounded*: when the search backend is
+    # slow we return without it rather than holding the response open, and Meilisearch still applies
+    # the update in the background. See SYNC_INDEX_WAIT_TIMEOUT.
+    upsert_library_block_index_doc.apply(
+        args=[str(library_block_data.usage_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(LIBRARY_BLOCK_DELETED)

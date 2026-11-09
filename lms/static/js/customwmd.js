@@ -42,9 +42,6 @@ Mostly adapted from math.stackexchange.com: http://cdn.sstatic.net/js/mathjax-ed
     MathJaxProcessor.prototype.processMath = function(start, last, preProcess) {
       var block, i, j, ref, ref1;
       block = this.blocks.slice(start, last + 1).join("").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      if (MathJax.Hub.Browser.isMSIE) {
-        block = block.replace(/(%[^\n]*)\n/g, "$1<br/>\n");
-      }
       for (i = j = ref = start + 1, ref1 = last; ref <= ref1 ? j <= ref1 : j >= ref1; i = ref <= ref1 ? ++j : --j) {
         this.blocks[i] = "";
       }

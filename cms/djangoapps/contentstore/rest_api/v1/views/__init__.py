@@ -17,3 +17,7 @@ from .textbooks import CourseTextbooksView  # noqa: F401
 from .vertical_block import ContainerHandlerView, vertical_container_children_redirect_view  # noqa: F401
 from .videos import CourseVideosView, VideoDownloadView, VideoUsageView  # noqa: F401
 from .xblock import XblockViewSet  # noqa: F401
+from .youtube_transcripts import (
+    YoutubeTranscriptChecksViewSet,  # noqa: F401
+    YoutubeTranscriptImportsViewSet,  # noqa: F401
+)

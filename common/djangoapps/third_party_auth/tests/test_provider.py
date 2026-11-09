@@ -10,17 +10,17 @@ from django.test.utils import CaptureQueriesContext
 
 from common.djangoapps.third_party_auth import provider
 from common.djangoapps.third_party_auth.tests import testutil
-from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
     with_site_configuration_context,
 )
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 SITE_DOMAIN_A = 'professionalx.example.com'
 SITE_DOMAIN_B = 'somethingelse.example.com'
 
 
-@skip_unless_thirdpartyauth()
+@skip_unless_lms
 class RegistryTest(testutil.TestCase):
     """Tests registry discovery and operation."""
 

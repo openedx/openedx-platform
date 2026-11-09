@@ -28,6 +28,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
+from edx_rest_framework_extensions.errors import Conflict
 from rest_framework.exceptions import (
     APIException,
     NotFound,
@@ -50,15 +51,8 @@ from openedx.core.djangoapps.enrollments.errors import (
 )
 from openedx.core.djangoapps.user_api.models import UserRetirementStatus
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
-from openedx.core.lib.api.exceptions import Conflict
 from openedx.core.lib.exceptions import CourseNotFoundError
 from openedx.core.lib.log_utils import audit_log
-from openedx.features.enterprise_support.api import (
-    ConsentApiServiceClient,
-    EnterpriseApiException,
-    EnterpriseApiServiceClient,
-    enterprise_enabled,
-)
 
 log = logging.getLogger(__name__)
 
@@ -172,24 +166,6 @@ class EnrollmentOperationsService:
             is_active = request.data.get("is_active")
             if is_active is not None and not isinstance(is_active, bool):
                 raise ValidationError(f"'{is_active}' is an invalid enrollment activation status.")
-
-            explicit_linked_enterprise = request.data.get("linked_enterprise_customer")
-            if explicit_linked_enterprise and has_api_key and enterprise_enabled():
-                enterprise_api_client = EnterpriseApiServiceClient()
-                consent_client = ConsentApiServiceClient()
-                try:
-                    enterprise_api_client.post_enterprise_course_enrollment(username, str(course_id))
-                except EnterpriseApiException as error:
-                    log.exception(
-                        "An unexpected error occurred while creating the new EnterpriseCourseEnrollment "
-                        "for user [%s] in course run [%s]", username, course_id,
-                    )
-                    raise CourseEnrollmentError(str(error)) from error
-                consent_client.provide_consent(
-                    username=username,
-                    course_id=str(course_id),
-                    enterprise_customer_uuid=explicit_linked_enterprise,
-                )
 
             enrollment_attributes = request.data.get("enrollment_attributes")
             force_enrollment = request.data.get("force_enrollment")

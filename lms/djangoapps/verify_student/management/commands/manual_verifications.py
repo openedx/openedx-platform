@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from lms.djangoapps.verify_student.models import ManualVerification
 from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
+from openedx.core.lib.log_utils import get_email_or_pii_safe_user_id_for_log, get_standalone_pii_or_redacted_for_log
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class Command(BaseCommand):
         if single_email:
             successfully_verified = self._add_user_to_manual_verification(single_email)
             if successfully_verified is False:
-                log.error(f'Manual verification of {single_email} failed')
+                log.error('Manual verification of %s failed', get_standalone_pii_or_redacted_for_log(single_email))
             return
 
         email_ids_file = options['email_ids_file']
@@ -70,7 +71,10 @@ class Command(BaseCommand):
                 len(failed_emails),
                 total_emails
             ))
-            log.error(f'Failed emails:{pformat(failed_emails)}')
+            log.error(
+                'Failed emails for manual verification:%s',
+                get_standalone_pii_or_redacted_for_log(pformat(failed_emails)),
+            )
         else:
             log.info(f'Successfully generated manual verification for {total_emails} emails.')
 
@@ -122,7 +126,8 @@ class Command(BaseCommand):
                     status='approved',
                 ))
             else:
-                log.info(f'Skipping email {user.email}, existing verification found.')
+                user_identifier_for_log = get_email_or_pii_safe_user_id_for_log(user)
+                log.info('Skipping user %s, existing verification found.', user_identifier_for_log)
         ManualVerification.objects.bulk_create(verifications_to_create)
         failed_emails = set(email_ids) - set(users.values_list('email', flat=True))
         return list(failed_emails)
@@ -147,5 +152,8 @@ class Command(BaseCommand):
             )
             return True
         except User.DoesNotExist:
-            log.error(f'Tried to verify email {email_id}, but user not found')
+            log.error(
+                'Tried to verify email %s, but user not found',
+                get_standalone_pii_or_redacted_for_log(email_id),
+            )
             return False

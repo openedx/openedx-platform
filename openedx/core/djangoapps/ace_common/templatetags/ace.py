@@ -3,10 +3,10 @@ from urllib.parse import urlparse
 
 from crum import get_current_request
 from django import template
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from openedx.core.djangoapps.ace_common.tracking import CampaignTrackingInfo, GoogleAnalyticsTrackingPixel
-from openedx.core.djangolib.markup import HTML
 
 register = template.Library()  # pylint: disable=invalid-name
 
@@ -86,9 +86,7 @@ def google_analytics_tracking_pixel(context):
     """
     image_url = _get_google_analytics_tracking_url(context)
     if image_url is not None:
-        return mark_safe(
-            HTML('<img src="{0}" alt="" role="presentation" aria-hidden="true" />').format(HTML(image_url))
-        )
+        return format_html('<img src="{}" alt="" role="presentation" aria-hidden="true" />', image_url)
     else:
         return ''
 

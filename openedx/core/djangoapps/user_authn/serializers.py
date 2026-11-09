@@ -61,6 +61,18 @@ class ContextDataSerializer(serializers.Serializer):
             return PipelineUserDetailsSerializer(obj.get('pipeline_user_details')).data
         return {}
 
+    def to_representation(self, instance):
+        """
+        Serialize the declared fields, then merge in the context's ``extra_context`` entries.
+
+        ``extra_context`` holds entries contributed by plugins, which this serializer cannot
+        declare fields for. They are merged as-is: the contributor owns their shape, and no
+        coercion is applied.
+        """
+        representation = super().to_representation(instance)
+        representation.update(instance.get('extra_context') or {})
+        return representation
+
 
 class MFEContextSerializer(serializers.Serializer):
     """

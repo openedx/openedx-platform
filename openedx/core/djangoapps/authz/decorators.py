@@ -6,12 +6,15 @@ from functools import wraps
 from django.contrib.auth.models import AbstractUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
 from rest_framework import status
 
 from common.djangoapps.student.roles import enable_authz_course_authoring
 from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -61,10 +64,17 @@ def user_has_course_permission(
     authz_permission: str,
     course_key: CourseKey,
     legacy_permission: LegacyAuthoringPermission | None = None,
+    default_fallback: bool = False,
 ) -> bool:
     """
     Checks if the user has the specified AuthZ permission for the course,
     with optional fallback to legacy permissions.
+
+    ``default_fallback`` is the result when AuthZ is disabled for the course and
+    no ``legacy_permission`` grant applies. It defaults to ``False`` (deny), but
+    callers guarding an affordance that has no legacy-permission concept and was
+    historically always available (e.g. tag management) can pass ``True`` to
+    preserve that pre-RBAC behaviour without a separate flag check.
     """
     if enable_authz_course_authoring(course_key):
         # If AuthZ is enabled for this course, check the permission via AuthZ only.
@@ -102,7 +112,7 @@ def user_has_course_permission(
             "course_key": str(course_key),
         },
     )
-    return False
+    return default_fallback
 
 
 def get_course_key(course_id: str) -> CourseKey:
@@ -117,3 +127,66 @@ def get_course_key(course_id: str) -> CourseKey:
         # Attempt to parse it as such and extract the course key.
         usage_key = UsageKey.from_string(course_id)
         return usage_key.course_key
+
+
+def user_has_course_permission_for_upstream(
+    request,
+    authz_permission: str,
+    upstream_key,
+    param_name: str = "downstream_block_id",
+) -> bool:
+    """
+    Check an AuthZ course permission for the course of a downstream block, but only if
+    that downstream's upstream link actually points at ``upstream_key``.
+
+    Meant for endpoints that are normally scoped to a library resource (``upstream_key``,
+    a ``LibraryUsageLocatorV2`` or ``LibraryContainerLocator``) but should also grant
+    access to a user reviewing that exact resource from a course they can't otherwise
+    view the library from, e.g. a Course Auditor reviewing pending library updates. The
+    caller is expected to fall back to its regular resource-level permission check when
+    this returns False.
+
+    The query param must be the *downstream block's* usage key, not a bare course id: we
+    resolve its real upstream link and compare it against ``upstream_key`` ourselves,
+    rather than trusting the caller's claim that the two are related. Otherwise, holding
+    the permission in any course would grant access to any library resource, whether or
+    not that course actually uses it.
+
+    Returns False (never raises) for any reason the bypass doesn't apply: the param is
+    absent, not a valid usage key, the downstream doesn't exist, has no upstream link, or
+    that link doesn't match ``upstream_key``.
+
+    Deliberately doesn't use cms.lib.xblock.upstream_sync.UpstreamLink: this module is a
+    dependency of low-level apps like content_libraries and xblock (per the "low-level
+    apps should not depend on high-level apps" import-linter contract), so it can't import
+    from upstream_sync without creating a cycle. We only need the raw upstream reference,
+    so we read the block's ``upstream`` field directly (relying on it having the mixin
+    that provides that field applied elsewhere, not on importing that mixin ourselves) and
+    parse it ourselves, the same way UpstreamLink.get_for_block does internally.
+    """
+    downstream_id = request.GET.get(param_name)
+    if not downstream_id:
+        return False
+    try:
+        downstream_key = UsageKey.from_string(downstream_id)
+    except InvalidKeyError:
+        return False
+    try:
+        downstream = modulestore().get_item(downstream_key)
+    except ItemNotFoundError:
+        return False
+
+    upstream_ref = getattr(downstream, "upstream", None)
+    if not upstream_ref:
+        return False
+    try:
+        downstream_upstream_key = LibraryUsageLocatorV2.from_string(upstream_ref)
+    except InvalidKeyError:
+        try:
+            downstream_upstream_key = LibraryContainerLocator.from_string(upstream_ref)
+        except InvalidKeyError:
+            return False
+
+    if downstream_upstream_key != upstream_key:
+        return False
+    return user_has_course_permission(request.user, authz_permission, downstream_key.course_key)

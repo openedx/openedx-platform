@@ -4,7 +4,6 @@ Tasks for discussions
 import logging
 
 from celery import shared_task
-from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.data import CourseDiscussionConfigurationData, DiscussionTopicContext
 from openedx_events.learning.signals import COURSE_DISCUSSIONS_CHANGED
@@ -20,7 +19,6 @@ log = logging.getLogger(__name__)
 
 
 @shared_task
-@set_code_owner_attribute
 def update_discussions_settings_from_course_task(course_key_str: str, discussable_units=None):
     """
     Celery task that creates or updates discussions settings for a course.

@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from openedx_filters.authentication.types import RunningPipelineKwargs
 from organizations.models import Organization
 from social_core.backends.base import BaseAuth
 from social_core.backends.oauth import OAuthAuth
@@ -317,7 +318,7 @@ class ProviderConfig(ConfigurationModel):
         return remote_id
 
     @classmethod
-    def get_register_form_data(cls, pipeline_kwargs):
+    def get_register_form_data(cls, pipeline_kwargs: RunningPipelineKwargs):
         """Gets dict of data to display on the register form.
 
         register_user uses this to populate
@@ -325,8 +326,11 @@ class ProviderConfig(ConfigurationModel):
         provider, preventing duplicate data entry.
 
         Args:
-            pipeline_kwargs: dict of string -> object. Keyword arguments
-                accumulated by the pipeline thus far.
+            pipeline_kwargs (RunningPipelineKwargs): Keyword arguments accumulated by the
+                pipeline thus far. This method is reachable from pipeline steps of the
+                registration form filter, which may live in other repositories, so the
+                argument's declared shape is the shared cross-repository contract in
+                ``openedx_filters.authentication.types``.
 
         Returns:
             Dict of string -> string. Keys are names of form fields; values are
@@ -677,17 +681,21 @@ class SAMLProviderConfig(ProviderConfig):
     default_last_name = models.CharField(
         max_length=255, blank=True, verbose_name="Default Value for Last Name",
         help_text="Default value for last name to be used if not present in SAML response.")
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     attr_username = models.CharField(
         max_length=128, blank=True, verbose_name="Username Hint Attribute",
         help_text="URN of SAML attribute to use as a suggested username for this user. Leave blank for default."
     )
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     default_username = models.CharField(
         max_length=255, blank=True, verbose_name="Default Value for Username",
         help_text="Default value for username to be used if not present in SAML response."
     )
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     attr_email = models.CharField(
         max_length=128, blank=True, verbose_name="Email Attribute",
         help_text="URN of SAML attribute containing the user's email address[es]. Leave blank for default.")
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     default_email = models.CharField(
         max_length=255, blank=True, verbose_name="Default Value for Email",
         help_text="Default value for email to be used if not present in SAML response."
@@ -735,6 +743,7 @@ class SAMLProviderConfig(ProviderConfig):
             "for trusted providers that are known to provide accurate user information."
         ),
     )
+    # pylint: disable-next=pii-invalid-no-pii-annotation  # field does not store user PII data, safe under OEP-30
     skip_email_verification = models.BooleanField(
         default=True,
         help_text=_(

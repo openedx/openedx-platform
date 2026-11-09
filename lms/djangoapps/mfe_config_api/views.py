@@ -4,14 +4,14 @@ MFE API Views for useful information related to mfes.
 
 from configparser import Error as ConfigParserError
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
-from django.http import HttpResponseNotFound, JsonResponse
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from help_tokens.core import HelpUrlExpert
 from rest_framework import status
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -249,11 +249,12 @@ class MFEConfigView(APIView):
     """
 
     @method_decorator(cache_page(settings.MFE_CONFIG_API_CACHE_TIMEOUT))
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.query_parameter(
+            OpenApiParameter(
                 "mfe",
-                str,
+                OpenApiTypes.STR,
+                OpenApiParameter.QUERY,
                 description="Name of an MFE (a.k.a. an APP_ID).",
             ),
         ],
@@ -298,9 +299,6 @@ class MFEConfigView(APIView):
         }
         ```
         """
-
-        if not settings.ENABLE_MFE_CONFIG_API:
-            return HttpResponseNotFound()
 
         mfe_name = (
             str(request.query_params.get("mfe"))
@@ -438,9 +436,6 @@ class FrontendSiteConfigView(APIView):
         }
         ```
         """
-        if not settings.ENABLE_MFE_CONFIG_API:
-            raise NotFound()
-
         # Legacy translation (removable once MFE_CONFIG is deprecated).
         site_config = translate_legacy_mfe_config()
 

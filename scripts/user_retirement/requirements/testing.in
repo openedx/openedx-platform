@@ -1,9 +1,0 @@
--r base.txt
-
-moto
-pytest
-requests_mock
-responses
-mock
-ddt
-urllib3

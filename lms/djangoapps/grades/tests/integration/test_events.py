@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import ddt
 from crum import set_current_request
-from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.student.models import CourseEnrollment
