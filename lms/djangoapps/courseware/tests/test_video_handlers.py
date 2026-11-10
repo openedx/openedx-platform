@@ -17,7 +17,7 @@ from django.utils.timezone import now
 from edxval import api
 from webob import Request, Response
 from xblock.django.request import DjangoWebobRequest
-from xblocks_contrib.video import VideoBlock
+from xblock_video import VideoBlock
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
@@ -505,7 +505,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherit
         assert response.status == '404 Not Found'
 
     @patch(
-        'xblocks_contrib.video.video_handlers.get_transcript',
+        'xblock_video.video_handlers.get_transcript',
         return_value=('Subs!', 'test_filename.srt', 'application/x-subrip; charset=utf-8')
     )
     def test_download_srt_exist(self, __):  # noqa: PT019
@@ -516,7 +516,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherit
         assert response.headers['Content-Language'] == 'en'
 
     @patch(
-        'xblocks_contrib.video.video_handlers.get_transcript',
+        'xblock_video.video_handlers.get_transcript',
         return_value=('Subs!', 'txt', 'text/plain; charset=utf-8')
     )
     def test_download_txt_exist(self, __):  # noqa: PT019
@@ -793,7 +793,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
         if sub:
             assert ('Location', f'/static/dummy/static/subs_{sub}.srt.sjson') in response.headerlist
 
-    @patch('xblocks_contrib.video.VideoBlock.context_key', return_value='not_a_course_locator')
+    @patch('xblock_video.VideoBlock.context_key', return_value='not_a_course_locator')
     def test_translation_static_non_course(self, __):  # noqa: PT019
         """
         Test that get_static_transcript short-circuits in the case of a non-CourseLocator.
@@ -815,7 +815,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
             store.update_item(self.course, self.user.id)
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.edxval_api.get_video_transcript_data')
-    @patch('xblocks_contrib.video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
+    @patch('xblock_video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
     def test_translation_fallback_transcript(self, mock_get_video_transcript_data):
         """
         Verify that the val transcript is returned as a fallback,
@@ -847,7 +847,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-i
         for attribute, value in expected_headers.items():
             assert response.headers[attribute] == value
 
-    @patch('xblocks_contrib.video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
+    @patch('xblock_video.VideoBlock.get_static_transcript', Mock(return_value=Response(status=404)))
     def test_translation_fallback_transcript_feature_disabled(self):
         """
         Verify that val transcript is not returned when its feature is disabled.

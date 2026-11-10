@@ -17,7 +17,7 @@ from edxval.api import create_video
 from opaque_keys.edx.keys import UsageKey
 from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR
 from organizations.tests.factories import OrganizationFactory
-from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
+from xblock_video import VideoBlock  # pylint: disable=wrong-import-order
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin

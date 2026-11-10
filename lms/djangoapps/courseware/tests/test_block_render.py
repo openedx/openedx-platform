@@ -55,7 +55,7 @@ from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
 from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,  # pylint: disable=reimported
 )
-from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
+from xblock_video import VideoBlock  # pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode  # pylint: disable=reimported
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user

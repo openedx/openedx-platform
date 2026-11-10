@@ -8,7 +8,7 @@ import ddt
 from django.conf import settings
 from django.core import mail
 from django.test import TestCase, override_settings
-from xblocks_contrib.video import VideoBlock
+from xblock_video import VideoBlock
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import SupportStaffRole
