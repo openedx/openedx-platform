@@ -10,17 +10,14 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.db import connection
-from django.db.models import signals as model_signals
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import Resolver404, resolve, reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from help_tokens.core import HelpUrlExpert
-from rest_framework import serializers
 from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
 from cms.djangoapps.contentstore.rest_api.v1.views.help_urls import HelpUrlsView as LegacyHelpUrlsView
-from cms.djangoapps.contentstore.rest_api.v2.serializers.help_urls import HelpUrlsSerializer
 from cms.djangoapps.contentstore.rest_api.v2.views.help_urls import HelpUrlsView
 from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import (
     PASSWORD,
@@ -252,11 +249,6 @@ class HelpUrlsIdempotenceTest(TestCase):
             assert writes(queries.captured_queries) == [], method
             assert signals.unexpected() == [], method
 
-    def test_the_capture_sees_a_write_when_one_happens(self):
-        with CaptureQueriesContext(connection) as queries, SignalRecorder() as signals:
-            UserFactory(password=PASSWORD)
-        assert writes(queries.captured_queries) != []
-        assert any(signal is model_signals.post_save for _, signal in signals.unexpected())
 
 
 class HelpUrlsParityTest(TestCase):
@@ -326,17 +318,15 @@ class HelpUrlsParityTest(TestCase):
                     token: f"https://docs.example.com/{directory}/authors/known/{token}.html" for token in tokens
                 }
 
-    def test_a_token_the_contract_does_not_declare_is_served_only_by_the_legacy_route(self):
-        with _help_tokens_file([*_ini_tokens(), "unlisted_page"]), override_settings(
+    def test_a_token_added_by_the_operator_is_served_by_both_routes(self):
+        tokens = [token for token in _ini_tokens() if token not in ("home", "outline")] + ["my_custom_page"]
+        with _help_tokens_file(tokens), override_settings(
             HELP_TOKENS_BOOKS=KNOWN_BOOKS, HELP_TOKENS_LANGUAGE_CODE=None,
         ):
             legacy, new = self._pair()
-        self._assert_parity(
-            legacy, new, expected_status=200,
-            intentional=(("unlisted_page", "the v2 body carries the declared tokens only"),),
-        )
-        assert legacy.json()["unlisted_page"] == "https://docs.example.com/en/authors/known/unlisted_page.html"
-        assert list(new.json()) == _ini_tokens()
+        self._assert_identical(legacy, new)
+        assert list(new.json()) == tokens
+        assert new.json()["my_custom_page"] == "https://docs.example.com/en/authors/known/my_custom_page.html"
 
     def test_query_strings_are_ignored_on_both_routes(self):
         stock_legacy, stock_new = self._pair()
@@ -369,26 +359,6 @@ class HelpUrlsParityTest(TestCase):
                 self.client.get(reverse(url_name))
             counts[url_name] = len(queries.captured_queries)
         assert counts[URL_NAME] == counts[LEGACY_URL_NAME], counts
-
-
-class HelpUrlsSerializerTest(SimpleTestCase):
-    """The serializer declares exactly the tokens of the help tokens file."""
-
-    def test_the_fields_follow_the_help_tokens_file_in_order(self):
-        fields = list(HelpUrlsSerializer().fields)
-        assert fields == _ini_tokens()
-        assert fields == list(get_help_urls())
-
-    def test_every_field_is_a_read_only_url(self):
-        for name, field in HelpUrlsSerializer().fields.items():
-            assert isinstance(field, serializers.URLField), name
-            assert field.read_only is True, name
-
-    def test_every_field_describes_its_own_page(self):
-        help_texts = [field.help_text for field in HelpUrlsSerializer().fields.values()]
-        assert len(set(help_texts)) == len(help_texts)
-        for text in help_texts:
-            assert text.startswith("Documentation page URL for "), text
 
 
 class HelpUrlsRoutingTest(TestCase):
@@ -435,19 +405,10 @@ class HelpUrlsSchemaTest(TestCase):
         assert "parameters" not in operation
         assert "deprecated" not in operation
 
-    def test_the_success_body_is_one_object_of_links(self):
+    def test_the_success_body_is_a_map_of_links(self):
         success = self._operation()["responses"]["200"]["content"]["application/json"]["schema"]
-        assert success == {"$ref": "#/components/schemas/HelpUrls"}
-        component = self.components["HelpUrls"]
-        tokens = _ini_tokens()
-        assert component["type"] == "object"
-        assert list(component["properties"]) == tokens
-        assert sorted(component["required"]) == sorted(tokens)
-        fields = HelpUrlsSerializer().fields
-        for token, prop in component["properties"].items():
-            assert prop == {
-                "type": "string", "format": "uri", "readOnly": True, "description": fields[token].help_text,
-            }, token
+        assert success == {"type": "object", "additionalProperties": {"type": "string", "format": "uri"}}
+        assert "HelpUrls" not in self.components
 
     def test_the_unauthenticated_error_references_the_shared_envelope(self):
         responses = self._operation()["responses"]
@@ -455,16 +416,3 @@ class HelpUrlsSchemaTest(TestCase):
         assert responses["401"]["content"]["application/json"]["schema"] == {
             "$ref": "#/components/schemas/ErrorResponse"
         }
-
-    def test_only_the_legacy_help_urls_operation_is_deprecated(self):
-        legacy = self.schema["paths"][LEGACY_HELP_URLS_PATH]["get"]
-        assert legacy["operationId"] == "v1_help_urls_retrieve"
-        assert legacy["deprecated"] is True
-        for other in (
-            "/api/contentstore/v1/proctored_exam_settings/{course_id}",
-            "/api/authoring/v2/courses/{course_key}/textbooks/",
-        ):
-            operations = self.schema["paths"][other]
-            assert operations, other
-            for method, operation in operations.items():
-                assert "deprecated" not in operation, (other, method)

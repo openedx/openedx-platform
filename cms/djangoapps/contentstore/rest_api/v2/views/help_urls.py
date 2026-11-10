@@ -10,7 +10,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from cms.djangoapps.contentstore.rest_api.v2.serializers.help_urls import HelpUrlsSerializer
 from cms.djangoapps.contentstore.utils import get_help_urls
 
 
@@ -39,9 +38,12 @@ class HelpUrlsView(StandardizedErrorMixin, APIView):
             "documentation settings."
         ),
         responses={
+            # A map rather than a serializer: operators choose the token set
+            # through HELP_TOKENS_INI_FILE. A DictField would publish as an
+            # unspecified response body.
             200: OpenApiResponse(
-                response=HelpUrlsSerializer,
-                description="The documentation link of each Studio page.",
+                response={"type": "object", "additionalProperties": {"type": "string", "format": "uri"}},
+                description="The documentation link of each Studio page, keyed by help token.",
             ),
             401: OpenApiResponse(
                 response=ErrorResponseSerializer,
@@ -51,4 +53,4 @@ class HelpUrlsView(StandardizedErrorMixin, APIView):
     )
     def get(self, request: Request) -> Response:
         """Return the documentation link of each Studio page."""
-        return Response(HelpUrlsSerializer(get_help_urls()).data)
+        return Response(get_help_urls())
