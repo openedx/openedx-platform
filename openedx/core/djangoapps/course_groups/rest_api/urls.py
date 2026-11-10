@@ -1,11 +1,11 @@
 """
 Cohorts and content groups REST API v2 URLs.
 """
+from django.conf import settings
 from django.urls import re_path
 from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
 
 from openedx.core.constants import COURSE_ID_PATTERN
-from openedx.core.djangoapps.course_groups.constants import USERNAME_LOOKUP_REGEX
 from openedx.core.djangoapps.course_groups.rest_api import cohort_views, views
 
 COURSE_KEY = fr'(?P<course_key>{COURSE_KEY_LOOKUP_REGEX})'
@@ -41,7 +41,7 @@ urlpatterns = [
     ),
     re_path(
         fr'^v2/courses/{COURSE_KEY}/cohorts/(?P<cohort_id>[0-9]+)/users/'
-        fr'(?P<username>{USERNAME_LOOKUP_REGEX})/$',
+        fr'(?P<username>{settings.USERNAME_REGEX_PARTIAL})/$',
         cohort_views.CohortMemberViewSet.as_view({'delete': 'destroy'}),
         name='cohort_member_detail',
     ),

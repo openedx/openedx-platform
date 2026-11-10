@@ -3,6 +3,7 @@ Tests for the v2 cohorts REST API.
 """
 from datetime import datetime, timedelta
 from types import SimpleNamespace
+from urllib.parse import unquote
 from zoneinfo import ZoneInfo
 
 import ddt
@@ -15,6 +16,8 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters import PipelineStep
+from openedx_filters.learning.filters import CohortAssignmentRequested, CohortChangeRequested
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -22,6 +25,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.course_groups import cohorts
 from openedx.core.djangoapps.course_groups.models import (
+    CohortMembership,
     CourseCohort,
     CourseCohortsSettings,
     CourseUserGroup,
@@ -33,6 +37,7 @@ from openedx.core.djangoapps.course_groups.rest_api.cohort_permissions import (
 )
 from openedx.core.djangoapps.course_groups.rest_api.cohort_views import (
     DUPLICATE_NAME_MESSAGE,
+    INVALID_COURSE_KEY_MESSAGE,
     LAST_RANDOM_COHORT_MESSAGE,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
@@ -51,6 +56,44 @@ PAGINATION_FIELDS = {"count", "num_pages", "current_page", "start", "next", "pre
 MISSING_COURSE_KEY = CourseKey.from_string("course-v1:NoSuch+Course+Run")
 DISCUSSION_ROLES = (FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_ADMINISTRATOR)
 MODERATOR_READABLE = {"list cohorts", "read cohort"}
+REFUSED_ASSIGNMENT_USERNAME = "refused-assignment"
+REFUSED_CHANGE_USERNAME = "refused-change"
+EMPTY_UPDATE_MESSAGE = "Supply at least one of name, assignment_type or group_id."
+
+
+class RefuseNamedLearnerAssignmentStep(PipelineStep):
+    """Refuse to place the learner named REFUSED_ASSIGNMENT_USERNAME in any cohort."""
+
+    def run_filter(self, user, target_cohort):  # pylint: disable=arguments-differ
+        """Stop the assignment for that learner only."""
+        if user.username == REFUSED_ASSIGNMENT_USERNAME:
+            raise CohortAssignmentRequested.PreventCohortAssignment("Assignment refused.")
+        return {}
+
+
+class RefuseNamedLearnerChangeStep(PipelineStep):
+    """Refuse to move the learner named REFUSED_CHANGE_USERNAME out of their cohort."""
+
+    def run_filter(self, current_membership, target_cohort):  # pylint: disable=arguments-differ
+        """Stop the move for that learner only."""
+        if current_membership.user.username == REFUSED_CHANGE_USERNAME:
+            raise CohortChangeRequested.PreventCohortChange("Move refused.")
+        return {}
+
+
+# Spelled out rather than taken from __name__, which depends on how the test
+# runner imported this module; the filter pipeline imports the steps by this path.
+THIS_MODULE = "openedx.core.djangoapps.course_groups.rest_api.tests.test_cohort_views"
+REFUSING_FILTERS = {
+    "org.openedx.learning.cohort.assignment.requested.v1": {
+        "pipeline": [f"{THIS_MODULE}.RefuseNamedLearnerAssignmentStep"],
+        "fail_silently": False,
+    },
+    "org.openedx.learning.cohort.change.requested.v1": {
+        "pipeline": [f"{THIS_MODULE}.RefuseNamedLearnerChangeStep"],
+        "fail_silently": False,
+    },
+}
 
 
 def create_cohort(course_key, name, assignment_type=CourseCohort.MANUAL):
@@ -362,40 +405,47 @@ class TestCohortV2Access(CohortV2TestCase):
         """
         A segment without the shape of a course key matches no route, so it is
         the site's 404 rather than a server error. A key with the shape that
-        still does not parse is refused by the views; see
-        TestCohortV2PermissionClasses.
+        still does not parse reaches the view; see the next test.
         """
         response = self.client.get("/api/cohorts/v2/courses/not-a-key/cohorts/")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_a_course_key_that_does_not_parse_is_a_not_found_envelope(self):
+        """
+        A segment with the shape of a course key that does not parse is routed
+        to the view, which refuses it with the standard 404 before any
+        permission check reads the key.
+        """
+        path = "/api/cohorts/v2/courses/x+y+z/cohorts/"
+        assert resolve(path).url_name == "cohort_list"
+        envelope = assert_error_envelope(self.client.get(path), expected_status=404, expected_type_slug="not-found")
+        assert envelope["detail"] == INVALID_COURSE_KEY_MESSAGE
+
 
 class TestCohortV2PermissionClasses(CohortV2TestCase):
-    """Branches of the permission classes that the URL routing keeps out of reach."""
+    """
+    The permission classes evaluated on their own.
 
-    def check(self, permission, user, course_key="not-a-key", method="GET"):
-        """Evaluate ``permission`` for a stub request and view."""
+    On the views ``IsAuthenticated`` refuses an anonymous caller first, so
+    these cases show each class refuses one without relying on it.
+    """
+
+    def check(self, permission, user, method="GET"):
+        """Evaluate ``permission`` for a stub request and a view holding the fixture course key."""
         request = SimpleNamespace(user=user, method=method)
-        view = SimpleNamespace(kwargs={"course_key": course_key})
+        view = SimpleNamespace(course_key=self.course_key)
         return permission.has_permission(request, view)
-
-    def test_unparseable_course_key_is_denied(self):
-        """A key that does not parse is refused rather than raising."""
-        grant_forum_role(self.outsider, self.course_key, FORUM_ROLE_MODERATOR)
-        assert self.check(IsCohortCourseAdmin(), self.outsider) is False
-        assert self.check(CanReadCohortsAsDiscussionModerator(), self.outsider) is False
 
     def test_anonymous_user_is_denied(self):
         """Both classes refuse an anonymous user on their own."""
-        key = str(self.course_key)
-        assert self.check(IsCohortCourseAdmin(), AnonymousUser(), key) is False
-        assert self.check(CanReadCohortsAsDiscussionModerator(), AnonymousUser(), key) is False
+        assert self.check(IsCohortCourseAdmin(), AnonymousUser()) is False
+        assert self.check(CanReadCohortsAsDiscussionModerator(), AnonymousUser()) is False
 
     def test_moderator_read_methods(self):
         """GET and HEAD are reads; OPTIONS and every write are not."""
         grant_forum_role(self.outsider, self.course_key, FORUM_ROLE_MODERATOR)
-        key = str(self.course_key)
         allowed = {
-            method: self.check(CanReadCohortsAsDiscussionModerator(), self.outsider, key, method)
+            method: self.check(CanReadCohortsAsDiscussionModerator(), self.outsider, method)
             for method in ("GET", "HEAD", "OPTIONS", "POST", "PATCH", "PUT", "DELETE")
         }
         assert allowed == {
@@ -657,9 +707,17 @@ class TestCohortV2Update(CohortV2TestCase):
         """A payload naming no field is a 400."""
         response = self.client.patch(self.detail_url(), {}, format="json")
         envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-        assert envelope["errors"] == {
-            "non_field_errors": ["Supply at least one of name, assignment_type or group_id."]
-        }
+        assert envelope["errors"] == {"non_field_errors": [EMPTY_UPDATE_MESSAGE]}
+
+    def test_partition_alone_is_rejected_as_an_empty_update(self):
+        """
+        A user_partition_id without a group_id changes nothing, so it is the
+        same 400 as an empty payload and no content-group link is written.
+        """
+        response = self.client.patch(self.detail_url(), {"user_partition_id": 50}, format="json")
+        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
+        assert envelope["errors"] == {"non_field_errors": [EMPTY_UPDATE_MESSAGE]}
+        assert not CourseUserGroupPartitionGroup.objects.filter(course_user_group=self.cohort).exists()
 
     def test_link_relink_and_unlink_content_group(self):
         """A content group can be linked, replaced, kept as is and unlinked."""
@@ -745,10 +803,42 @@ class TestCohortV2Members(CohortV2TestCase):
             "unknown": ["nobody-by-this-name"],
             "preassigned": ["future@example.com"],
             "invalid": ["bad@"],
+            "not_allowed": [],
         }
         assert sorted(self.cohort.users.values_list("username", flat=True)) == sorted(
             [self.member.username, self.learner.username, mover.username]
         )
+
+    @override_settings(OPEN_EDX_FILTERS_CONFIG=REFUSING_FILTERS)
+    def test_add_reports_learners_a_filter_refuses(self):
+        """
+        A learner a plugin filter refuses, whether placing them in their first
+        cohort or moving them from another, is reported as not allowed and left
+        where they were, while the other entries are still added.
+        """
+        other = create_cohort(self.course_key, "Other")
+        refused_new = UserFactory.create(username=REFUSED_ASSIGNMENT_USERNAME)
+        refused_mover = UserFactory.create(username=REFUSED_CHANGE_USERNAME)
+        cohorts.add_user_to_cohort(other, refused_mover.username)
+        response = self.client.post(self.members_url(), {"users": [
+            refused_new.username, self.learner.username, refused_mover.username,
+        ]}, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "added": [{"username": self.learner.username, "email": self.learner.email}],
+            "changed": [],
+            "present": [],
+            "unknown": [],
+            "preassigned": [],
+            "invalid": [],
+            "not_allowed": [refused_new.username, refused_mover.username],
+        }
+        assert sorted(self.cohort.users.values_list("username", flat=True)) == sorted(
+            [self.member.username, self.learner.username]
+        )
+        assert not CohortMembership.objects.filter(user=refused_new).exists()
+        assert CohortMembership.objects.get(user=refused_mover).course_user_group == other
+        assert list(other.users.values_list("username", flat=True)) == [refused_mover.username]
 
     def test_add_without_users_is_rejected(self):
         """An empty list is a 400."""
@@ -761,6 +851,21 @@ class TestCohortV2Members(CohortV2TestCase):
         response = self.client.delete(self.member_url(self.member.username))
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not self.cohort.users.exists()
+
+    def test_remove_a_member_whose_username_has_a_space(self):
+        """
+        Usernames may contain a space, as Arabic and Farsi ones can, and such a
+        member is removed through the member address like any other.
+        """
+        spaced = UserFactory.create(username="abc def")
+        cohorts.add_user_to_cohort(self.cohort, spaced)
+        url = self.member_url(spaced.username)
+        assert url == f"/api/cohorts/v2/courses/{self.course_key}/cohorts/{self.cohort.id}/users/abc%20def/"
+        match = resolve(unquote(url))
+        assert (match.url_name, match.kwargs["username"]) == ("cohort_member_detail", "abc def")
+        response = self.client.delete(url)
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert list(self.cohort.users.values_list("username", flat=True)) == [self.member.username]
 
     def test_remove_non_member_is_rejected(self):
         """Removing a learner who is not in the cohort is a 400."""

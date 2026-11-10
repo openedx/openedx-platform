@@ -70,8 +70,13 @@ class CohortUpdateSerializer(CohortSerializer):
     )
 
     def validate(self, attrs):
-        """Refuse an empty update, then apply the content-group rule."""
-        if not attrs:
+        """
+        Refuse an update that changes nothing, then apply the content-group rule.
+
+        ``user_partition_id`` only qualifies a ``group_id``, so sent alone it
+        changes nothing and is refused like an empty body.
+        """
+        if not attrs.keys() - {"user_partition_id"}:
             raise serializers.ValidationError(
                 "Supply at least one of name, assignment_type or group_id."
             )
@@ -134,6 +139,13 @@ class CohortMembershipResultSerializer(serializers.Serializer):
     invalid = serializers.ListField(
         child=serializers.CharField(),
         help_text="Entries that are not valid email addresses.",
+    )
+    not_allowed = serializers.ListField(
+        child=serializers.CharField(),
+        help_text=(
+            "Entries a site plugin refused to place in or move to this cohort. They stay where they "
+            "were; the other entries are still processed."
+        ),
     )
 
 

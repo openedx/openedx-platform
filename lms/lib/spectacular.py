@@ -12,10 +12,13 @@ LEGACY_V2_PREFIX = "/api/enrollment/v2/"
 COLLIDING_LEGACY_PATH = "/api/enrollment/v2/enrollments"
 
 # Routes a newer version supersedes. They are published so that clients can
-# see they are deprecated, and every operation under them is marked so.
+# see they are deprecated, and every operation under them is marked so. The
+# removal window of each is recorded on
+# https://github.com/openedx/openedx-platform/issues/39128.
 SUPERSEDED_PATH_PATTERNS = (
-    # Cohorts v1 settings, cohorts and membership. The v1 CSV upload route has
-    # no successor and stays unpublished.
+    # Cohorts v1 settings, cohorts and membership, removal recorded at
+    # https://github.com/openedx/openedx-platform/issues/39128#issuecomment-6769149285.
+    # The v1 CSV upload route has no successor and stays unpublished.
     re.compile(r"^/api/cohorts/v1/(settings/|courses/[^/]+/cohorts/)"),
 )
 

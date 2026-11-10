@@ -1,8 +1,6 @@
 """
 Permissions for the v2 cohorts REST API.
 """
-from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions
 
 from common.djangoapps.student.roles import GlobalStaff
@@ -25,19 +23,6 @@ DISCUSSION_PRIVILEGED_ROLES = {
 MODERATOR_READ_METHODS = ("GET", "HEAD")
 
 
-def course_key_from_view(view):
-    """
-    Return the course key named in the request path, or None if it cannot be parsed.
-
-    A malformed key is denied rather than raised, so it cannot surface as a
-    server error.
-    """
-    try:
-        return CourseKey.from_string(view.kwargs.get("course_key", ""))
-    except InvalidKeyError:
-        return None
-
-
 class IsCohortCourseAdmin(permissions.BasePermission):
     """
     Grants full access to the course's staff and instructors, global staff and superusers.
@@ -45,6 +30,9 @@ class IsCohortCourseAdmin(permissions.BasePermission):
     This is the only permission on cohort membership and on the course's cohort
     settings: those responses carry learners' usernames, email addresses and
     full names, so the read-only discussion roles are not admitted there.
+
+    Reads the course key from ``view.course_key``, which the cohort views parse
+    from the path, refusing a malformed key, before any permission is checked.
     """
 
     def has_permission(self, request, view):
@@ -53,10 +41,7 @@ class IsCohortCourseAdmin(permissions.BasePermission):
             return False
         if GlobalStaff().has_user(user) or user.is_superuser:
             return True
-        course_key = course_key_from_view(view)
-        if course_key is None:
-            return False
-        _, staff_access, instructor_access = administrative_accesses_to_course_for_user(user, course_key)
+        _, staff_access, instructor_access = administrative_accesses_to_course_for_user(user, view.course_key)
         return bool(staff_access or instructor_access)
 
 
@@ -69,6 +54,8 @@ class CanReadCohortsAsDiscussionModerator(permissions.BasePermission):
     caller must also be able to load the course: a course that has not started
     yet, or that is hidden from learners, is refused to anyone without course
     staff access.
+
+    Reads the course key from ``view.course_key``, as ``IsCohortCourseAdmin`` does.
     """
 
     def has_permission(self, request, view):
@@ -77,9 +64,7 @@ class CanReadCohortsAsDiscussionModerator(permissions.BasePermission):
             return False
         if not (user and user.is_authenticated):
             return False
-        course_key = course_key_from_view(view)
-        if course_key is None:
-            return False
+        course_key = view.course_key
         if not get_user_role_names(user, course_key) & DISCUSSION_PRIVILEGED_ROLES:
             return False
         course = modulestore().get_course(course_key)

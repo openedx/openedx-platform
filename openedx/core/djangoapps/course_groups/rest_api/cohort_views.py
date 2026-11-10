@@ -26,8 +26,9 @@ from rest_framework.views import APIView
 from openedx.core.djangoapps.course_groups import api as cohort_api
 from openedx.core.djangoapps.course_groups import cohorts
 from openedx.core.djangoapps.course_groups.cohorts import get_legacy_discussion_settings
-from openedx.core.djangoapps.course_groups.constants import USERNAME_LOOKUP_REGEX
 from openedx.core.djangoapps.course_groups.models import (
+    CohortAssignmentNotAllowed,
+    CohortChangeNotAllowed,
     CohortMembership,
     CourseCohort,
     CourseCohortsSettings,
@@ -53,6 +54,7 @@ User = get_user_model()
 log = logging.getLogger(__name__)
 
 DUPLICATE_NAME_MESSAGE = "A cohort with that name already exists in this course."
+INVALID_COURSE_KEY_MESSAGE = "The course key in the path is not valid."
 LAST_RANDOM_COHORT_MESSAGE = "There must be one cohort to which students can automatically be assigned."
 
 
@@ -84,7 +86,7 @@ class CohortAPIAccessMixin:
         try:
             self.course_key = CourseKey.from_string(kwargs.get("course_key", ""))
         except InvalidKeyError as exc:
-            raise NotFound("The course key in the path is not valid.") from exc
+            raise NotFound(INVALID_COURSE_KEY_MESSAGE) from exc
         super().initial(request, *args, **kwargs)
 
     def ensure_course_exists(self):
@@ -269,11 +271,13 @@ class CohortViewSet(
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        if cohorts.is_cohort_exists(self.course_key, data["name"]):
-            raise ValidationError({"name": [DUPLICATE_NAME_MESSAGE]})
-
         with transaction.atomic():
-            cohort = cohorts.add_cohort(self.course_key, data["name"], data["assignment_type"])
+            try:
+                cohort = cohorts.add_cohort(self.course_key, data["name"], data["assignment_type"])
+            except ValueError as exc:
+                # add_cohort also refuses a missing course this way, but the course
+                # was found above, so the refusal here is the duplicate name.
+                raise ValidationError({"name": [DUPLICATE_NAME_MESSAGE]}) from exc
             if data.get("group_id") is not None:
                 self._apply_content_group(cohort, data)
         return Response(represent_cohort(cohort, self.course_key), status=status.HTTP_201_CREATED)
@@ -396,7 +400,6 @@ class CohortMemberViewSet(
     serializer_class = CohortMemberSerializer
     pagination_class = DefaultPagination
     lookup_url_kwarg = "username"
-    lookup_value_regex = USERNAME_LOOKUP_REGEX
 
     def list(self, request, **kwargs):
         """Return the learners in this cohort, in a stable order."""
@@ -408,13 +411,19 @@ class CohortMemberViewSet(
         )
 
     def create(self, request, **kwargs):
-        """Add the named learners to this cohort."""
+        """
+        Add the named learners to this cohort.
+
+        Each entry is handled on its own and reported in the bucket matching its
+        outcome, so one entry that is refused, including by a plugin filter on
+        cohort assignment, does not undo or block the others.
+        """
         cohort = self.get_cohort_or_404()
         serializer = CohortMembershipRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         result = {key: [] for key in
-                  ("added", "changed", "present", "unknown", "preassigned", "invalid")}
+                  ("added", "changed", "present", "unknown", "preassigned", "invalid", "not_allowed")}
         for identifier in serializer.validated_data["users"]:
             try:
                 user, previous_cohort, preassigned = cohorts.add_user_to_cohort(cohort, identifier)
@@ -424,6 +433,8 @@ class CohortMemberViewSet(
                 result["invalid"].append(identifier)
             except ValueError:
                 result["present"].append(identifier)
+            except (CohortAssignmentNotAllowed, CohortChangeNotAllowed):
+                result["not_allowed"].append(identifier)
             else:
                 if preassigned:
                     result["preassigned"].append(identifier)
