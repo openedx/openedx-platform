@@ -6,7 +6,7 @@ from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
-from xblocks_contrib.poll import PollBlock
+from xblock_poll_question import PollBlock
 
 from openedx.core.lib.safe_lxml import etree
 
