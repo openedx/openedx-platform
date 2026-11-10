@@ -5,7 +5,7 @@ import json
 from unittest import mock
 from urllib.parse import urljoin
 
-import httpretty
+import responses
 from django.core.cache import cache
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -21,7 +21,6 @@ TEST_API_URL = "http://www-internal.example.com/api"
 
 
 @skip_unless_lms
-@httpretty.activate
 class TestGetEdxApiData(
     CatalogIntegrationMixin, CredentialsApiConfigMixin, CacheIsolationTestCase
 ):
@@ -33,29 +32,29 @@ class TestGetEdxApiData(
 
     def setUp(self):
         super().setUp()
+        responses.start()
+        self.addCleanup(responses.stop)
+        self.addCleanup(responses.reset)
 
         self.user = UserFactory()
         self.base_api_url = (
             CatalogIntegration.current().get_internal_api_url().strip("/")
         )
 
-        httpretty.httpretty.reset()
         cache.clear()
 
-    def _mock_catalog_api(self, responses, url=None):
-        assert (
-            httpretty.is_enabled()
-        ), "httpretty must be enabled to mock Catalog API calls."
-
+    def _mock_catalog_api(self, mock_responses, url=None):
+        """Register one mocked response per dict of ``responses.add`` kwargs, returned in order."""
         url = url if url else urljoin(f"{self.base_api_url}/", "programs/")
 
-        httpretty.register_uri(httpretty.GET, url, responses=responses)
+        for kwargs in mock_responses:
+            responses.add(responses.GET, url, content_type="application/json", **kwargs)
 
     def _assert_num_requests(self, count):
         """
         DRY helper for verifying request counts.
         """
-        assert len(httpretty.httpretty.latest_requests) == count
+        assert len(responses.calls) == count
 
     def test_get_unpaginated_data(self):
         """
@@ -71,7 +70,7 @@ class TestGetEdxApiData(
         }
 
         self._mock_catalog_api(
-            [httpretty.Response(body=json.dumps(data), content_type="application/json")]
+            [{"body": json.dumps(data)}]
         )
 
         with mock.patch("requests.Session") as mock_init:
@@ -99,7 +98,7 @@ class TestGetEdxApiData(
         expected_collection = ["some", "test", "data"]
         url = urljoin(f"{self.base_api_url}/", "/programs/?page={}")
 
-        responses = []
+        mock_responses = []
         for page, record in enumerate(expected_collection, start=1):
             data = {
                 "next": url.format(page + 1)
@@ -109,11 +108,11 @@ class TestGetEdxApiData(
             }
 
             body = json.dumps(data)
-            responses.append(
-                httpretty.Response(body=body, content_type="application/json")
+            mock_responses.append(
+                {"body": body}
             )
 
-        self._mock_catalog_api(responses)
+        self._mock_catalog_api(mock_responses)
 
         actual_collection = get_api_data(
             catalog_integration,
@@ -133,7 +132,7 @@ class TestGetEdxApiData(
         api = get_catalog_api_client(self.user)
 
         url = urljoin(f"{self.base_api_url}/", "/programs/?page={}")
-        responses = [
+        mock_responses = [
             {
                 "next": url.format(2),
                 "results": ["some"],
@@ -143,14 +142,12 @@ class TestGetEdxApiData(
                 "results": ["test"],
             },
         ]
-        expected_response = responses[0]
+        expected_response = mock_responses[0]
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(body), content_type="application/json"
-                )
-                for body in responses
+                {"body": json.dumps(body)}
+                for body in mock_responses
             ]
         )
 
@@ -178,9 +175,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(expected_resource), content_type="application/json"
-                )
+                {"body": json.dumps(expected_resource)}
             ],
             url=url,
         )
@@ -216,9 +211,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(expected_resource), content_type="application/json"
-                )
+                {"body": json.dumps(expected_resource)}
             ],
             url=url,
         )
@@ -251,9 +244,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(response), content_type="application/json"
-                )
+                {"body": json.dumps(response)}
             ],
             url=url,
         )
@@ -303,9 +294,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(data), content_type="application/json"
-                )
+                {"body": json.dumps(data)}
             ],
         )
 
@@ -316,9 +305,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body=json.dumps(expected_resource), content_type="application/json"
-                )
+                {"body": json.dumps(expected_resource)}
             ],
             url=url,
         )
@@ -392,9 +379,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body="clunk", content_type="application/json", status_code=500
-                )
+                {"body": "clunk", "status": 500}
             ]
         )
 
@@ -437,9 +422,7 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body="clunk", content_type="application/json", status_code=500
-                )
+                {"body": "clunk", "status": 500}
             ]
         )
 
@@ -466,13 +449,9 @@ class TestGetEdxApiData(
 
         self._mock_catalog_api(
             [
-                httpretty.Response(
-                    body="clunk",
-                    content_type="application/json",
-                    status_code=500,
-                    url=url,
-                )
-            ]
+                {"body": "clunk", "status": 500}
+            ],
+            url=url,
         )
 
         with self.assertRaises(Exception):  # noqa: B017, PT027

@@ -9,8 +9,8 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 import pytest
+import responses
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.db import connection
@@ -199,9 +199,9 @@ class CreditApiTestBase(ModuleStoreTestCase):
 
     def _mock_ecommerce_courses_api(self, course_key, body, status=200):
         """ Mock GET requests to the ecommerce course API endpoint. """
-        httpretty.reset()
-        httpretty.register_uri(
-            httpretty.GET, f'{TEST_API_URL}/courses/{str(course_key)}/?include_products=1',
+        responses.reset()
+        responses.add(
+            responses.GET, f'{TEST_API_URL}/courses/{str(course_key)}/?include_products=1',
             status=status,
             body=json.dumps(body), content_type='application/json',
         )
@@ -619,7 +619,7 @@ class CreditRequirementApiTests(CreditApiTestBase):
         req_status = api.get_credit_requirement_status(self.course_key, "bob", namespace="grade", name="grade")
         assert len(req_status) == 0
 
-    @httpretty.activate
+    @responses.activate
     @override_settings(
         ECOMMERCE_API_URL=TEST_API_URL,
         ECOMMERCE_SERVICE_WORKER_USERNAME=TEST_ECOMMERCE_WORKER
@@ -1218,7 +1218,7 @@ class CourseApiTests(CreditApiTestBase):
         )
         assert not hasattr(self.worker_user, 'profile')
 
-    @httpretty.activate
+    @responses.activate
     def test_get_credit_provider_display_names_method(self):
         """Verify that parsed providers list is returns after getting course production information."""
         self._mock_ecommerce_courses_api(self.course_key, self.COURSE_API_RESPONSE)
@@ -1235,7 +1235,7 @@ class CourseApiTests(CreditApiTestBase):
         assert mock_get_client.called
         assert response is None
 
-    @httpretty.activate
+    @responses.activate
     def test_get_credit_provider_display_names_caching(self):
         """Verify that providers list is cached."""
         assert self.credit_config.is_cache_enabled
@@ -1250,9 +1250,9 @@ class CourseApiTests(CreditApiTestBase):
         self.assertListEqual(self.PROVIDERS_LIST, response_providers)  # noqa: PT009
 
         # Verify only one request was made.
-        assert len(httpretty.httpretty.latest_requests) == 1
+        assert len(responses.calls) == 1
 
-    @httpretty.activate
+    @responses.activate
     def test_get_credit_provider_display_names_without_caching(self):
         """Verify that providers list is not cached."""
         self.credit_config.cache_ttl = 0
@@ -1267,9 +1267,9 @@ class CourseApiTests(CreditApiTestBase):
         response_providers = get_credit_provider_attribute_values(self.course_key, 'display_name')
         self.assertListEqual(self.PROVIDERS_LIST, response_providers)  # noqa: PT009
 
-        assert len(httpretty.httpretty.latest_requests) == 2
+        assert len(responses.calls) == 2
 
-    @httpretty.activate
+    @responses.activate
     @ddt.data(
         (None, None),
         ({'products': []}, []),
@@ -1304,7 +1304,7 @@ class CourseApiTests(CreditApiTestBase):
         response_providers = get_credit_provider_attribute_values(self.course_key, 'display_name')
         assert expected_data == response_providers
 
-    @httpretty.activate
+    @responses.activate
     def test_get_credit_provider_display_names_without_providers(self):
         """Verify that if all providers are in-active than method return empty list."""
         self._mock_ecommerce_courses_api(self.course_key, self.COURSE_API_RESPONSE)
