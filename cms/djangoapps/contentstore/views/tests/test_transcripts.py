@@ -16,7 +16,7 @@ from django.urls import reverse
 from edxval.api import create_video
 from opaque_keys.edx.keys import UsageKey
 from organizations.tests.factories import OrganizationFactory
-from xblocks_contrib.video import VideoBlock  # pylint: disable=wrong-import-order
+from xblock_video import VideoBlock  # pylint: disable=wrong-import-order
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
 from openedx.core.djangoapps.content_libraries import api as lib_api

@@ -8,7 +8,7 @@ from django.test import override_settings
 from opaque_keys.edx.locator import CourseLocator
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
-from xblocks_contrib.video import VideoBlock
+from xblock_video import VideoBlock
 
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from xmodule.tests import get_test_descriptor_system

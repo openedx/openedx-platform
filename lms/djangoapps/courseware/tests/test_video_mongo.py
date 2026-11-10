@@ -40,8 +40,8 @@ from opaque_keys.edx.locator import CourseLocator
 from path import Path as path
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
-from xblocks_contrib.video import VideoBlock, bumper_utils, video_utils
-from xblocks_contrib.video.video import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
+from xblock_video import VideoBlock, bumper_utils, video_utils
+from xblock_video.block import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE
 from common.test.utils import assert_dict_contains_subset
@@ -92,7 +92,7 @@ def instantiate_block(**field_data):
     Instantiate block with most properties.
 
     Moved from the deleted xmodule/tests/test_video.py; now builds the
-    xblocks_contrib VideoBlock instead of the removed built-in block.
+    xblock_video VideoBlock instead of the removed built-in block.
     """
     if field_data.get('data', None):
         field_data = VideoBlock.parse_video_xml(field_data['data'])
@@ -2378,7 +2378,7 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
     CATEGORY = "video"
     METADATA = {}
 
-    @patch('xblocks_contrib.video.bumper_utils.get_bumper_settings')
+    @patch('xblock_video.bumper_utils.get_bumper_settings')
     def test_is_bumper_enabled(self, get_bumper_settings):
         """
         Check that bumper is (not)shown if ENABLE_VIDEO_BUMPER is (False)True
@@ -2396,8 +2396,8 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
             assert not bumper_utils.is_bumper_enabled(self.block)
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xblocks_contrib.video.bumper_utils.is_bumper_enabled')
-    @patch('xblocks_contrib.video.bumper_utils.get_bumper_settings')
+    @patch('xblock_video.bumper_utils.is_bumper_enabled')
+    @patch('xblock_video.bumper_utils.get_bumper_settings')
     @patch('edxval.api.get_urls_for_profiles')
     def test_bumper_metadata(
         self, get_url_for_profiles, get_bumper_settings, is_bumper_enabled, mock_render_django_template

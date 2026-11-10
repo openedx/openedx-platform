@@ -11,7 +11,7 @@ from opaque_keys.edx.keys import UsageKey
 from organizations.tests.factories import OrganizationFactory
 from rest_framework import status
 from rest_framework.test import APIClient
-from xblocks_contrib.video import VideoBlock
+from xblock_video import VideoBlock
 
 from cms.djangoapps.contentstore.rest_api.v0.views.transcripts import (
     YoutubeTranscriptCheckView,

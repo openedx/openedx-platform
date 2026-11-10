@@ -29,7 +29,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey, CourseKey, UsageKey
 from opaque_keys.edx.locations import CourseLocator
 from path import Path as path
-from xblocks_contrib.video import VideoBlock
+from xblock_video import VideoBlock
 
 from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.config import waffle
