@@ -10,7 +10,7 @@ from lxml import etree
 from rest_framework import status
 from web_fragments.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
-from xblocks_contrib.problem import ProblemBlock
+from xblock_problem import ProblemBlock
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
@@ -171,7 +171,7 @@ class TestItemBankForCms(ItemBankTestBase):
         'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
-    @patch('xblocks_contrib.problem.ProblemBlock.author_view', dummy_render, create=True)
+    @patch('xblock_problem.ProblemBlock.author_view', dummy_render, create=True)
     @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_preview_view(self):
         """ Test preview view rendering """
@@ -186,7 +186,7 @@ class TestItemBankForCms(ItemBankTestBase):
         'xmodule.modulestore.split_mongo.runtime.SplitModuleStoreRuntime.render',
         VanillaRuntime.render,
     )
-    @patch('xblocks_contrib.problem.ProblemBlock.author_view', dummy_render, create=True)
+    @patch('xblock_problem.ProblemBlock.author_view', dummy_render, create=True)
     @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
     def test_author_view(self):
         """ Test author view rendering """

@@ -4,7 +4,7 @@ import ddt
 from django.test import RequestFactory
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
-from xblocks_contrib.problem.capa_block import SHOWANSWER  # pylint: disable=wrong-import-order
+from xblock_problem.block import SHOWANSWER  # pylint: disable=wrong-import-order
 
 from lms.djangoapps.ccx.tests.test_overrides import inject_field_overrides
 from lms.djangoapps.courseware.block_render import get_block

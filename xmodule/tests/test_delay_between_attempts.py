@@ -20,7 +20,7 @@ from xblock.exceptions import NotFoundError
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 from xblock.scorable import Score
-from xblocks_contrib.problem import ProblemBlock
+from xblock_problem import ProblemBlock
 
 from . import get_test_system
 
