@@ -5,6 +5,8 @@ from ccx_keys.locator import CCXLocator
 from rest_framework import serializers
 
 from lms.djangoapps.ccx.models import CustomCourseForEdX
+from lms.djangoapps.ccx.toggles import v0_course_modules_use_schedule
+from lms.djangoapps.ccx.utils import get_ccx_visible_chapters
 
 
 class CCXCourseSerializer(serializers.ModelSerializer):
@@ -49,6 +51,11 @@ class CCXCourseSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_course_modules(obj):
         """
-        Getter for the Course Blocks. The list is stored in a compressed field.
+        Getter for the Course Blocks.
+
+        With the ``ccx.v0_course_modules_use_schedule`` flag these are the
+        chapters learners can see, otherwise the list stored in ``structure_json``.
         """
+        if v0_course_modules_use_schedule(obj.course_id):
+            return get_ccx_visible_chapters(obj.course, obj)
         return obj.structure or []
