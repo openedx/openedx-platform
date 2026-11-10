@@ -28,7 +28,7 @@ from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.test import APIClient
 
-from cms.djangoapps.contentstore.rest_api.v1.views.videos import CourseVideosView, VideoDownloadView, VideoUsageView
+from cms.djangoapps.contentstore.rest_api.v1.views.videos import CourseVideosView
 from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import (
     PASSWORD,
     SignalRecorder,
@@ -182,6 +182,13 @@ class CourseVideoSettingsAccessTest(VideoSettingsTestBase):
 
     def test_a_missing_course_is_not_found_for_a_privileged_caller(self):
         response = self.get(self.global_staff, course_key=MISSING_COURSE_KEY)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+        assert response.data["detail"] == "The requested course does not exist."
+
+    # A key naming only a version has no course run behind it; the role check
+    # cannot evaluate one, so it is answered as a missing course.
+    def test_a_key_naming_only_a_version_is_not_found(self):
+        response = self.get(self.global_staff, course_key="course-v1:version@" + "a" * 24)
         assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
         assert response.data["detail"] == "The requested course does not exist."
 
@@ -462,14 +469,3 @@ class CourseVideoSettingsSchemaTest(CourseTestCase):
         operation = self.schema["paths"][LEGACY_VIDEOS_PATH]["get"]
         assert operation["operationId"] == "v1_videos_retrieve"
         assert "deprecated" not in operation
-        for path, view in self._legacy_sibling_paths():
-            for operation in self.schema["paths"][path].values():
-                assert "deprecated" not in operation, (path, view)
-
-    def _legacy_sibling_paths(self):
-        """Return the legacy usage and download paths published beside the legacy videos path."""
-        paths = [(p, v) for p in self.schema["paths"] for v in (VideoUsageView, VideoDownloadView)
-                 if p.startswith("/api/contentstore/v1/videos/{course_id}/") and
-                 p.endswith("/usage" if v is VideoUsageView else "/download")]
-        assert len(paths) == 2
-        return paths

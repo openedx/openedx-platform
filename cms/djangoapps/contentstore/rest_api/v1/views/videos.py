@@ -3,16 +3,15 @@ Public rest API endpoints for contentstore API video assets (outside authoring A
 """
 import logging
 
-from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 import cms.djangoapps.contentstore.toggles as contentstore_toggles
+from cms.djangoapps.contentstore.rest_api.throttles import VideoDownloadThrottle
 from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     CourseVideosSerializer,
     VideoDownloadSerializer,
@@ -181,17 +180,6 @@ class VideoUsageView(DeveloperErrorViewMixin, APIView):
         usage_locations = get_video_usage_path(course_key, edx_video_id)
         serializer = VideoUsageSerializer(usage_locations)
         return Response(serializer.data)
-
-
-class VideoDownloadThrottle(UserRateThrottle):
-    """
-    Per-user rate limit on the Studio video-download endpoint.
-
-    The download endpoint streams a multi-video zip into the response, which
-    keeps a uWSGI worker busy for the duration. Rate-limiting per user keeps
-    a single course author from initiating many overlapping streams.
-    """
-    rate = settings.VIDEO_DOWNLOAD_RATE_LIMIT
 
 
 @view_auth_classes(is_authenticated=True)
