@@ -1,6 +1,5 @@
 """Script to Empty the trashcan"""
 
-
 from django.core.management.base import BaseCommand
 from opaque_keys.edx.keys import CourseKey
 
@@ -12,9 +11,13 @@ from .prompt import query_yes_no
 
 class Command(BaseCommand):
     """
-        Command to Empty the trashcan.
+    Command to Empty the trashcan.
     """
-    help = 'Empty the trashcan. Can pass an optional course_id to limit the damage.'
+
+    help = (
+        "Empty the asset trashcan, optionally just for one course.\n"
+        + "⚠️ This command is deprecated and will be removed in the future."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument('course_id',
