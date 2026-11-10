@@ -17,7 +17,6 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
 from cms.lib.spectacular import (
-    ANY_OF_COMPONENTS,
     SUPERSEDED_PATHS,
     CmsAutoSchema,
     cms_api_filter,
@@ -140,42 +139,6 @@ class CmsMarkMigratedPathsTest(SimpleTestCase):
         """Paths are not trimmed, so every key resolves against a service-root server."""
         result = cms_mark_migrated_paths(_schema("/api/contentstore/v1/xblock/"), None, None, False)
         assert list(result["paths"]) == ["/api/contentstore/v1/xblock/"]
-
-
-def _alternatives(*names):
-    return [{"$ref": f"#/components/schemas/{name}"} for name in names]
-
-
-class OverlappingShapesTest(SimpleTestCase):
-    """The post-processing hook publishes the listed overlapping response shapes as anyOf, and nothing else."""
-
-    READ = "authoring_grading.CourseGradingRead.v3"
-    SHAPES = ("authoring_grading.CourseGradingFull.v3", "authoring_grading.CourseGrading.v3")
-
-    def _run(self, schemas):
-        result = {"paths": {}, "components": {"schemas": schemas}}
-        return cms_mark_migrated_paths(result, None, None, True)["components"]["schemas"]
-
-    def test_only_the_grading_read_is_listed(self):
-        assert ANY_OF_COMPONENTS == {self.READ: self.SHAPES}
-
-    def test_the_grading_read_becomes_any_of(self):
-        schemas = self._run({self.READ: {"oneOf": _alternatives(*self.SHAPES)}})
-        assert schemas[self.READ] == {"anyOf": _alternatives(*self.SHAPES)}
-
-    def test_other_one_of_components_are_left_alone(self):
-        other = {"oneOf": _alternatives("A", "B")}
-        schemas = self._run({"Other": other, self.READ: {"oneOf": _alternatives(*self.SHAPES)}})
-        assert schemas["Other"] == {"oneOf": _alternatives("A", "B")}
-
-    def test_the_grading_read_with_other_shapes_is_left_alone(self):
-        """A change to the shapes the read offers needs a fresh look at whether they overlap."""
-        for shapes in (self.SHAPES[::-1], self.SHAPES[:1], (*self.SHAPES, "authoring_grading.Other.v3")):
-            schemas = self._run({self.READ: {"oneOf": _alternatives(*shapes)}})
-            assert schemas[self.READ] == {"oneOf": _alternatives(*shapes)}, shapes
-
-    def test_a_schema_without_components_is_accepted(self):
-        assert cms_mark_migrated_paths({"paths": {}}, None, None, True) == {"paths": {}}
 
 
 class SpectacularSettingsTest(SimpleTestCase):
@@ -348,26 +311,25 @@ class GradingSchemaTest(DjangoTestCase):
             "hours": ("integer", 0), "minutes": ("integer", 0), "seconds": ("integer", 0),
         }
 
-    def test_the_read_documents_the_full_and_the_default_shape(self):
+    def test_the_read_is_one_shape_whose_full_view_fields_are_optional(self):
         components = self.schema["components"]["schemas"]
-        # anyOf, as a full response also matches the default shape. Full first, so a
-        # client trying each shape in order reads a full response as full.
-        assert components["authoring_grading.CourseGradingRead.v3"] == {"anyOf": [
-            {"$ref": "#/components/schemas/authoring_grading.CourseGradingFull.v3"},
-            {"$ref": "#/components/schemas/authoring_grading.CourseGrading.v3"},
-        ]}
         for path in (self.CONFORMING, self.LEGACY_V3):
             response = self._operation(path, "get")["responses"]["200"]
             assert self._ref(response) == "authoring_grading.CourseGradingRead.v3", path
         policy = {"graders", "grade_cutoffs", "grace_period", "minimum_grade_credit"}
-        extras = {
+        full_view = {
             "course_assignment_lists", "default_grade_designations", "is_credit_course",
             "show_credit_eligibility", "mfe_proctored_exam_settings_url",
         }
+        read = components["authoring_grading.CourseGradingRead.v3"]
+        assert not {"oneOf", "anyOf", "allOf"} & set(read)
+        assert set(read["properties"]) == policy | full_view
+        assert set(read["required"]) == policy
+        for name in full_view:
+            assert "Present only with view=full." in read["properties"][name]["description"], name
         default = components["authoring_grading.CourseGrading.v3"]
-        full = components["authoring_grading.CourseGradingFull.v3"]
         assert set(default["properties"]) == set(default["required"]) == policy
-        assert set(full["properties"]) == set(full["required"]) == policy | extras
+        assert "authoring_grading.CourseGradingFull.v3" not in components
 
     def test_the_policy_response_marks_what_is_always_present_and_what_can_be_null(self):
         components = self.schema["components"]["schemas"]
@@ -376,7 +338,7 @@ class GradingSchemaTest(DjangoTestCase):
             properties = components[component]["properties"]
             return {name for name, schema in properties.items() if schema.get("nullable")}
 
-        for component in ("authoring_grading.CourseGrading.v3", "authoring_grading.CourseGradingFull.v3"):
+        for component in ("authoring_grading.CourseGrading.v3", "authoring_grading.CourseGradingRead.v3"):
             assert nullable(component) == {"grade_cutoffs", "grace_period", "minimum_grade_credit"}, component
             cutoffs = components[component]["properties"]["grade_cutoffs"]
             assert cutoffs["additionalProperties"] == {"type": "number", "format": "double", "nullable": True}
