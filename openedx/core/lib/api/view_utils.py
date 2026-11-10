@@ -13,7 +13,7 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import serializers, status
-from rest_framework.exceptions import APIException, ErrorDetail
+from rest_framework.exceptions import APIException, ErrorDetail, PermissionDenied
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
@@ -90,6 +90,8 @@ class DeveloperErrorViewMixin:
         """
         if isinstance(exc, DeveloperErrorResponseException):
             return exc.response
+        elif isinstance(exc, PermissionDenied):
+            return self._make_error_response(exc.status_code, exc.detail, exc.get_codes())
         elif isinstance(exc, APIException):
             return self._make_error_response(exc.status_code, exc.detail)
         elif isinstance(exc, (Http404, ObjectDoesNotExist)):

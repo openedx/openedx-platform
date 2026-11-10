@@ -832,7 +832,7 @@ openedx-atlas==0.7.2
     #   openedx-authz
     #   openedx-forum
     #   openedx-platform
-openedx-authz==2.2.0
+openedx-authz==3.1.0
     # via openedx-platform
 openedx-calc==5.1.0
     # via
