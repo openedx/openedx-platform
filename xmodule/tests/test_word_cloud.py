@@ -9,7 +9,7 @@ from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from webob import Request
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
-from xblocks_contrib.word_cloud import WordCloudBlock
+from xblock_word_cloud import WordCloudBlock
 
 from . import get_test_descriptor_system, get_test_system
 
