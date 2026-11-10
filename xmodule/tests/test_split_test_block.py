@@ -158,7 +158,7 @@ class SplitTestBlockLMSTest(SplitTestBlockTest):
         assert self.split_test_block.child_block.url_name == self.split_test_block.child_block.url_name
 
     # Patch the definition_to_xml for the html children.
-    @patch('xblocks_contrib.html.HtmlBlock.definition_to_xml')
+    @patch('xblock_html.HtmlBlock.definition_to_xml')
     def test_export_import_round_trip(self, def_to_xml):
         # The HtmlBlock definition_to_xml tries to write to the filesystem
         # before returning an xml object. Patch this to just return the xml.
