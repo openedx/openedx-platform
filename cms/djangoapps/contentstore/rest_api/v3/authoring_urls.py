@@ -29,7 +29,7 @@ urlpatterns = [
     ),
     path(
         "courses/<course_key:course_key>/grading/",
-        AuthoringGradingViewSet.as_view({"patch": "partial_update"}),
+        AuthoringGradingViewSet.as_view({"get": "retrieve", "patch": "partial_update"}),
         name="course_grading",
     ),
 ]

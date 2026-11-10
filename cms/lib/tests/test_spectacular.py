@@ -1,11 +1,14 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
 import re
+from importlib import import_module
 from pathlib import Path
 from unittest import TestCase, mock
 
 from django.conf import settings
 from django.test import SimpleTestCase
+from django.test import TestCase as DjangoTestCase
+from django.urls import include
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.settings import spectacular_settings
@@ -78,6 +81,8 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v0/grading/{course_id}",
+            "/api/contentstore/v1/course_grading/{course_id}",
         }
 
     def test_the_conforming_paths_are_left_unmarked(self):
@@ -215,3 +220,138 @@ class CmsAutoSchemaTest(SimpleTestCase):
         # Already distinct from its conforming twin's id, so it keeps its name.
         assert ids["/api/authoring/v4/courses/"] == "v4_courses_list"
         assert ids["/api/contentstore/v4/home/courses/"] == "v4_home_courses_list"
+
+
+class GradingSchemaTest(DjangoTestCase):
+    """The grading operations as published, generated from the real contentstore and authoring routes."""
+
+    CONFORMING = "/api/authoring/v3/courses/{course_key}/grading/"
+    LEGACY_V3 = "/api/contentstore/v3/authoring_grading/{course_key}/"
+    V1 = "/api/contentstore/v1/course_grading/{course_id}"
+    V0 = "/api/contentstore/v0/grading/{course_id}"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Importing the service URLconf registers the course key converter the authoring routes use.
+        import_module(settings.ROOT_URLCONF)
+        patterns = [
+            url_path("api/contentstore/", include("cms.djangoapps.contentstore.rest_api.urls")),
+            url_path("api/authoring/v3/", include("cms.djangoapps.contentstore.rest_api.v3.authoring_urls")),
+        ]
+        cls.schema = SchemaGenerator(patterns=patterns).get_schema(request=None, public=True)
+
+    def _operation(self, path, method):
+        return self.schema["paths"][path][method]
+
+    @staticmethod
+    def _ref(response_or_body):
+        return response_or_body["content"]["application/json"]["schema"]["$ref"].rsplit("/", 1)[-1]
+
+    def test_the_superseded_operations_are_deprecated(self):
+        assert self._operation(self.V1, "get")["deprecated"] is True
+        assert self._operation(self.V1, "post")["deprecated"] is True
+        assert self._operation(self.V0, "post")["deprecated"] is True
+
+    def test_the_read_on_the_conforming_address_is_published_for_the_sdk(self):
+        operation = self._operation(self.CONFORMING, "get")
+        assert "deprecated" not in operation
+        assert operation["operationId"] == "v3_courses_grading_retrieve"
+        assert operation["tags"] == ["openedx-platform-sdk"]
+        view = [p for p in operation["parameters"] if p["name"] == "view"]
+        assert len(view) == 1
+        assert view[0]["in"] == "query"
+        assert "required" not in view[0]
+        assert view[0]["schema"]["enum"] == ["full"]
+        assert self._ref(operation["responses"]["200"]) == "authoring_grading.CourseGradingRead.v3"
+        for status in ("400", "401", "403", "404"):
+            assert self._ref(operation["responses"][status]) == "ErrorResponse", status
+
+    def test_the_read_on_the_legacy_address_is_deprecated(self):
+        operation = self._operation(self.LEGACY_V3, "get")
+        assert operation["deprecated"] is True
+        assert operation["operationId"] == "v3_authoring_grading_retrieve"
+
+    def test_the_update_takes_the_update_body_and_returns_the_policy(self):
+        for path in (self.CONFORMING, self.LEGACY_V3):
+            operation = self._operation(path, "patch")
+            assert self._ref(operation["requestBody"]) == "Patchedauthoring_grading.CourseGradingUpdate.v3", path
+            assert self._ref(operation["responses"]["200"]) == "authoring_grading.CourseGrading.v3", path
+            for status in ("400", "401", "403", "404"):
+                assert self._ref(operation["responses"][status]) == "ErrorResponse", (path, status)
+        assert "deprecated" not in self._operation(self.CONFORMING, "patch")
+        assert self._operation(self.LEGACY_V3, "patch")["deprecated"] is True
+
+    def test_the_update_body_requires_nothing_but_a_type_per_grader(self):
+        components = self.schema["components"]["schemas"]
+        assert "required" not in components["Patchedauthoring_grading.CourseGradingUpdate.v3"]
+        assert components["authoring_grading.GraderUpdate.v3"]["required"] == ["type"]
+        assert "required" not in components["authoring_grading.GracePeriodUpdate.v3"]
+
+    def test_the_update_body_is_json_only(self):
+        for path in (self.CONFORMING, self.LEGACY_V3):
+            assert list(self._operation(path, "patch")["requestBody"]["content"]) == ["application/json"], path
+
+    def test_the_update_body_types(self):
+        components = self.schema["components"]["schemas"]
+        update = components["Patchedauthoring_grading.CourseGradingUpdate.v3"]["properties"]
+        assert update["grade_cutoffs"]["additionalProperties"] == {"type": "number", "format": "double"}
+        assert update["grade_cutoffs"]["minProperties"] == 1
+        assert "nullable" not in update["grade_cutoffs"]
+        assert {key: update["minimum_grade_credit"][key] for key in ("type", "format", "nullable")} == {
+            "type": "number", "format": "double", "nullable": True,
+        }
+        assert "nullable" not in update["graders"]
+        assert update["grace_period"]["allOf"] == [
+            {"$ref": "#/components/schemas/authoring_grading.GracePeriodUpdate.v3"},
+        ]
+        assert update["grace_period"]["nullable"] is True
+        grace = components["authoring_grading.GracePeriodUpdate.v3"]["properties"]
+        assert {unit: (grace[unit]["type"], grace[unit]["default"]) for unit in grace} == {
+            "hours": ("integer", 0), "minutes": ("integer", 0), "seconds": ("integer", 0),
+        }
+
+    def test_the_read_is_one_shape_whose_full_view_fields_are_optional(self):
+        components = self.schema["components"]["schemas"]
+        for path in (self.CONFORMING, self.LEGACY_V3):
+            response = self._operation(path, "get")["responses"]["200"]
+            assert self._ref(response) == "authoring_grading.CourseGradingRead.v3", path
+        policy = {"graders", "grade_cutoffs", "grace_period", "minimum_grade_credit"}
+        full_view = {
+            "course_assignment_lists", "default_grade_designations", "is_credit_course",
+            "show_credit_eligibility", "mfe_proctored_exam_settings_url",
+        }
+        read = components["authoring_grading.CourseGradingRead.v3"]
+        assert not {"oneOf", "anyOf", "allOf"} & set(read)
+        assert set(read["properties"]) == policy | full_view
+        assert set(read["required"]) == policy
+        for name in full_view:
+            assert "Present only with view=full." in read["properties"][name]["description"], name
+        default = components["authoring_grading.CourseGrading.v3"]
+        assert set(default["properties"]) == set(default["required"]) == policy
+        assert "authoring_grading.CourseGradingFull.v3" not in components
+
+    def test_the_policy_response_marks_what_is_always_present_and_what_can_be_null(self):
+        components = self.schema["components"]["schemas"]
+
+        def nullable(component):
+            properties = components[component]["properties"]
+            return {name for name, schema in properties.items() if schema.get("nullable")}
+
+        for component in ("authoring_grading.CourseGrading.v3", "authoring_grading.CourseGradingRead.v3"):
+            assert nullable(component) == {"grade_cutoffs", "grace_period", "minimum_grade_credit"}, component
+            cutoffs = components[component]["properties"]["grade_cutoffs"]
+            assert cutoffs["additionalProperties"] == {"type": "number", "format": "double", "nullable": True}
+        grader = components["authoring_grading.Grader.v3"]
+        assert set(grader["required"]) == set(grader["properties"]) == {
+            "type", "min_count", "drop_count", "short_label", "weight", "id",
+        }
+        assert nullable("authoring_grading.Grader.v3") == {"type", "short_label"}
+        grace = components["authoring_grading.GracePeriod.v3"]
+        assert grace["required"] == ["hours", "minutes", "seconds"]
+        assert nullable("authoring_grading.GracePeriod.v3") == set()
+
+    def test_only_get_and_patch_are_published_on_the_grading_addresses(self):
+        for path in (self.CONFORMING, self.LEGACY_V3):
+            methods = {key for key in self.schema["paths"][path] if key != "parameters"}
+            assert methods == {"get", "patch"}, path
