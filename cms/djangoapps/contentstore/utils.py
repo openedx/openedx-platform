@@ -1872,8 +1872,8 @@ def _get_course_index_context(request, course_key, course_block):
 
     from cms.djangoapps.contentstore.views.course import (
         _course_outline_json,
-        _deprecated_blocks_info,
         course_outline_initial_state,
+        deprecated_blocks_info,
         user_can_reindex_course,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
@@ -1900,7 +1900,7 @@ def _get_course_index_context(request, course_key, course_block):
         current_action = None
 
     deprecated_block_names = [block.name for block in deprecated_xblocks()]
-    deprecated_blocks_info = _deprecated_blocks_info(course_block, deprecated_block_names)
+    deprecated_info = deprecated_blocks_info(course_block, deprecated_block_names)
 
     frontend_app_publisher_url = configuration_helpers.get_value_for_org(
         course_block.location.org,
@@ -1932,7 +1932,7 @@ def _get_course_index_context(request, course_key, course_block):
         'course_release_date': course_release_date,
         'settings_url': settings_url,
         'reindex_link': reindex_link,
-        'deprecated_blocks_info': deprecated_blocks_info,
+        'deprecated_blocks_info': deprecated_info,
         'notification_dismiss_url': reverse_course_url(
             'course_notifications_handler',
             current_action.course_key,

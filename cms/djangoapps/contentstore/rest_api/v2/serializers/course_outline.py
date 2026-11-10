@@ -121,34 +121,16 @@ class CourseOutlineFullSerializer(serializers.Serializer):  # pylint: disable=ab
     )
     course_structure = serializers.DictField(
         help_text=(
-            "The whole outline down to units, as the Studio outline page reads it: the course block, "
+            "The whole outline down to units, as the Studio outline builder produces it: the course block, "
             "whose child_info.children holds its sections, and so on down to units and to components "
             "placed directly in a section or subsection. child_info is an object with category, "
             "display_name and children on the course, sections and subsections, with children only on "
             "other containers, and is absent on units and components. "
-            "Every block carries actions, ancestor_has_staff_lock, category, course_authoring_url, "
-            "course_graders, course_tags_count, display_name, due, due_date, edited_on, edited_on_raw, "
-            "embed_lms_url, enable_copy_paste_units, enable_hide_from_toc_ui, explanatory_message, format, "
-            "graded, group_access, has_changes, has_children, has_explicit_staff_lock, "
-            "has_partition_group_components, hide_from_toc, hide_from_toc_message, id, "
-            "is_tagging_feature_disabled, lms_url, published, published_on, relative_weeks_due, "
-            "release_date, released_to_students, show_correctness, staff_only_message, start, studio_url, "
-            "tag_counts_by_block, taxonomy_tags_widget_url, upstream_info, user_partition_info, "
-            "user_partitions, visibility_state and xblock_type. "
-            "The course also carries end, highlights_enabled_for_messaging and unit_level_discussions; the "
-            "course and sections highlights_doc_url, highlights_enabled and highlights_preview_only; "
-            "sections highlights; subsections hide_after_due; units discussion_enabled. "
-            "Some keys depend on configuration: course_authoring_url, course_tags_count, "
-            "tag_counts_by_block and taxonomy_tags_widget_url are absent when tagging is disabled; "
-            "video_sharing_enabled, video_sharing_options and video_sharing_doc_url appear when public "
-            "video sharing is on; with special exams enabled the course carries enable_proctored_exams, "
-            "create_zendesk_tickets and enable_timed_exams, and subsections is_proctored_exam, "
-            "was_exam_ever_linked_with_external, online_proctoring_rules, is_practice_exam, "
-            "is_onboarding_exam, is_time_limited, exam_review_rules, default_time_limit_minutes, "
-            "proctoring_exam_configuration_link, supports_onboarding and show_review_rules; with "
-            "subsection gating on, subsections carry is_prereq, prereqs, prereq, prereq_min_score and "
-            "prereq_min_completion; a subsection of an entrance exam carries is_header_visible; units "
-            "carry summary_configuration_enabled when content summaries are configured."
+            "By default each block carries the keys that create_xblock_info in "
+            "cms/djangoapps/contentstore/xblock_storage_handlers/view_handlers.py produces. Operators may "
+            "replace that builder through the "
+            "OVERRIDE_CREATE_XBLOCK_INFO setting, and several keys appear or disappear with configuration, "
+            "so the exact set of keys on a block is not part of this contract."
         ),
     )
     deprecated_blocks_info = CourseOutlineDeprecatedBlocksSerializer(
@@ -254,8 +236,10 @@ class CourseOutlineQuerySerializer(serializers.Serializer):  # pylint: disable=a
         """
         Parse the key and accept only a key of a block in the course run in the path.
 
-        Whether the block is in the course's outline is checked when the outline
-        is read.
+        The key is returned without the branch or version it may pin, as it was
+        compared: the outline is always read from the course as it is now, and a
+        pinned version the branch is no longer at cannot be looked up. Whether the
+        block is in the course's outline is checked when the outline is read.
         """
         try:
             usage_key = UsageKey.from_string(value)
@@ -269,7 +253,7 @@ class CourseOutlineQuerySerializer(serializers.Serializer):  # pylint: disable=a
             or _run_of(usage_key.course_key) != _run_of(self.context["course_key"])
         ):
             raise serializers.ValidationError(NOT_AN_OUTLINE_BLOCK_MESSAGE)
-        return usage_key
+        return usage_key.for_branch(None).version_agnostic()
 
     def validate(self, attrs):
         view = attrs.get("view") or OUTLINE_MINIMAL_VIEW

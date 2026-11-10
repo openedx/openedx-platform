@@ -12,6 +12,7 @@ import ddt
 import jsonschema
 import pymongo
 import pytest
+from bson import ObjectId
 from django.conf import settings
 from django.db import connection
 from django.db.models.signals import post_save
@@ -60,7 +61,6 @@ from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestM
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content_staging import api as content_staging_api
 from openedx.core.djangoapps.content_tagging import api as tagging_api
-from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from xmodule.course_block import DEFAULT_START_DATE
@@ -625,6 +625,22 @@ class OutlineDefaultViewTest(ModuleStoreTestCase):
         assert self._read(usage_key=block_id) == self._expected_tree(block, 2)
         assert self._read(usage_key=block_id, depth=1) == self._expected_tree(block, 1)
 
+    def test_a_usage_key_pinning_a_branch_or_version_reads_the_course_as_it_is(self):
+        """
+        A key of a block in this course that names a branch, a version, or a
+        version that branch is not at returns the same tree as the plain key.
+        """
+        section = modulestore().get_course(self.course.id).get_children()[0].location
+        plain = self._read(usage_key=str(section))
+        other_version = ObjectId()
+        for pinned in (
+            section.for_branch("draft-branch").for_version(other_version),
+            section.for_branch("published-branch"),
+            section.for_version(other_version),
+        ):
+            assert str(pinned) != str(section)
+            assert self._read(usage_key=str(pinned)) == plain, str(pinned)
+
     def test_empty_course_and_empty_section(self):
         empty = CourseFactory.create()
         CourseStaffRole(empty.id).add_users(self.reader)
@@ -1180,91 +1196,6 @@ class OutlineFullViewReindexLinkAuthzTest(CourseAuthoringAuthzTestMixin, _FullVi
         assert self.assert_parity(self._user_with(COURSE_ADMIN.external_key))["reindex_link"] is None
 
 
-# The keys of each full-view course_structure node, by block type, on a course
-# with every configuration-dependent key off except tagging. The nodes come
-# from the shared create_xblock_info builder; v2 publishes them as documented
-# in CourseOutlineFullSerializer.course_structure.
-_EVERY_NODE_KEYS = frozenset({
-    "actions", "ancestor_has_staff_lock", "category", "course_authoring_url", "course_graders",
-    "course_tags_count", "display_name", "due", "due_date", "edited_on", "edited_on_raw", "embed_lms_url",
-    "enable_copy_paste_units", "enable_hide_from_toc_ui", "explanatory_message", "format", "graded",
-    "group_access", "has_changes", "has_children", "has_explicit_staff_lock", "has_partition_group_components",
-    "hide_from_toc", "hide_from_toc_message", "id", "is_tagging_feature_disabled", "lms_url", "published",
-    "published_on", "relative_weeks_due", "release_date", "released_to_students", "show_correctness",
-    "staff_only_message", "start", "studio_url", "tag_counts_by_block", "taxonomy_tags_widget_url",
-    "upstream_info", "user_partition_info", "user_partitions", "visibility_state", "xblock_type",
-})
-_HIGHLIGHTS_KEYS = frozenset({"highlights_doc_url", "highlights_enabled", "highlights_preview_only"})
-FULL_VIEW_NODE_KEYS = {
-    "course": _EVERY_NODE_KEYS | _HIGHLIGHTS_KEYS | {
-        "child_info", "end", "highlights_enabled_for_messaging", "unit_level_discussions",
-    },
-    "chapter": _EVERY_NODE_KEYS | _HIGHLIGHTS_KEYS | {"child_info", "highlights"},
-    "sequential": _EVERY_NODE_KEYS | {"child_info", "hide_after_due"},
-    "vertical": _EVERY_NODE_KEYS | {"discussion_enabled"},
-    "split_test": _EVERY_NODE_KEYS | {"child_info"},
-    "vertical outside a subsection": _EVERY_NODE_KEYS,
-    "problem": _EVERY_NODE_KEYS,
-}
-_TAGGING_KEYS = frozenset({
-    "course_authoring_url", "course_tags_count", "tag_counts_by_block", "taxonomy_tags_widget_url",
-})
-FULL_VIEW_CHILD_INFO_KEYS = {
-    "course": {"category", "display_name", "children"},
-    "chapter": {"category", "display_name", "children"},
-    "sequential": {"category", "display_name", "children"},
-    "split_test": {"children"},
-}
-
-
-@ddt.ddt
-class OutlineFullViewNodeKeysTest(ModuleStoreTestCase):
-    """The keys each view=full course_structure node carries are the published contract."""
-
-    @ddt.data(False, True)
-    def test_every_node_carries_exactly_the_documented_keys(self, tagging_disabled):
-        course = build_course(sections=1, subsections=1, units=1)
-        subsection = modulestore().get_course(course.id).get_children()[0].get_children()[0]
-        BlockFactory.create(parent_location=subsection.location, category="problem", display_name="Loose")
-        split = BlockFactory.create(parent_location=subsection.location, category="split_test", display_name="Split")
-        BlockFactory.create(parent_location=split.location, category="vertical", display_name="Group")
-        reader = UserFactory()
-        CourseStaffRole(course.id).add_users(reader)
-        with override_waffle_flag(DISABLE_TAGGING_FEATURE, active=tagging_disabled):
-            body = _client(reader).get(outline_url(course.id), {"view": "full"}).json()
-
-        def kinds(node, parent_category=None):
-            """``(kind, node)`` of every node; a vertical is a unit only directly in a subsection."""
-            kind = node["category"]
-            if kind == "vertical" and parent_category != "sequential":
-                kind = "vertical outside a subsection"
-            yield kind, node
-            for child in node.get("child_info", {}).get("children", []):
-                yield from kinds(child, node["category"])
-
-        nodes = list(kinds(body["course_structure"]))
-        assert sorted({kind for kind, _ in nodes}) == sorted(FULL_VIEW_NODE_KEYS)
-        for category, node in nodes:
-            keys = set(node)
-            expected = FULL_VIEW_NODE_KEYS[category] - (_TAGGING_KEYS if tagging_disabled else set())
-            assert keys == expected, (
-                f"The keys of a {category} node in view=full course_structure changed: added "
-                f"{sorted(keys - expected)}, removed {sorted(expected - keys)}. These nodes are built by the "
-                "shared create_xblock_info and are part of the published v2 outline contract. A removed or "
-                "renamed key breaks v2 callers and needs a new version; an added key must be documented in "
-                "CourseOutlineFullSerializer.course_structure and listed here."
-            )
-            assert set(node.get("child_info", {})) == FULL_VIEW_CHILD_INFO_KEYS.get(category, set()), category
-
-    def test_the_documented_keys_are_named_in_the_published_description(self):
-        description = _published_schema()["components"]["schemas"][FULL_SHAPE]["properties"]["course_structure"][
-            "description"
-        ]
-        named = set(re.findall(r"[a-z]+(?:_[a-z]+)+|\b[a-z]{2,}\b", description))
-        missing = set().union(*FULL_VIEW_NODE_KEYS.values(), *FULL_VIEW_CHILD_INFO_KEYS.values()) - named
-        assert missing == set()
-
-
 # ---------------------------------------------------------------------------
 # Reads write nothing
 # ---------------------------------------------------------------------------
@@ -1756,8 +1687,13 @@ class OutlineSchemaTest(SharedModuleStoreTestCase):
         assert parse_qs(urlsplit(cut[0]["children_url"]).query) == {"usage_key": [cut[0]["id"]], "depth": ["1"]}
         page = examples["OutlinePageData"]["value"]
         assert_matches_one_read_shape(page, FULL_SHAPE)
-        node_keys = set(page["course_structure"]) - {"child_info"}
-        assert node_keys < FULL_VIEW_NODE_KEYS["course"]
+        # The example is abridged, so it may show fewer keys than a real course
+        # block, but only keys the default outline builder actually produces.
+        course = CourseFactory.create()
+        reader = UserFactory()
+        CourseStaffRole(course.id).add_users(reader)
+        real = _client(reader).get(outline_url(course.id), {"view": "full"}).json()["course_structure"]
+        assert set(page["course_structure"]) <= set(real)
 
     def test_the_v1_read_is_deprecated(self):
         operation = _published_schema()["paths"][self.V1]["get"]

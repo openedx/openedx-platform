@@ -761,7 +761,7 @@ def _get_rerun_link_for_item(course_key):
     return reverse_course_url('course_rerun_handler', course_key)
 
 
-def _deprecated_blocks_info(course_block, deprecated_block_types):
+def deprecated_blocks_info(course_block, deprecated_block_types):
     """
     Returns deprecation information about `deprecated_block_types`
 
