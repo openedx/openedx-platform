@@ -5,7 +5,7 @@ import logging
 from typing import Dict, List, Optional, Tuple  # noqa: UP035
 
 from opaque_keys.edx.keys import CourseKey
-from xblocks_contrib.discussion import DiscussionXBlock  # pylint: disable=wrong-import-order
+from xblock_discussion import DiscussionXBlock  # pylint: disable=wrong-import-order
 
 from lms.djangoapps.courseware.access import has_access
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort_names, is_course_cohorted

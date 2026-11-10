@@ -18,7 +18,7 @@ from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 from xblock.field_data import DictFieldData
-from xblocks_contrib.discussion import DiscussionXBlock
+from xblock_discussion import DiscussionXBlock
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_api.blocks.tests.helpers import deserialize_usage_key
