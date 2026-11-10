@@ -10,19 +10,6 @@ from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseCreatorRole, OrgContentCreatorRole
 
 
-def add_user_with_status_unrequested(user):
-    """
-    Adds a user to the course creator table with status 'unrequested'.
-
-    If the user is already in the table, this method is a no-op
-    (state will not be changed).
-
-    If the user is marked as is_staff, this method is a no-op (user
-    will not be added to table).
-    """
-    _add_user(user, CourseCreator.UNREQUESTED)
-
-
 def add_user_with_status_granted(caller, user):
     """
     Adds a user to the course creator table with status 'granted'.

@@ -10,9 +10,9 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from cms.djangoapps.contentstore.views.course import _get_course_creator_status
+from cms.djangoapps.course_creators.models import CourseCreator
 from cms.djangoapps.course_creators.views import (
     add_user_with_status_granted,
-    add_user_with_status_unrequested,
     get_course_creator_status,
     update_course_creator_group,
     update_org_content_creator_role,
@@ -57,24 +57,12 @@ class CourseCreatorView(TestCase):
     def test_table_initially_empty(self):
         self.assertIsNone(get_course_creator_status(self.user))  # noqa: PT009
 
-    def test_add_unrequested(self):
-        add_user_with_status_unrequested(self.user)
-        self.assertEqual('unrequested', get_course_creator_status(self.user))  # noqa: PT009
-
-        # Calling add again will be a no-op (even if state is different).
-        add_user_with_status_granted(self.admin, self.user)
-        self.assertEqual('unrequested', get_course_creator_status(self.user))  # noqa: PT009
-
     @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_add_granted(self):
         # Calling add_user_with_status_granted impacts is_user_in_course_group_role.
         self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
         add_user_with_status_granted(self.admin, self.user)
-        self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
-
-        # Calling add again will be a no-op (even if state is different).
-        add_user_with_status_unrequested(self.user)
         self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
 
         self.assertTrue(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
@@ -97,7 +85,7 @@ class CourseCreatorView(TestCase):
 
     @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_user_requested_access(self):
-        add_user_with_status_unrequested(self.user)
+        CourseCreator.objects.create(user=self.user, state=CourseCreator.UNREQUESTED)
         self.assertEqual('unrequested', get_course_creator_status(self.user))  # noqa: PT009
 
         self.client.login(username=self.user.username, password='foo')
@@ -142,6 +130,7 @@ class CourseCreatorView(TestCase):
         assert get_course_creator_status(self.user) is None
         admin_notification.send.assert_not_called()
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
     def test_user_requested_already_granted(self):
         add_user_with_status_granted(self.admin, self.user)
         self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
@@ -149,11 +138,6 @@ class CourseCreatorView(TestCase):
         # user from the authz course creator group (and that can only be done by an admin).
         user_requested_access(self.user)
         self.assertEqual('granted', get_course_creator_status(self.user))  # noqa: PT009
-
-    def test_add_user_unrequested_staff(self):
-        # Users marked as is_staff will not be added to the course creator table.
-        add_user_with_status_unrequested(self.admin)
-        self.assertIsNone(get_course_creator_status(self.admin))  # noqa: PT009
 
     def test_add_user_granted_staff(self):
         # Users marked as is_staff will not be added to the course creator table.
