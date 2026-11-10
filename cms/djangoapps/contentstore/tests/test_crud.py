@@ -1,7 +1,7 @@
 """Tests for CRUD Operations"""
 
 
-from xblocks_contrib.problem import ProblemBlock
+from xblock_problem import ProblemBlock
 
 from xmodule import templates
 from xmodule.course_block import CourseBlock
