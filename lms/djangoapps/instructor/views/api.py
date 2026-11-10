@@ -81,6 +81,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor import enrollment
 from lms.djangoapps.instructor.access import ROLES, allow_access, list_with_level, revoke_access, update_forum_role
+from lms.djangoapps.instructor.authz.legacy import is_django_staff
 from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import INVOICE_KEY
 from lms.djangoapps.instructor.enrollment import (
@@ -1851,6 +1852,7 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
     **Response Values**
         * Empty as this is executed asynchronously.
     """
+
     authentication_classes = (
         JwtAuthentication,
         BearerAuthenticationAllowInactiveUser,
@@ -1859,15 +1861,7 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
     permission_classes = (IsAuthenticated, InstructorAuthzPermission)
     authz_permissions = (COURSES_MANAGE_COHORTS.identifier,)
     course_id_url_kwarg = "course_key_string"
-
-    @staticmethod
-    def legacy_permission_check(user, course_key):  # pylint: disable=unused-argument
-        """
-        Preserve this endpoint's pre-AuthZ access check (Django staff only), used as the
-        fallback when ``authz.enable_course_authoring`` is disabled for the course. Unlike
-        the other cohorts endpoints, this one was never gated on course-level staff access.
-        """
-        return bool(user and user.is_staff)
+    legacy_permission_check = staticmethod(is_django_staff)
 
     def post(self, request, course_key_string):
         """

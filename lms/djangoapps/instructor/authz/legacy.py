@@ -36,6 +36,26 @@ from openedx.core.djangoapps.django_comment_common.models import (
 )
 
 
+def is_django_staff(user: AbstractUser, course_key: CourseKey) -> bool:  # pylint: disable=unused-argument
+    """
+    Check the legacy access of the endpoints restricted to Django staff.
+
+    It follows the same rule as DRF's ``IsAdminUser`` (``user.is_staff``), regardless
+    of the course. It is not a default of ``LEGACY_PERMISSION_CHECKS``: views pass it
+    as their ``legacy_permission_check``.
+
+    Args:
+        user (AbstractUser): The user to check.
+        course_key (CourseKey): The course to check. It is not used, as the rule
+            does not depend on the course.
+
+    Returns:
+        bool: True for Django staff. Course staff and course instructors are not
+        included.
+    """
+    return bool(user and user.is_staff)
+
+
 def has_staff_access(user: AbstractUser, course_key: CourseKey) -> bool:
     """
     Check whether the user has course staff access.
