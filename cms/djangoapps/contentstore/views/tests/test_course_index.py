@@ -29,7 +29,7 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
     check_mongo_calls,
 )
 
-from ..course import _deprecated_blocks_info, course_outline_initial_state, reindex_course_and_check_access
+from ..course import course_outline_initial_state, deprecated_blocks_info, reindex_course_and_check_access
 
 
 @ddt.ddt
@@ -190,7 +190,7 @@ class TestCourseOutline(CourseTestCase):
         # get updated course_block
         course_block = modulestore().get_item(self.course.location)
 
-        info = _deprecated_blocks_info(course_block, block_types)
+        info = deprecated_blocks_info(course_block, block_types)
         self._verify_deprecated_info(
             course_block.id,
             course_block.advanced_modules,
@@ -215,7 +215,7 @@ class TestCourseOutline(CourseTestCase):
         self._create_test_data(course_block, create_blocks=True, block_types=enabled_block_types)
         # get updated course_module
         course_block = modulestore().get_item(self.course.location)
-        info = _deprecated_blocks_info(course_block, deprecated_block_types)
+        info = deprecated_blocks_info(course_block, deprecated_block_types)
         self._verify_deprecated_info(
             course_block.id,
             course_block.advanced_modules,
