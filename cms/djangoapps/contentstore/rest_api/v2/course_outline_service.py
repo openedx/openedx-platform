@@ -17,8 +17,8 @@ from cms.djangoapps.contentstore.utils import (
     reverse_course_url,
 )
 from cms.djangoapps.contentstore.views.course import (
-    _deprecated_blocks_info,
     course_outline_initial_state,
+    deprecated_blocks_info,
     user_can_reindex_course,
 )
 from cms.djangoapps.contentstore.views.permissions import COURSE_NOT_FOUND_MESSAGE
@@ -164,7 +164,7 @@ def get_full_outline(request, course_key, show=None):
         if settings.ENABLE_COURSEWARE_INDEX and user_can_reindex_course(course_key, request.user):
             reindex_link = f"/course/{course_key}/search_reindex"
         rerun = _rerun_notification(course_key)
-        deprecated_blocks_info = _deprecated_blocks_info(course, [block.name for block in deprecated_xblocks()])
+        deprecated_info = deprecated_blocks_info(course, [block.name for block in deprecated_xblocks()])
         proctoring_errors = CourseMetadata.validate_proctoring_settings(
             course, CourseMetadata.fetch(course), request.user,
         )
@@ -178,7 +178,7 @@ def get_full_outline(request, course_key, show=None):
                 get_default_time_display(course.start) if course.start != DEFAULT_START_DATE else _("Set Date")
             ),
             "course_structure": course_structure,
-            "deprecated_blocks_info": deprecated_blocks_info,
+            "deprecated_blocks_info": deprecated_info,
             "discussions_incontext_feedback_url": settings.DISCUSSIONS_INCONTEXT_FEEDBACK_URL,
             "discussions_incontext_learnmore_url": settings.DISCUSSIONS_INCONTEXT_LEARNMORE_URL,
             "discussions_settings": discussions_settings,
