@@ -5,7 +5,7 @@ from datetime import datetime
 
 from xblock.core import XBlock
 from xblock.fields import Boolean, List, Scope, String
-from xblocks_contrib.html import HtmlBlockMixin
+from xblock_html import HtmlBlockMixin
 
 from xmodule.x_module import ResourceTemplates
 
