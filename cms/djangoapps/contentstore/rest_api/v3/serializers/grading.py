@@ -8,9 +8,6 @@ from django.core.validators import MinLengthValidator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-from rest_framework.settings import api_settings
-from rest_framework.utils import html
 
 GRADING_FULL_VIEW = "full"
 
@@ -83,11 +80,18 @@ class CourseGradingSerializer(serializers.Serializer):  # pylint: disable=abstra
         ref_name = "authoring_grading.CourseGrading.v3"
 
 
-class CourseGradingFullSerializer(CourseGradingSerializer):  # pylint: disable=abstract-method
-    """The grading policy of a course, with the context the Studio grading page shows beside it."""
+class CourseGradingReadSerializer(CourseGradingSerializer):  # pylint: disable=abstract-method
+    """
+    The grading policy of a course as a read returns it.
+
+    With ``view=full`` the read adds the context the Studio grading page shows
+    beside the policy. Those fields are optional: a value that lacks them is
+    serialized without them, so one serializer covers both representations.
+    """
 
     course_assignment_lists = serializers.DictField(
         child=serializers.ListField(child=serializers.CharField()),
+        required=False,
         help_text=(
             "For each assignment type in use, its graded subsections as '<section> - <subsection>'. "
             "Present only with view=full."
@@ -95,12 +99,15 @@ class CourseGradingFullSerializer(CourseGradingSerializer):  # pylint: disable=a
     )
     default_grade_designations = serializers.ListField(
         child=serializers.CharField(),
+        required=False,
         help_text="Letter grade names offered for new grade cutoffs. Present only with view=full.",
     )
     is_credit_course = serializers.BooleanField(
+        required=False,
         help_text="Whether the course offers course credit. Present only with view=full.",
     )
     show_credit_eligibility = serializers.BooleanField(
+        required=False,
         help_text=(
             "Whether the minimum grade for credit applies: true for a credit course when credit "
             "eligibility is enabled on the platform. Present only with view=full."
@@ -108,6 +115,7 @@ class CourseGradingFullSerializer(CourseGradingSerializer):  # pylint: disable=a
     )
     mfe_proctored_exam_settings_url = serializers.CharField(
         allow_blank=True,
+        required=False,
         help_text=(
             "Path of the course's proctored exam settings page in the authoring app, or an empty "
             "string when that page is not available. Present only with view=full."
@@ -115,7 +123,7 @@ class CourseGradingFullSerializer(CourseGradingSerializer):  # pylint: disable=a
     )
 
     class Meta:
-        ref_name = "authoring_grading.CourseGradingFull.v3"
+        ref_name = "authoring_grading.CourseGradingRead.v3"
 
 
 class GradingViewQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -347,8 +355,3 @@ class CourseGradingUpdateSerializer(serializers.Serializer):  # pylint: disable=
 
     class Meta:
         ref_name = "authoring_grading.CourseGradingUpdate.v3"
-
-    def to_internal_value(self, data):
-        if html.is_html_input(data):
-            raise ValidationError({api_settings.NON_FIELD_ERRORS_KEY: ["Send the grading policy as a JSON object."]})
-        return super().to_internal_value(data)

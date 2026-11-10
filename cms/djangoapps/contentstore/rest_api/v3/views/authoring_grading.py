@@ -1,17 +1,11 @@
 """API views for a course's grading policy (v3)."""
 
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    PolymorphicProxySerializer,
-    extend_schema,
-)
-from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.errors import ErrorResponseSerializer
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
 from rest_framework import viewsets
+from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -24,7 +18,7 @@ from cms.djangoapps.contentstore.rest_api.v3.grading_service import (
 from cms.djangoapps.contentstore.rest_api.v3.permissions import CanEditGradingSettings, CanViewGradingSettings
 from cms.djangoapps.contentstore.rest_api.v3.serializers.grading import (
     GRADING_FULL_VIEW,
-    CourseGradingFullSerializer,
+    CourseGradingReadSerializer,
     CourseGradingSerializer,
     CourseGradingUpdateSerializer,
     GradingViewQuerySerializer,
@@ -49,17 +43,6 @@ _VIEW_PARAMETER = OpenApiParameter(
 )
 
 
-# The full shape is listed first: the default shape allows extra keys, so a
-# client trying each shape in order would otherwise read a full response as the
-# default one and lose the view=full fields. As the shapes overlap, the CMS
-# schema hooks publish this component as anyOf (cms.lib.spectacular.ANY_OF_COMPONENTS).
-_READ_RESPONSE = PolymorphicProxySerializer(
-    component_name="authoring_grading.CourseGradingRead.v3",
-    serializers=[CourseGradingFullSerializer, CourseGradingSerializer],
-    resource_type_field_name=None,
-)
-
-
 def _error(description):
     return OpenApiResponse(response=ErrorResponseSerializer, description=description)
 
@@ -79,15 +62,13 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     modulestore, not database rows.
     """
 
-    # Studio authors whose account is not yet activated use this endpoint from
-    # the authoring app; the default session class would reject them.
-    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated,)
     action_permission_classes = {
         "retrieve": CanViewGradingSettings,
         "partial_update": CanEditGradingSettings,
     }
     serializer_class = CourseGradingSerializer
+    parser_classes = (JSONParser,)
 
     lookup_field = "course_key"
     lookup_value_regex = COURSE_KEY_LOOKUP_REGEX
@@ -122,8 +103,8 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         parameters=[_COURSE_KEY_PARAMETER, _VIEW_PARAMETER],
         responses={
             200: OpenApiResponse(
-                response=_READ_RESPONSE,
-                description="The grading policy, in the full shape with view=full and the default shape otherwise.",
+                response=CourseGradingReadSerializer,
+                description="The grading policy, with the grading page's context fields added when view=full.",
             ),
             400: _error("The view parameter has an unknown value."),
             401: _error("The requester is not authenticated."),
@@ -139,9 +120,10 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
         query = GradingViewQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         if query.validated_data.get("view") == GRADING_FULL_VIEW:
-            full = get_full_grading_settings(self.get_course_key())
-            return Response(CourseGradingFullSerializer(full).data)
-        return Response(self.get_serializer(get_grading_policy(self.get_course_key())).data)
+            grading = get_full_grading_settings(self.get_course_key())
+        else:
+            grading = get_grading_policy(self.get_course_key())
+        return Response(CourseGradingReadSerializer(grading).data)
 
     @extend_schema(
         summary="Update a course's grading settings",
@@ -150,7 +132,7 @@ class AuthoringGradingViewSet(StandardizedErrorMixin, viewsets.ViewSet):
             "every assignment type. A null grace_period or minimum_grade_credit leaves that field "
             "unchanged. Unknown fields are ignored. Returns the stored policy."
         ),
-        request={"application/json": CourseGradingUpdateSerializer},
+        request=CourseGradingUpdateSerializer,
         parameters=[_COURSE_KEY_PARAMETER],
         responses={
             200: OpenApiResponse(

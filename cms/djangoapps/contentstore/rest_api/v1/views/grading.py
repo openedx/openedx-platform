@@ -131,8 +131,13 @@ class CourseGradingView(DeveloperErrorViewMixin, APIView):
         """
         Update a course's grading.
 
-        Deprecated: use ``PATCH /api/authoring/v3/courses/{course_key}/grading/``,
-        which accepts this body unchanged. See https://github.com/openedx/openedx-platform/issues/39128.
+        Deprecated: use ``PATCH /api/authoring/v3/courses/{course_key}/grading/``.
+        It takes the same body but answers 400 to some values this endpoint
+        stores: a null ``grade_cutoffs`` or a cutoff that is not a JSON number
+        (null included), a ``minimum_grade_credit`` that is neither a JSON
+        number nor null (``""`` and numeric strings included), and a grader
+        whose ``type`` is not a string or whose ``short_label`` is neither a
+        string nor null. See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 

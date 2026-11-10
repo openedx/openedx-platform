@@ -42,6 +42,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.credit.tests.factories import CreditCourseFactory
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
@@ -280,8 +281,11 @@ def _published_components():
 
 
 DEFAULT_SHAPE = "authoring_grading.CourseGrading.v3"
-FULL_SHAPE = "authoring_grading.CourseGradingFull.v3"
 READ_SHAPE = "authoring_grading.CourseGradingRead.v3"
+FULL_VIEW_FIELDS = (
+    "course_assignment_lists", "default_grade_designations", "is_credit_course",
+    "show_credit_eligibility", "mfe_proctored_exam_settings_url",
+)
 
 
 def assert_matches_published_schema(body, component):
@@ -457,14 +461,43 @@ class GradingAccessLegacyPermissionsTest(_AccessMatrixMixin, SharedModuleStoreTe
         self.assert_access(self._user_with(CourseStaffRole(self.other_course.id)), mount, operation, 403)
 
     @ddt.data(*MOUNTS)
-    def test_inactive_user_with_a_session_may_read_and_change(self, mount):
-        """Session callers whose account is not activated are admitted."""
+    def test_inactive_user_with_a_session_is_refused_with_401(self, mount):
+        """A session whose account is not activated authenticates no one, so the caller is anonymous."""
         user = UserFactory(is_staff=True, is_active=False, password="password")
         client = APIClient()
         assert client.login(username=user.username, password="password")
-        assert client.get(grading_url(mount, self.course.id)).status_code == 200
-        response = _patch(client, grading_url(mount, self.course.id), {"grade_cutoffs": CUTOFFS})
-        assert response.status_code == 200
+        url = grading_url(mount, self.course.id)
+        stored_cutoffs = modulestore().get_course(self.course.id).grade_cutoffs
+        assert_error_envelope(client.get(url), expected_status=401, expected_type_slug="authn")
+        with patch(CREDIT_TASK):
+            response = _patch(client, url, {"grade_cutoffs": {"A": 0.99, "Pass": 0.98}})
+        assert_error_envelope(response, expected_status=401, expected_type_slug="authn")
+        assert modulestore().get_course(self.course.id).grade_cutoffs == stored_cutoffs
+        # The same session is admitted once the account is active.
+        user.is_active = True
+        user.save()
+        assert client.get(url).status_code == 200
+
+    @ddt.data(*CALLS)
+    @ddt.unpack
+    def test_each_operation_falls_back_to_its_own_studio_access(self, mount, operation):
+        """
+        A read needs Studio read access and a change Studio write access. Course
+        roles grant both or neither, so each level is withheld in turn to tell them apart.
+        """
+        user = self._user_with(CourseStaffRole(self.course.id))
+        is_read = operation.startswith("get")
+        for withheld, refused in (
+            (LegacyAuthoringPermission.READ, is_read),
+            (LegacyAuthoringPermission.WRITE, not is_read),
+        ):
+            with patch.dict(LEGACY_PERMISSION_HANDLER_MAP, {withheld: lambda *args: False}), \
+                    patch(CREDIT_TASK):
+                response = self._call(user, mount, operation, self.course.id)
+            if refused:
+                assert_error_envelope(response, expected_status=403, expected_type_slug="authz")
+            else:
+                assert response.status_code == 200, (withheld, response.content)
 
     @ddt.data(*MOUNTS)
     def test_jwt_caller_may_read(self, mount):
@@ -664,9 +697,10 @@ class GradingReadTest(ModuleStoreTestCase):
     def test_reads_match_the_published_shapes(self, mount):
         """
         Including policies stored with each value the schema marks nullable, and a
-        course never configured. The read publishes both shapes; a full response
-        also matches the default one. This update refuses the nullable values, so
-        they are stored through the grading model, as the v1 update still stores them.
+        course never configured. Both views match the one published read shape, whose
+        full-view fields are optional; the default view also matches the policy an
+        update returns. This update refuses the nullable values, so they are stored
+        through the grading model, as the v1 update still stores them.
         """
         nullable_values = _full(
             graders=[{**GRADERS[0], "type": None, "short_label": None}],
@@ -695,8 +729,8 @@ class GradingReadTest(ModuleStoreTestCase):
             full = self.client.get(grading_url(mount, course.id), {"view": "full"}).json()
             assert default == expected
             assert {key: full[key] for key in default} == expected
+            assert set(full) == set(POLICY_FIELDS) | set(FULL_VIEW_FIELDS)
             assert_matches_published_schema(default, DEFAULT_SHAPE)
-            assert_matches_published_schema(full, FULL_SHAPE)
             assert_matches_published_schema(default, READ_SHAPE)
             assert_matches_published_schema(full, READ_SHAPE)
 
@@ -704,12 +738,16 @@ class GradingReadTest(ModuleStoreTestCase):
         default = self.client.get(grading_url(mount, never_configured.id)).json()
         full = self.client.get(grading_url(mount, never_configured.id), {"view": "full"}).json()
         assert default["grace_period"] is None
+        assert set(default) == set(POLICY_FIELDS)
+        assert set(full) == set(POLICY_FIELDS) | set(FULL_VIEW_FIELDS)
         assert_matches_published_schema(default, DEFAULT_SHAPE)
-        assert_matches_published_schema(full, FULL_SHAPE)
         assert_matches_published_schema(default, READ_SHAPE)
         assert_matches_published_schema(full, READ_SHAPE)
+        # The read shape still requires the policy and types the full-view fields.
         with pytest.raises(jsonschema.ValidationError):
-            assert_matches_published_schema(default, FULL_SHAPE)
+            assert_matches_published_schema({key: full[key] for key in FULL_VIEW_FIELDS}, READ_SHAPE)
+        with pytest.raises(jsonschema.ValidationError):
+            assert_matches_published_schema({**full, "is_credit_course": "no"}, READ_SHAPE)
 
     @ddt.data(*MOUNTS)
     def test_head_answers_without_a_body(self, mount):
@@ -1080,8 +1118,8 @@ class GradingUpdateBodyTest(ModuleStoreTestCase):
         """Integers the modulestore cannot store are refused rather than half-written."""
         self._assert_refused_before_anything_is_written(TOO_LARGE_BODIES)
 
-    def test_a_form_encoded_body_is_refused(self):
-        """Only a JSON object is a grading policy update."""
+    def test_a_form_encoded_body_is_refused_with_415(self):
+        """Only a JSON body is parsed, so a form body is refused before anything is written."""
         course = seed_course(self.staff)
         seeded = stored_policy(course.id)
         response = self.client.patch(
@@ -1089,8 +1127,7 @@ class GradingUpdateBodyTest(ModuleStoreTestCase):
             data="graders[0]type=Homework&grade_cutoffs=x",
             content_type="application/x-www-form-urlencoded",
         )
-        envelope = assert_error_envelope(response, expected_status=400, expected_type_slug="validation")
-        assert list(envelope["errors"]) == ["non_field_errors"]
+        assert_error_envelope(response, expected_status=415, expected_type_slug="internal")
         assert stored_policy(course.id) == seeded
 
 
