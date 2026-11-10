@@ -86,20 +86,20 @@ class CmsMarkSupersededPathsTest(TestCase):
         result = self._run(schema)
         assert result["paths"]["/api/contentstore/v1/home"]["get"]["deprecated"] is True
 
-    def test_v1_home_libraries_sibling_is_not_marked_deprecated(self):
-        """Exact-path lookup must not spill onto the sibling libraries path."""
+    def test_a_path_under_v1_home_is_not_marked_deprecated(self):
+        """Exact-path lookup must not spill onto a path that starts with the superseded one."""
         home_path = "/api/contentstore/v1/home"
-        libraries_path = "/api/contentstore/v1/home/libraries"
+        sibling_path = "/api/contentstore/v1/home/example"
         result = self._run({"paths": {
             home_path: {"get": {}},
-            libraries_path: {"get": {}},
+            sibling_path: {"get": {}},
         }})
         assert result["paths"][home_path]["get"]["deprecated"] is True
-        assert "deprecated" not in result["paths"][libraries_path]["get"]
+        assert "deprecated" not in result["paths"][sibling_path]["get"]
 
     def test_a_conforming_sibling_path_is_not_marked_deprecated(self):
         """A real path near the replacement that no entry in SUPERSEDED_PATHS covers is unchanged."""
-        sibling_path = "/api/authoring/v3/home/courses/"
+        sibling_path = "/api/authoring/v4/courses/"
         result = self._run({"paths": {sibling_path: {"get": {}}}})
         assert "deprecated" not in result["paths"][sibling_path]["get"]
 
