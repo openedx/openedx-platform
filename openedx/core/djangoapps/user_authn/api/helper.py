@@ -31,6 +31,7 @@ class RegistrationFieldsContext(APIView):
         'job_title',
         'title',
         'mailing_address',
+        'phone_number',
         'goals',
         'honor_code',
         'terms_of_service',

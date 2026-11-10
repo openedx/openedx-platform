@@ -1031,6 +1031,52 @@ class RegistrationViewTestV1(
             }
         )
 
+    @ddt.data("required", "optional")
+    def test_registration_form_phone_number(self, state):
+        """Verify the phone field description reflects its configured required or optional state."""
+        self._assert_reg_field(
+            {"phone_number": state},
+            {
+                "name": "phone_number",
+                "type": "text",
+                "required": state == "required",
+                "label": "Phone number",
+                "errorMessages": {"required": "Enter your phone number"},
+            },
+        )
+
+    @override_settings(REGISTRATION_EXTRA_FIELDS={"phone_number": "required"})
+    @ddt.data(None, "", "   ", "letters", "1" * 51)
+    def test_register_invalid_phone_number(self, phone):
+        """Verify missing or invalid required phone numbers prevent account creation."""
+        data = {
+            "email": self.EMAIL, "name": self.NAME,
+            "username": self.USERNAME, "password": self.PASSWORD, "honor_code": "true",
+        }
+        if phone is not None:
+            data["phone_number"] = phone
+        response = self.client.post(self.url, data)
+        self.assertHttpBadRequest(response)
+        assert "phone_number" in response.json()
+        assert not User.objects.filter(username=self.USERNAME).exists()
+
+    @ddt.data(("required", "+18005551234"), ("optional", "+18005551234"), ("optional", None))
+    @ddt.unpack
+    def test_register_phone_number(self, state, phone):
+        """Verify registration saves the phone number and allows an optional phone to be omitted."""
+        data = {
+            "email": self.EMAIL, "name": self.NAME,
+            "username": self.USERNAME, "password": self.PASSWORD,
+            "honor_code": "true",
+        }
+        if phone is not None:
+            data["phone_number"] = phone
+        with override_settings(REGISTRATION_EXTRA_FIELDS={"phone_number": state}):
+            response = self.client.post(self.url, data)
+        self.assertHttpOK(response)
+        account_url = reverse("accounts_api", kwargs={"username": self.USERNAME})
+        assert self.client.get(account_url).json()["phone_number"] == phone
+
     def test_registration_form_goals(self):
         self._assert_reg_field(
             {"goals": "optional"},
