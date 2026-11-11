@@ -625,31 +625,24 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         return next(t for t in response.data["results"] if t["id"] == taxonomy.id)["tags_count"]
 
     @ddt.data(
-        ("tA1", {}),
-        ("tA1", {"org": "orgA"}),
-        ("ot1", {"unassigned": "true"}),
+        ("tA1", {}, ("three",), 2),
+        ("tA1", {"org": "orgA"}, ("three",), 2),
+        ("ot1", {"unassigned": "true"}, ("three",), 2),
+        ("tA1", {}, ("one", "two", "three"), 0),
     )
     @ddt.unpack
-    def test_list_taxonomy_tags_count_excludes_archived(self, taxonomy_attr: str, query_params: dict) -> None:
+    def test_list_taxonomy_tags_count_excludes_archived(
+        self, taxonomy_attr: str, query_params: dict, archived_values: tuple[str, ...], expected_count: int
+    ) -> None:
         """
         Archived tags are hidden from the taxonomy's tag list, so they must not be counted either.
         """
         taxonomy = getattr(self, taxonomy_attr)
         for value in ("one", "two", "three"):
             Tag.objects.create(taxonomy=taxonomy, value=value)
-        Tag.objects.filter(taxonomy=taxonomy, value="three").update(archived=True)
+        Tag.objects.filter(taxonomy=taxonomy, value__in=archived_values).update(archived=True)
 
-        assert self._get_tags_count(taxonomy, query_params) == 2
-
-    def test_list_taxonomy_tags_count_all_archived_is_zero(self) -> None:
-        """
-        A taxonomy whose tags are all archived reports no tags.
-        """
-        for value in ("one", "two", "three"):
-            Tag.objects.create(taxonomy=self.tA1, value=value)
-        Tag.objects.filter(taxonomy=self.tA1).update(archived=True)
-
-        assert self._get_tags_count(self.tA1, {}) == 0
+        assert self._get_tags_count(taxonomy, query_params) == expected_count
 
     def test_list_taxonomy_type_mixed(self) -> None:
         """

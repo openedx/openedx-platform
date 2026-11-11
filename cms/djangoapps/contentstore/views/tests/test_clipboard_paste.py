@@ -5,6 +5,7 @@ APIs.
 """
 import ddt
 from opaque_keys.edx.keys import UsageKey
+from openedx_content import models_api as content_models
 from openedx_content.api import signals as content_signals
 from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
@@ -284,8 +285,21 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
             dest_chapter = BlockFactory.create(parent=dest_course, category='chapter', display_name='Section')
             dest_sequential = BlockFactory.create(parent=dest_chapter, category='sequential', display_name='Subsection')
 
-        # Archive one of the unit's associations, to test that it isn't pasted.
         unit_key = source_block_keys['vertical']
+
+        # Disable a taxonomy; disabled is not archived, so its tags are still pasted.
+        taxonomy_disabled = tagging_api.create_taxonomy(
+            "test_taxonomy_disabled",
+            "Test Taxonomy Disabled",
+            export_id="DISABLED",
+        )
+        tagging_api.set_taxonomy_orgs(taxonomy_disabled, all_orgs=True)
+        tagging_api.add_tag_to_taxonomy(taxonomy_disabled, "tag_1")
+        tagging_api.tag_object(object_id=str(unit_key), taxonomy=taxonomy_disabled, tags=["tag_1"])
+        taxonomy_disabled.enabled = False
+        taxonomy_disabled.save()
+
+        # Archive one of the unit's associations, to test that it isn't pasted.
         ObjectTag.objects.filter(
             object_id=str(unit_key),
             taxonomy__export_id='ALL_ORGS',
@@ -311,6 +325,13 @@ class ClipboardPasteTestCase(ModuleStoreTestCase):
         tags = list(tagging_api.get_object_tags(str(dest_unit_key)))
         assert len(tags) == 1
         assert str(tags[0]) == f'<ObjectTag> {dest_unit_key}: test_taxonomy=tag_1'
+
+        # get_object_tags() hides the disabled taxonomy, so read the rows directly.
+        disabled_values = ObjectTag.objects.filter(
+            object_id=str(dest_unit_key),
+            taxonomy__export_id="DISABLED",
+        ).values_list("_value", flat=True)
+        assert list(disabled_values) == ["tag_1"]
 
         # Ensure that the pasted child blocks were tagged too.
         dest_tags, _ = tagging_api.get_all_object_tags(dest_course.id)
@@ -511,6 +532,48 @@ class ClipboardPasteFromV2LibraryTestCase(OpenEdxEventsTestMixin, ImmediateOnCom
         for object_tag in object_tags:
             assert object_tag.value in self.lib_block_tags
             assert not object_tag.is_copied
+
+    def test_paste_from_library_unit_leaves_archived_tags_out(self):
+        # Neither the pasted unit nor its child carries an archived tag.
+        # If we're working with Containers in test cases, we need this line:
+        self.addCleanup(content_models.Container.reset_cache)
+        taxonomy = tagging_api.get_taxonomy_by_export_id("ALL_ORGS")
+        unit = library_api.create_container(
+            library_key=self.library.key,
+            container_cls=content_models.Unit,
+            slug="unit-1",
+            title="Unit 1",
+            user_id=None,
+        )
+        library_api.update_container_children(unit.container_key, [self.lib_block_key], None)
+        library_api.publish_changes(self.library.key)
+        unit_id = str(unit.container_key)
+        child_id = str(self.lib_block_key)
+        tagging_api.tag_object(unit_id, taxonomy, ["tag_2", "tag_3"])
+        # The child already has the tags from setUp.
+        ObjectTag.objects.filter(object_id=unit_id, _value="tag_3").update(archived=True)
+        ObjectTag.objects.filter(object_id=child_id, _value="tag_5").update(archived=True)
+
+        library_api.copy_container(unit.container_key, self.user.id)
+        with self.store.bulk_operations(self.course.id):
+            chapter = BlockFactory.create(parent=self.course, category='chapter', display_name='Section')
+            sequential = BlockFactory.create(parent=chapter, category='sequential', display_name='Subsection')
+        paste_response = self.client.post(XBLOCK_ENDPOINT, {
+            "parent_locator": str(sequential.location),
+            "staged_content": "clipboard",
+        }, format="json")
+        assert paste_response.status_code == 200
+
+        pasted_unit_key = UsageKey.from_string(paste_response.json()["locator"])
+        pasted_children = self.store.get_item(pasted_unit_key).children
+        assert len(pasted_children) == 1
+
+        def stored_values(key):
+            # Unfiltered, so that a hidden copy would be found too.
+            return sorted(ObjectTag.objects.filter(object_id=str(key)).values_list("_value", flat=True))
+
+        assert stored_values(pasted_unit_key) == ["tag_2"]
+        assert stored_values(pasted_children[0]) == ["tag_1"]
 
     def test_paste_from_library_copies_asset(self):
         """
