@@ -18,20 +18,27 @@ from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_catalog.api import create_course_run_for_modulestore_course_with
+from openedx_catalog.models_api import CourseRun
+from openedx_learning.api import associate_competency_criterion, create_competency_taxonomy
+from openedx_learning.models_api import CompetencyCriteriaGroup, CompetencyCriterion, RuleType
+from openedx_tagging.rules import ObjectTagPermissionItem
 from organizations.models import OrganizationCourse
 from organizations.tests.factories import OrganizationFactory
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from common.djangoapps.course_action_state.managers import CourseRerunUIStateManager
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
@@ -151,9 +158,59 @@ class RerunCourseTaskTestCase(CourseTestCase):  # pylint: disable=missing-class-
 
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
-    def _rerun_course(self, old_course_key, new_course_key):
-        CourseRerunState.objects.initiated(old_course_key, new_course_key, self.user, 'Test Re-run')
-        rerun_course(str(old_course_key), str(new_course_key), self.user.id)
+    def _rerun_course(self, old_course_key, new_course_key, user=None):
+        user = user or self.user
+        CourseRerunState.objects.initiated(old_course_key, new_course_key, user, 'Test Re-run')
+        rerun_course(str(old_course_key), str(new_course_key), user.id)
+
+    def _tag_course_and_add_criterion(self, org=None):
+        """
+        Tag the course, give a new problem a competency criterion, and return the problem's key.
+
+        With `org`, the taxonomies are enabled for that organization only, otherwise for all.
+        """
+        problem = BlockFactory.create(
+            parent=BlockFactory.create(
+                parent=BlockFactory.create(parent=self.course, category="sequential"), category="vertical",
+            ),
+            category="problem",
+        )
+        problem_key = self.course.id.make_usage_key("problem", problem.location.block_id)
+        plain_taxonomy = tagging_api.create_taxonomy(name="Plain")
+        competency_taxonomy = create_competency_taxonomy(name="Competencies")
+        for taxonomy in (plain_taxonomy, competency_taxonomy):
+            if org:
+                tagging_api.set_taxonomy_orgs(taxonomy, orgs=[org])
+            else:
+                tagging_api.set_taxonomy_orgs(taxonomy, all_orgs=True)
+        tagging_api.add_tag_to_taxonomy(taxonomy=plain_taxonomy, tag="Alpha")
+        competency = tagging_api.add_tag_to_taxonomy(taxonomy=competency_taxonomy, tag="Writing")
+        tagging_api.tag_object(object_id=str(self.course.id), taxonomy=plain_taxonomy, tags=["Alpha"])
+        create_course_run_for_modulestore_course_with(self.course.id, title=self.course.display_name)
+        associate_competency_criterion(
+            competency.id,
+            str(problem_key),
+            rule_type_override=RuleType.GRADE,
+            rule_payload_override={"op": "gte", "value": 0.8, "scale": "percent"},
+        )
+        return problem_key
+
+    def _assert_rerun_state(self, new_course_key, state):
+        """Assert the rerun of `new_course_key` is in `state`."""
+        assert CourseRerunState.objects.find_first(course_key=new_course_key).state == state
+
+    def _assert_one_copy(self, new_course_key, problem_key):
+        """Assert the new run has one copy of the course's tags and of `problem_key`'s tags and criterion."""
+        new_problem_key = str(problem_key.map_into_course(new_course_key))
+        assert [tag.value for tag in tagging_api.get_object_tags(str(new_course_key))] == ["Alpha"]
+        assert [tag.value for tag in tagging_api.get_object_tags(new_problem_key)] == ["Writing"]
+        assert CompetencyCriteriaGroup.objects.filter(course__course_key=new_course_key).count() == 1
+        assert CompetencyCriterion.objects.filter(object_tag__object_id=new_problem_key).count() == 1
+
+    def _assert_nothing_copied(self, new_course_key):
+        """Assert the new run has no tags and no criteria."""
+        assert not tagging_api.get_all_object_tags(new_course_key)[0]
+        assert not CompetencyCriteriaGroup.objects.filter(course__course_key=new_course_key).exists()
 
     def test_success(self):
         """ The task should clone the OrganizationCourse and RestrictedCourse data. """
@@ -210,6 +267,7 @@ class RerunCourseTaskTestCase(CourseTestCase):  # pylint: disable=missing-class-
 
         organization = OrganizationFactory(short_name=old_course_key.org)
         OrganizationCourse.objects.create(course_id=old_course_id, organization=organization)
+        self._tag_course_and_add_criterion(org=organization)
 
         # Run the task!
         self._rerun_course(old_course_key, new_course_key)
@@ -217,6 +275,86 @@ class RerunCourseTaskTestCase(CourseTestCase):  # pylint: disable=missing-class-
         # Verify the OrganizationCourse is cloned with a different org
         self.assertEqual(OrganizationCourse.objects.count(), 2)  # noqa: PT009
         OrganizationCourse.objects.get(course_id=new_course_id, organization__short_name='neworg')
+
+        # The source taxonomies are not enabled for the new org, so nothing is copied and the rerun still succeeds.
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.SUCCEEDED)
+        self._assert_nothing_copied(new_course_key)
+
+    def test_rerun_copies_tags_and_criteria(self):
+        problem_key = self._tag_course_and_add_criterion()
+        new_course_key = CourseLocator(org=self.course.id.org, course=self.course.id.course, run='rerun')
+
+        self._rerun_course(self.course.id, new_course_key)
+
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.SUCCEEDED)
+        self._assert_one_copy(new_course_key, problem_key)
+
+    def test_rerun_by_user_without_tagging_permission_copies_everything(self):
+        problem_key = self._tag_course_and_add_criterion()
+        new_course_key = CourseLocator(org=self.course.id.org, course=self.course.id.course, run='rerun')
+        author = UserFactory()
+        competency_taxonomy = tagging_api.get_object_tags(str(problem_key))[0].taxonomy
+        permission_item = ObjectTagPermissionItem(taxonomy=competency_taxonomy, object_id=str(self.course.id))
+        assert not author.has_perm("oel_tagging.can_tag_object", permission_item)
+
+        self._rerun_course(self.course.id, new_course_key, user=author)
+
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.SUCCEEDED)
+        self._assert_one_copy(new_course_key, problem_key)
+
+    def _fail_criteria_copy(self):
+        """Patch the criteria copy, which runs after the tags are written, to raise."""
+        return patch(
+            'openedx.core.djangoapps.content_tagging.api.copy_competency_criteria_for_course_rerun',
+            side_effect=Exception('criteria copy failed'),
+        )
+
+    def test_rerun_copy_failure_fails_and_deletes_course(self):
+        self._tag_course_and_add_criterion()
+        new_course_key = CourseLocator(org=self.course.id.org, course=self.course.id.course, run='rerun')
+
+        with self._fail_criteria_copy() as criteria_copy:
+            self._rerun_course(self.course.id, new_course_key)
+
+        criteria_copy.assert_called_once()
+
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.FAILED)
+        assert modulestore().get_course(new_course_key) is None
+        self._assert_nothing_copied(new_course_key)
+
+    def test_rerun_retry_after_failure_has_one_copy(self):
+        problem_key = self._tag_course_and_add_criterion()
+        new_course_key = CourseLocator(org=self.course.id.org, course=self.course.id.course, run='rerun')
+        with self._fail_criteria_copy():
+            self._rerun_course(self.course.id, new_course_key)
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.FAILED)
+        self._assert_nothing_copied(new_course_key)
+
+        self._rerun_course(self.course.id, new_course_key)
+
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.SUCCEEDED)
+        self._assert_one_copy(new_course_key, problem_key)
+
+    def test_rerun_retry_after_late_failure_has_one_copy(self):
+        problem_key = self._tag_course_and_add_criterion()
+        new_course_key = CourseLocator(org=self.course.id.org, course=self.course.id.course, run='rerun')
+        new_problem_key = str(problem_key.map_into_course(new_course_key))
+        # Deleting the failed run's course sends course_deleted, whose receiver removes the destination CourseRun.
+        with SignalHandler.course_deleted.for_state(is_enabled=True), \
+                patch('edxval.api.copy_course_videos', side_effect=Exception('video copy failed')):
+            self._rerun_course(self.course.id, new_course_key)
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.FAILED)
+        # The tags committed before the failure and outlive the CourseRun, so the retry meets them.
+        assert not CourseRun.objects.filter(course_key=new_course_key).exists()
+        assert not CompetencyCriteriaGroup.objects.filter(course__course_key=new_course_key).exists()
+        assert not CompetencyCriterion.objects.filter(object_tag__object_id=new_problem_key).exists()
+        assert [tag.value for tag in tagging_api.get_object_tags(str(new_course_key))] == ["Alpha"]
+        assert [tag.value for tag in tagging_api.get_object_tags(new_problem_key)] == ["Writing"]
+
+        self._rerun_course(self.course.id, new_course_key)
+
+        self._assert_rerun_state(new_course_key, CourseRerunUIStateManager.State.SUCCEEDED)
+        self._assert_one_copy(new_course_key, problem_key)
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
