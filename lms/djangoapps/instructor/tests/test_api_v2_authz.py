@@ -331,12 +331,12 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
     """
     AuthZ enforcement of the Date Extensions tab endpoints: ``GradedSubsectionsView``
     and ``UnitExtensionsView`` (``courses.view_learner_extensions``), and
-    ``ChangeDueDateView`` (``courses.manage_learner_extensions``).
+    ``ChangeDueDateView`` and the legacy ``ResetDueDate`` (``courses.manage_learner_extensions``).
     """
 
     # (url_name, "get" or "post")
     VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"))
-    MANAGE_ENDPOINTS = (("change_due_date", "post"),)
+    MANAGE_ENDPOINTS = (("change_due_date", "post"), ("reset_due_date", "post"))
 
     @classmethod
     def setUpClass(cls):
@@ -363,6 +363,12 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
     def _request(self, user, url_name, method):
         """Call the given endpoint as ``user``, GET or POST depending on ``method``."""
         self.client.force_authenticate(user=user)
+        if url_name == "reset_due_date":
+            # Legacy (v1) endpoint, used by the Date Extensions tab to rescind an extension.
+            return self.client.post(
+                reverse(url_name, kwargs={"course_id": str(self.course_key)}),
+                {"student": self.learner.username, "url": str(self.sequential.location)},
+            )
         url = reverse(f"instructor_api_v2:{url_name}", kwargs={"course_id": str(self.course_key)})
         if method == "get":
             return self.client.get(url)
