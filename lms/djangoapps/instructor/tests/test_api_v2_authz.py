@@ -7,6 +7,7 @@ They cover the tabs, ``authz_enabled`` and the migrated endpoints.
 from unittest.mock import patch
 
 import ddt
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from openedx_authz.applets.course_team_roles.constants import (
     COURSE_AUDITOR,
@@ -16,11 +17,16 @@ from openedx_authz.applets.course_team_roles.constants import (
     COURSE_LIMITED_STAFF,
 )
 from openedx_authz.applets.learner_administration.constants import COURSES_VIEW_COURSE_INFO
-from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF
+from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF, COURSES_MANAGE_COURSE_TEAM, COURSES_VIEW_COURSE_TEAM
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
+from common.djangoapps.student.roles import (
+    CourseDataResearcherRole,
+    CourseInstructorRole,
+    CourseLimitedStaffRole,
+    CourseStaffRole,
+)
 from common.djangoapps.student.tests.factories import (
     InstructorFactory,
     StaffFactory,
@@ -29,6 +35,8 @@ from common.djangoapps.student.tests.factories import (
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor.authz import constants
 from lms.djangoapps.instructor.authz.tests.mixins import InstructorAuthzTestMixin
+from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_MODERATOR, Role
+from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -41,6 +49,20 @@ MIGRATED_TABS = {tab: permissions[0] for tab, permissions in constants.TAB_PERMI
 TAB_PERMISSION_PAIRS = [
     (tab, permission) for tab, permissions in constants.TAB_PERMISSIONS.items() for permission in permissions
 ]
+
+
+def allowed_only(*permissions):
+    """
+    Build an ``is_user_allowed`` side effect that grants only the given permissions.
+    """
+    return lambda _username, permission, _scope: permission in permissions
+
+
+def allowed_all_except(*permissions):
+    """
+    Build an ``is_user_allowed`` side effect that grants every permission but the given ones.
+    """
+    return lambda _username, permission, _scope: permission not in permissions
 
 
 @ddt.ddt
@@ -193,9 +215,6 @@ class CourseMetadataViewAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTes
         """
         user = UserFactory()
 
-        def allowed_only(*permissions):
-            return lambda _username, permission, _scope: permission in permissions
-
         with patch(
             f"{API}.authz_api.is_user_allowed",
             side_effect=allowed_only(COURSES_VIEW_COURSE_INFO.identifier),
@@ -312,3 +331,382 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
         self.set_authz_enabled(False)
 
         assert not self._has_instructor_tab(UserFactory())
+
+
+class CourseTeamAuthzTestMixin(InstructorAuthzTestMixin):
+    """
+    Setup, helpers and checks shared by the Course Team endpoint tests.
+
+    Each test class defines ``_send_default_request``: a request a course
+    instructor is allowed to make on its endpoint.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+    def _send_default_request(self, user):
+        """Send a request a course instructor is allowed to make on the endpoint."""
+        raise NotImplementedError
+
+    def _create_user(self, authz_role=None):
+        """Create a user with the AuthZ role in the course, or without any role."""
+        if authz_role is None:
+            return UserFactory()
+        return self.create_user_with_authz_role(authz_role, self.course_key)
+
+    def _create_legacy_user(self, legacy_role):
+        """
+        Create a user with a legacy course role: ``instructor`` or ``staff``.
+
+        Call it with the flag off, otherwise the factories assign the
+        equivalent AuthZ role instead of the legacy one.
+        """
+        if legacy_role == "instructor":
+            return InstructorFactory(course_key=self.course_key)
+        return StaffFactory(course_key=self.course_key)
+
+    def _add_forum_role(self, user, rolename):
+        """Give the user a forum role in the course."""
+        seed_permissions_roles(self.course_key)
+        Role.objects.get(course_id=self.course_key, name=rolename).users.add(user)
+
+    def _has_course_role(self, role_class, user):
+        """Check a course role on a fresh copy of the user, since roles are cached on the user object."""
+        return role_class(self.course_key).has_user(get_user_model().objects.get(pk=user.pk))
+
+    def _has_forum_role(self, user, rolename):
+        """Check whether the user holds the forum role in the course."""
+        return Role.objects.filter(course_id=self.course_key, name=rolename, users=user).exists()
+
+    def test_authz_denied_overrides_legacy_instructor(self):
+        """With the flag on, AuthZ denying a legacy instructor means no access."""
+        self.set_authz_enabled(False)
+        instructor = self._create_legacy_user("instructor")
+        self.set_authz_enabled(True)
+
+        with patch(f"{API}.authz_api.is_user_allowed", return_value=False):
+            response = self._send_default_request(instructor)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_legacy_does_not_query_authz(self):
+        """With the flag off, AuthZ is not queried."""
+        self.set_authz_enabled(False)
+        instructor = self._create_legacy_user("instructor")
+
+        with patch(f"{API}.authz_api.is_user_allowed") as is_user_allowed:
+            response = self._send_default_request(instructor)
+
+        assert response.status_code == status.HTTP_200_OK
+        is_user_allowed.assert_not_called()
+
+
+@ddt.ddt
+class CourseTeamRolesViewAuthzTest(CourseTeamAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    ``CourseTeamRolesView`` (``GET /team/roles``) follows the AuthZ flag.
+
+    With the flag on, listing the roles requires ``courses.view_course_team``.
+    With it off, the legacy ``has_course_team_access`` check is used.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("instructor_api_v2:course_team_roles", kwargs={"course_id": str(self.course_key)})
+
+    def _get(self, user):
+        self.client.force_authenticate(user=user)
+        return self.client.get(self.url)
+
+    def _send_default_request(self, user):
+        return self._get(user)
+
+    @ddt.data(
+        (COURSE_ADMIN.external_key, status.HTTP_200_OK),
+        (COURSE_STAFF.external_key, status.HTTP_200_OK),
+        (None, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_list_roles(self, authz_role, expected_status):
+        """With the flag on, listing the roles requires ``courses.view_course_team``."""
+        user = self._create_user(authz_role)
+
+        response = self._get(user)
+
+        assert response.status_code == expected_status
+
+    @ddt.data(
+        (allowed_only(COURSES_VIEW_COURSE_TEAM.identifier), status.HTTP_200_OK),
+        (allowed_all_except(COURSES_VIEW_COURSE_TEAM.identifier), status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_get_requires_view_course_team(self, is_user_allowed, expected_status):
+        """With the flag on, GET requires ``courses.view_course_team`` and no other permission grants it."""
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=is_user_allowed):
+            response = self._get(user)
+
+        assert response.status_code == expected_status
+
+    @ddt.data(
+        ("instructor", status.HTTP_200_OK),
+        ("staff", status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_legacy_list_roles(self, legacy_role, expected_status):
+        """With the flag off, legacy instructors can list the roles, plain staff cannot."""
+        self.set_authz_enabled(False)
+        user = self._create_legacy_user(legacy_role)
+
+        response = self._get(user)
+
+        assert response.status_code == expected_status
+
+
+@ddt.ddt
+class CourseTeamViewAuthzTest(CourseTeamAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    ``CourseTeamView`` (``GET`` and ``POST /team``) follows the AuthZ flag.
+
+    With the flag on, listing the members requires ``courses.view_course_team``
+    and granting or revoking a role requires ``courses.manage_course_team``.
+    Changing a non-forum role also requires instructor access, checked by the
+    view. With the flag off, both methods use the legacy
+    ``has_course_team_access`` check.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("instructor_api_v2:course_team", kwargs={"course_id": str(self.course_key)})
+        self.target = UserFactory()
+
+    def _get(self, user):
+        self.client.force_authenticate(user=user)
+        return self.client.get(self.url)
+
+    def _grant(self, user, role, identifier=None):
+        """Grant the role to the target user, or to ``identifier`` if given."""
+        self.client.force_authenticate(user=user)
+        data = {"identifiers": [identifier or self.target.username], "role": role, "action": "allow"}
+        return self.client.post(self.url, data, format="json")
+
+    def _send_default_request(self, user):
+        return self._get(user)
+
+    @ddt.data(
+        (COURSE_ADMIN.external_key, status.HTTP_200_OK),
+        (COURSE_STAFF.external_key, status.HTTP_200_OK),
+        (None, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_list_members(self, authz_role, expected_status):
+        """With the flag on, listing the members requires ``courses.view_course_team``."""
+        user = self._create_user(authz_role)
+
+        response = self._get(user)
+
+        assert response.status_code == expected_status
+
+    @ddt.data(
+        (allowed_only(COURSES_VIEW_COURSE_TEAM.identifier), status.HTTP_200_OK),
+        (allowed_all_except(COURSES_VIEW_COURSE_TEAM.identifier), status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_get_requires_view_course_team(self, is_user_allowed, expected_status):
+        """With the flag on, GET requires ``courses.view_course_team`` and no other permission grants it."""
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=is_user_allowed):
+            response = self._get(user)
+
+        assert response.status_code == expected_status
+
+    @ddt.data(
+        (COURSE_ADMIN.external_key, status.HTTP_200_OK),
+        (COURSE_STAFF.external_key, status.HTTP_403_FORBIDDEN),
+        (None, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_grant_role(self, authz_role, expected_status):
+        """With the flag on, granting a role requires ``courses.manage_course_team``."""
+        user = self._create_user(authz_role)
+
+        response = self._grant(user, "staff")
+
+        assert response.status_code == expected_status
+        assert self._has_course_role(CourseStaffRole, self.target) == (expected_status == status.HTTP_200_OK)
+
+    def test_authz_course_staff_cannot_grant_itself_instructor_role(self):
+        """
+        Privilege escalation: a Course Staff, which can only view the course
+        team, cannot make itself a course instructor.
+        """
+        staff = self._create_user(COURSE_STAFF.external_key)
+
+        response = self._grant(staff, "instructor", identifier=staff.username)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert not self._has_course_role(CourseInstructorRole, staff)
+
+    @ddt.data(
+        ("instructor", CourseInstructorRole),
+        ("staff", CourseStaffRole),
+    )
+    @ddt.unpack
+    def test_authz_manage_course_team_without_instructor_access_cannot_grant_course_role(self, role, role_class):
+        """
+        Privilege escalation: ``courses.manage_course_team`` without instructor
+        access cannot grant a non-forum role.
+        """
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=allowed_only(COURSES_MANAGE_COURSE_TEAM.identifier)):
+            response = self._grant(user, role)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Denied by the view's own check, not by the permission class (which answers with ``developer_message``).
+        assert "error" in response.data
+        assert not self._has_course_role(role_class, self.target)
+
+    def test_authz_manage_course_team_without_instructor_access_can_grant_forum_role(self):
+        """``courses.manage_course_team`` without instructor access can still grant forum roles."""
+        seed_permissions_roles(self.course_key)
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=allowed_only(COURSES_MANAGE_COURSE_TEAM.identifier)):
+            response = self._grant(user, FORUM_ROLE_MODERATOR)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._has_forum_role(self.target, FORUM_ROLE_MODERATOR)
+
+    @ddt.data(
+        ("instructor", status.HTTP_200_OK),
+        ("staff", status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_legacy_list_members(self, legacy_role, expected_status):
+        """With the flag off, legacy instructors can list the members, plain staff cannot."""
+        self.set_authz_enabled(False)
+        user = self._create_legacy_user(legacy_role)
+
+        response = self._get(user)
+
+        assert response.status_code == expected_status
+
+    def test_legacy_instructor_can_grant_role(self):
+        """With the flag off, a legacy instructor can grant a role."""
+        self.set_authz_enabled(False)
+        instructor = self._create_legacy_user("instructor")
+
+        response = self._grant(instructor, "staff")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._has_course_role(CourseStaffRole, self.target)
+
+
+@ddt.ddt
+class CourseTeamMemberViewAuthzTest(CourseTeamAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    ``CourseTeamMemberView`` (``DELETE /team/<email_or_username>``) follows the AuthZ flag.
+
+    With the flag on, revoking a role requires ``courses.manage_course_team``.
+    Revoking a non-forum role also requires instructor access, checked by the
+    view. With the flag off, the legacy ``has_course_team_access`` check is used.
+    """
+
+    def _revoke(self, user, target, roles):
+        """Revoke the roles from the target user, acting as ``user``."""
+        self.client.force_authenticate(user=user)
+        url = reverse(
+            "instructor_api_v2:course_team_member",
+            kwargs={"course_id": str(self.course_key), "email_or_username": target.username},
+        )
+        return self.client.delete(url, {"roles": roles}, format="json")
+
+    def _send_default_request(self, user):
+        return self._revoke(user, StaffFactory(course_key=self.course_key), ["staff"])
+
+    @ddt.data(
+        (COURSE_ADMIN.external_key, status.HTTP_200_OK),
+        (COURSE_STAFF.external_key, status.HTTP_403_FORBIDDEN),
+        (None, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_revoke_role(self, authz_role, expected_status):
+        """With the flag on, revoking a role requires ``courses.manage_course_team``."""
+        target = StaffFactory(course_key=self.course_key)
+        user = self._create_user(authz_role)
+
+        response = self._revoke(user, target, ["staff"])
+
+        assert response.status_code == expected_status
+        assert self._has_course_role(CourseStaffRole, target) == (expected_status != status.HTTP_200_OK)
+
+    def test_authz_course_staff_cannot_revoke_course_admin(self):
+        """Privilege escalation: a Course Staff cannot remove a course instructor."""
+        admin = self._create_user(COURSE_ADMIN.external_key)
+        staff = self._create_user(COURSE_STAFF.external_key)
+
+        response = self._revoke(staff, admin, ["instructor"])
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert self._has_course_role(CourseInstructorRole, admin)
+
+    @ddt.data(
+        ("instructor", CourseInstructorRole, InstructorFactory),
+        ("staff", CourseStaffRole, StaffFactory),
+    )
+    @ddt.unpack
+    def test_authz_manage_course_team_without_instructor_access_cannot_revoke_course_role(
+        self, role, role_class, target_factory
+    ):
+        """
+        Privilege escalation: ``courses.manage_course_team`` without instructor
+        access cannot revoke a non-forum role.
+        """
+        target = target_factory(course_key=self.course_key)
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=allowed_only(COURSES_MANAGE_COURSE_TEAM.identifier)):
+            response = self._revoke(user, target, [role])
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Denied by the view's own check, not by the permission class (which answers with ``developer_message``).
+        assert "error" in response.data
+        assert self._has_course_role(role_class, target)
+
+    def test_authz_manage_course_team_without_instructor_access_can_revoke_forum_role(self):
+        """``courses.manage_course_team`` without instructor access can still revoke forum roles."""
+        target = self._create_user()
+        self._add_forum_role(target, FORUM_ROLE_MODERATOR)
+        user = self._create_user()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=allowed_only(COURSES_MANAGE_COURSE_TEAM.identifier)):
+            response = self._revoke(user, target, [FORUM_ROLE_MODERATOR])
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not self._has_forum_role(target, FORUM_ROLE_MODERATOR)
+
+    @ddt.data(
+        ("instructor", status.HTTP_200_OK),
+        ("staff", status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_legacy_revoke_staff_role(self, legacy_role, expected_status):
+        """With the flag off, legacy instructors can revoke the staff role, plain staff cannot."""
+        self.set_authz_enabled(False)
+        target = StaffFactory(course_key=self.course_key)
+        user = self._create_legacy_user(legacy_role)
+
+        response = self._revoke(user, target, ["staff"])
+
+        assert response.status_code == expected_status
+        assert self._has_course_role(CourseStaffRole, target) == (expected_status != status.HTTP_200_OK)

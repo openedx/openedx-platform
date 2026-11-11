@@ -51,6 +51,7 @@ from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import COURSES_MANAGE_COURSE_TEAM, COURSES_VIEW_COURSE_TEAM
 from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -3269,7 +3270,10 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         * 401: User is not authenticated
         * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COURSE_TEAM.identifier,),
+    }
 
     def get(self, request, course_id):
         """Return the list of available course team roles for this course."""
@@ -3407,7 +3411,11 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course not found
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COURSE_TEAM.identifier,),
+        "POST": (COURSES_MANAGE_COURSE_TEAM.identifier,),
+    }
 
     def get(self, request, course_id):
         """
@@ -3581,7 +3589,10 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         * 404: Course or user not found
         * 409: Cannot remove own instructor access
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "DELETE": (COURSES_MANAGE_COURSE_TEAM.identifier,),
+    }
 
     def delete(self, request, course_id, email_or_username):
         """Revoke one or more course roles from a user."""
