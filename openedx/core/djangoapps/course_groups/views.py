@@ -27,8 +27,9 @@ from rest_framework.serializers import Serializer
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from common.djangoapps.util.json_request import JsonResponse, expect_json
-from lms.djangoapps.courseware.courses import get_course, get_course_with_access
+from lms.djangoapps.courseware.courses import get_course, get_course_by_id, get_course_with_access
 from lms.djangoapps.instructor.authz.api import user_has_instructor_permission
 from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from openedx.core.djangoapps.course_groups.models import (
@@ -429,9 +430,24 @@ def debug_cohort_mgmt(request, course_key_string):
 
 def _get_course_with_access(request, course_key_string, action='staff'):
     """
-    Fetching a course with expected permission level
+    Fetch the course the cohorts API view is operating on.
+
+    The permission itself is enforced by ``InstructorAuthzPermission`` before the view runs.
+
+    With ``authz.enable_course_authoring`` enabled for the course, that class is the only
+    permission check: a ``staff`` action just loads the course, because the legacy
+    ``get_course_with_access(..., 'staff')`` only recognizes legacy roles (or AuthZ roles that
+    have a legacy equivalent) and would reject users that AuthZ already allowed. Any other
+    action (``load``) keeps going through ``get_course_with_access`` so the course visibility,
+    start/end dates and prerequisites checks still apply.
+
+    With the flag disabled the legacy behavior is kept as is. The check is not redundant there:
+    the legacy view access also lets forum Administrator, Moderator and Community TA roles in,
+    and the ``staff`` check is what keeps them out of the endpoints that require course staff.
     """
     course_key = CourseKey.from_string(course_key_string)
+    if action == 'staff' and enable_authz_course_authoring(course_key):
+        return course_key, get_course_by_id(course_key)
     return course_key, get_course_with_access(request.user, action, course_key)
 
 

@@ -81,6 +81,18 @@ class CohortsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
             response = self._request(user, name, url_kwargs, method, request_kwargs)
             assert response.status_code < 300, (name, method, response.status_code, response.data)
 
+    def test_authz_role_without_legacy_equivalent_can_view_and_manage(self):
+        """With the flag on, AuthZ alone decides: no legacy role (or compat projection) is needed."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course_key)
+
+        with patch(
+            "common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user",
+            return_value=set(),
+        ):
+            for name, url_kwargs, method, request_kwargs in (*self.VIEW_REQUESTS, *self.MANAGE_REQUESTS):
+                response = self._request(user, name, url_kwargs, method, request_kwargs)
+                assert response.status_code < 300, (name, method, response.status_code, response.data)
+
     def test_user_without_permission_is_denied(self):
         """A user with no AuthZ role in the course is denied every endpoint."""
         user = UserFactory()
