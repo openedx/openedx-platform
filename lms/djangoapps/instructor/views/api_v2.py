@@ -51,6 +51,8 @@ from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.applets.learner_grading.constants import COURSES_MANAGE_LEARNER_GRADING, COURSES_VIEW_GRADEBOOK
+from openedx_authz.authz import COURSES_VIEW_GRADING_SETTINGS
 from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -86,7 +88,6 @@ from lms.djangoapps.certificates.models import (
 )
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.masquerade import get_masquerade_role, setup_masquerade
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
@@ -105,7 +106,7 @@ from lms.djangoapps.instructor.access import (
 )
 from lms.djangoapps.instructor.authz import constants as authz_constants
 from lms.djangoapps.instructor.authz import legacy as authz_legacy
-from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission, user_has_instructor_permission
 from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
@@ -2565,7 +2566,10 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
     }
     ```
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_GRADEBOOK.identifier,),
+    }
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -2663,7 +2667,10 @@ class ProblemView(DeveloperErrorViewMixin, APIView):
     }
     ```
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_GRADEBOOK.identifier,),
+    }
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -2896,7 +2903,10 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
     ``text/html`` so the MFE can render it directly inside a ``<pre>`` block
     without additional parsing.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_GRADING_SETTINGS.identifier,),
+    }
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -3735,7 +3745,10 @@ class ResetAttemptsView(DeveloperErrorViewMixin, APIView):
     **POST** with `learner` query param: resets a single learner's attempts (synchronous).
     **POST** without `learner`: queues a background task to reset all learners (asynchronous).
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "POST": (COURSES_MANAGE_LEARNER_GRADING.identifier,),
+    }
     permission_name = permissions.GIVE_STUDENT_EXTENSION
 
     @extend_schema(
@@ -3801,8 +3814,12 @@ class ResetAttemptsView(DeveloperErrorViewMixin, APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         else:
-            course = get_course_with_access(request.user, 'staff', course_key, depth=None)
-            if not has_access(request.user, 'instructor', course):
+            if not user_has_instructor_permission(
+                request.user,
+                COURSES_MANAGE_LEARNER_GRADING.identifier,
+                course_key,
+                authz_legacy.has_instructor_access,
+            ):
                 return Response(
                     {'error': 'Instructor access required for bulk operations'},
                     status=status.HTTP_403_FORBIDDEN,
@@ -3834,7 +3851,10 @@ class DeleteStateView(DeveloperErrorViewMixin, APIView):
     The `learner` query parameter is required. This operation is destructive
     and cannot be undone.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "DELETE": (COURSES_MANAGE_LEARNER_GRADING.identifier,),
+    }
     permission_name = permissions.GIVE_STUDENT_EXTENSION
 
     @extend_schema(
@@ -3914,7 +3934,10 @@ class RescoreView(DeveloperErrorViewMixin, APIView):
     Optionally accepts `only_if_higher=true` (query param or request body) to only
     update if the new score is higher.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "POST": (COURSES_MANAGE_LEARNER_GRADING.identifier,),
+    }
     permission_name = permissions.OVERRIDE_GRADES
 
     @extend_schema(
@@ -3984,8 +4007,12 @@ class RescoreView(DeveloperErrorViewMixin, APIView):
             )
 
         else:
-            course = get_course_with_access(request.user, 'staff', course_key)
-            if not has_access(request.user, 'instructor', course):
+            if not user_has_instructor_permission(
+                request.user,
+                COURSES_MANAGE_LEARNER_GRADING.identifier,
+                course_key,
+                authz_legacy.has_instructor_access,
+            ):
                 return Response(
                     {'error': 'Instructor access required for bulk operations'},
                     status=status.HTTP_403_FORBIDDEN,
@@ -4021,7 +4048,10 @@ class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
 
     The `learner` query parameter is required. Accepts a JSON body with `score` field.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "PUT": (COURSES_MANAGE_LEARNER_GRADING.identifier,),
+    }
     permission_name = permissions.OVERRIDE_GRADES
 
     @extend_schema(
@@ -4070,17 +4100,11 @@ class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
         score = body_serializer.validated_data['score']
 
         try:
-            block = modulestore().get_item(usage_key)
+            modulestore().get_item(usage_key)
         except ItemNotFoundError:
             return Response(
                 {'error': 'Problem not found'},
                 status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if not has_access(request.user, 'staff', block):
-            return Response(
-                {'error': 'You do not have permission to override scores for this problem'},
-                status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
