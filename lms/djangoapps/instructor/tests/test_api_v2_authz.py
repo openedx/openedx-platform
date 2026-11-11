@@ -17,7 +17,9 @@ from openedx_authz.authz import (
     COURSE_EDITOR,
     COURSE_LIMITED_STAFF,
     COURSE_STAFF,
+    COURSES_MANAGE_LEARNER_EXTENSIONS,
     COURSES_VIEW_COURSE_INFO,
+    COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 from pytz import UTC
 from rest_framework import status
@@ -486,6 +488,38 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
             assert self._request(user, url_name, method).status_code == view_status, url_name
         for url_name, method in self.MANAGE_ENDPOINTS:
             assert self._request(user, url_name, method).status_code == manage_status, url_name
+
+    def test_authz_role_without_legacy_equivalent_can_view_and_manage(self):
+        """
+        With the flag on, AuthZ alone decides: a user holding the date extensions permissions
+        without any legacy role, nor its compatibility projection, has access to every endpoint.
+        """
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course_key)
+
+        with patch(
+            "common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user",
+            return_value=set(),
+        ):
+            self._assert_statuses(user, status.HTTP_200_OK, status.HTTP_200_OK)
+
+    @ddt.data(
+        # (permission the user holds, status of the view endpoints, status of the manage endpoint)
+        (COURSES_VIEW_LEARNER_EXTENSIONS, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN),
+        (COURSES_MANAGE_LEARNER_EXTENSIONS, status.HTTP_403_FORBIDDEN, status.HTTP_200_OK),
+    )
+    @ddt.unpack
+    def test_authz_permission_alone_grants_its_endpoints(self, permission, view_status, manage_status):
+        """
+        With the flag on, a user with no legacy role at all that holds only one of the date
+        extensions permissions gets exactly the endpoints that permission covers.
+        """
+        user = UserFactory()
+
+        with patch(
+            f"{API}.authz_api.is_user_allowed",
+            side_effect=lambda _user, perm, _scope: perm == permission.identifier,
+        ):
+            self._assert_statuses(user, view_status, manage_status)
 
     def test_legacy_does_not_query_authz(self):
         """With the flag off, AuthZ is not queried."""
