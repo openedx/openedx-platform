@@ -92,6 +92,11 @@ class HiddenContentTransformer(BlockStructureTransformer):
         if usage_info.has_staff_access:
             return [block_structure.create_universal_filter()]
 
+        # An earlier transformer may have removed the course block for this user, leaving nothing to hide.
+        # DateOverrideTransformer can still recreate it as an empty entry with no collected fields.
+        if block_structure.root_block_usage_key not in block_structure:
+            return
+
         block_structure.remove_block_traversal(lambda block_key: self._is_block_hidden(block_structure, block_key))
 
     def _is_block_hidden(self, block_structure, block_key):
