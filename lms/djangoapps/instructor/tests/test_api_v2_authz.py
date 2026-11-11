@@ -23,7 +23,12 @@ from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
+from common.djangoapps.student.roles import (
+    CourseBetaTesterRole,
+    CourseDataResearcherRole,
+    CourseLimitedStaffRole,
+    CourseStaffRole,
+)
 from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     InstructorFactory,
@@ -430,6 +435,57 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
         response = self._request(self.learner, url_name, method)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    @ddt.data(COURSE_AUDITOR.external_key, COURSE_EDITOR.external_key)
+    def test_authz_roles_without_legacy_equivalent_are_denied(self, role):
+        """
+        With the flag on, the AuthZ roles that have no legacy equivalent hold no date
+        extensions permission, so they are denied on every endpoint.
+        """
+        user = self.create_user_with_authz_role(role, self.course_key)
+
+        for url_name, method in (*self.VIEW_ENDPOINTS, *self.MANAGE_ENDPOINTS):
+            response = self._request(user, url_name, method)
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN, url_name
+
+    @ddt.data(
+        # (AuthZ role, status of the view endpoints, status of the manage endpoint)
+        (COURSE_LIMITED_STAFF.external_key, status.HTTP_200_OK, status.HTTP_200_OK),
+        (COURSE_DATA_RESEARCHER.external_key, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN),
+        (COURSE_BETA_TESTER.external_key, status.HTTP_403_FORBIDDEN, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_authz_legacy_roles_keep_their_legacy_access(self, authz_role, view_status, manage_status):
+        """
+        With the flag on, the AuthZ roles that stand for a legacy role are evaluated with
+        its legacy rule, so they keep exactly the access it had.
+        """
+        user = self.create_user_with_authz_role(authz_role, self.course_key)
+
+        self._assert_statuses(user, view_status, manage_status)
+
+    @ddt.data(
+        (CourseStaffRole, status.HTTP_200_OK, status.HTTP_200_OK),
+        (CourseLimitedStaffRole, status.HTTP_200_OK, status.HTTP_200_OK),
+        (CourseDataResearcherRole, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN),
+        (CourseBetaTesterRole, status.HTTP_403_FORBIDDEN, status.HTTP_403_FORBIDDEN),
+    )
+    @ddt.unpack
+    def test_legacy_roles_keep_their_access(self, role_class, view_status, manage_status):
+        """With the flag off, each legacy role keeps the access it had before AuthZ."""
+        self.set_authz_enabled(False)
+        user = UserFactory()
+        role_class(self.course_key).add_users(user)
+
+        self._assert_statuses(user, view_status, manage_status)
+
+    def _assert_statuses(self, user, view_status, manage_status):
+        """Assert the status ``user`` gets on the view endpoints and on the manage endpoint."""
+        for url_name, method in self.VIEW_ENDPOINTS:
+            assert self._request(user, url_name, method).status_code == view_status, url_name
+        for url_name, method in self.MANAGE_ENDPOINTS:
+            assert self._request(user, url_name, method).status_code == manage_status, url_name
 
     def test_legacy_does_not_query_authz(self):
         """With the flag off, AuthZ is not queried."""
