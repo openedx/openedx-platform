@@ -40,7 +40,6 @@ describe('Container Subviews', function() {
         TemplateHelpers.installTemplate('xblock-string-field-editor');
         TemplateHelpers.installTemplate('publish-xblock');
         TemplateHelpers.installTemplate('publish-history');
-        TemplateHelpers.installTemplate('unit-outline');
         TemplateHelpers.installTemplate('container-message');
         appendSetFixtures(mockContainerPage);
     });

@@ -75,11 +75,6 @@
                                 <span class="tip"><span class="sr">Tip: </span>Use this ID when you create links to this unit from other course content. You enter the ID in the URL field.</span>
                             </p>
                         </div>
-                        <div class="wrapper-unit-tree-location bar-mod-content">
-                            <h5 class="title">Location in Course Outline</h5>
-                            <div class="wrapper-unit-overview">
-                            </div>
-                        </div>
                     </div>
             </section>
         </div>
