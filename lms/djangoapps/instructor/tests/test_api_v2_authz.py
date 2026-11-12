@@ -330,12 +330,12 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
 class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
     """
     AuthZ enforcement of the Date Extensions tab endpoints: ``GradedSubsectionsView``
-    and ``UnitExtensionsView`` (``courses.view_learner_extensions``), and
+    ``UnitExtensionsView`` and ``LearnerView`` (``courses.view_learner_extensions``), and
     ``ChangeDueDateView`` and the legacy ``ResetDueDate`` (``courses.manage_learner_extensions``).
     """
 
     # (url_name, "get" or "post")
-    VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"))
+    VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"), ("learner_detail", "get"))
     MANAGE_ENDPOINTS = (("change_due_date", "post"), ("reset_due_date", "post"))
 
     @classmethod
@@ -369,7 +369,10 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
                 reverse(url_name, kwargs={"course_id": str(self.course_key)}),
                 {"student": self.learner.username, "url": str(self.sequential.location)},
             )
-        url = reverse(f"instructor_api_v2:{url_name}", kwargs={"course_id": str(self.course_key)})
+        kwargs = {"course_id": str(self.course_key)}
+        if url_name == "learner_detail":
+            kwargs["email_or_username"] = self.learner.username
+        url = reverse(f"instructor_api_v2:{url_name}", kwargs=kwargs)
         if method == "get":
             return self.client.get(url)
         return self.client.post(
