@@ -38,6 +38,7 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_when.api import get_date_for_block
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import COURSES_MANAGE_LEARNER_EXTENSIONS
 from rest_framework import serializers, status  # pylint: disable=wrong-import-order
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import (  # pylint: disable=wrong-import-order
@@ -81,6 +82,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor import enrollment
 from lms.djangoapps.instructor.access import ROLES, allow_access, list_with_level, revoke_access, update_forum_role
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import INVOICE_KEY
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
@@ -3362,7 +3364,8 @@ class ResetDueDate(APIView):
     """
     Rescinds a due date extension for a student on a particular unit.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_MANAGE_LEARNER_EXTENSIONS.identifier,)
     permission_name = permissions.GIVE_STUDENT_EXTENSION
     serializer_class = BlockDueDateSerializer
 
