@@ -163,6 +163,16 @@ class InstructorAuthzPermissionTest(InstructorAuthzTestMixin, TestCase):
 
         assert InstructorAuthzPermission().has_permission(self._request("delete"), view) == expected
 
+    def test_custom_course_id_url_kwarg(self):
+        """A view can read the course key from a differently named URL kwarg."""
+        self.assign_authz_role(self.user, COURSE_STAFF.external_key, COURSE_KEY)
+        view = FakeView(
+            authz_permissions=(COURSES_VIEW_ENROLLMENTS.identifier,), course_id_url_kwarg="course_key_string"
+        )
+        view.kwargs = {"course_key_string": str(COURSE_KEY)}
+
+        assert InstructorAuthzPermission().has_permission(self._request(), view)
+
     def test_invalid_course_key(self):
         """An invalid ``course_id`` raises ``Http404``."""
         view = FakeView(course_id="not-a-course", authz_permissions=(COURSES_VIEW_ENROLLMENTS.identifier,))
