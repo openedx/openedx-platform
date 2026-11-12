@@ -297,9 +297,9 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         Test a missing provider_type is reported as a 400, with no PII sharing flag set.
 
         Distinct from `test_post_error_messages`, which enables `CourseAllowPIISharingInLTIFlag`.
-        That flag makes `pii_sharing_allowed` true, which short-circuits the `and` in the view's
-        PII check before the unresolved (None) provider is dereferenced. Without the flag the
-        provider *is* dereferenced, and the view used to raise an AttributeError -- a 500 on the
+        That flag made `pii_sharing_allowed` true, which short-circuited the `and` in the view's
+        PII check before the unresolved (None) provider was dereferenced. Without the flag the
+        provider *was* dereferenced, and the view raised an AttributeError -- a 500 on the
         documented 400 path.
         """
         response = self._post({})
@@ -307,6 +307,16 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         self.assertEqual(response.status_code, 400)  # noqa: PT009
         content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(content, {'provider_type': ['This field is required.']})  # noqa: PT009
+
+    def test_post_blank_provider_type(self):
+        """
+        Test a blank provider_type keeps the serializer's non-blank field error.
+        """
+        response = self._post({'provider_type': ''})
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content, {'provider_type': ['This field may not be blank.']})  # noqa: PT009
 
     def test_post_unknown_provider_type_without_pii_flag(self):
         """
@@ -318,6 +328,48 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         response = self._post({
             'enabled': True,
             'provider_type': 'not_a_real_provider',
+        })
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertIn('does not exist', str(content))  # noqa: PT009
+
+    def test_post_free_tier_without_provider_type(self):
+        """
+        Test `free_tier` with no provider_type is a 400, not a 500.
+
+        `CourseLiveConfigurationSerializer.validate_free_tier` reads
+        `self.context['provider'].has_free_tier`, so an unresolved provider raised
+        AttributeError there before the serializer could report the missing provider.
+        """
+        response = self._post({'free_tier': True})
+
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content, {'provider_type': ['This field is required.']})  # noqa: PT009
+
+    def test_post_unknown_provider_type_with_lti_configuration(self):
+        """
+        Test an unknown provider_type carrying an lti_configuration is a 400, not a 500.
+
+        This is the payload shape Studio posts for Zoom. The view's empty-config injection is
+        skipped when the provider is unresolved, so the client's own `lti_config` block reached
+        `LtiSerializer.validate_lti_config`, which reads
+        `self.context.get('provider').requires_custom_email()` and raised AttributeError.
+        """
+        response = self._post({
+            'enabled': True,
+            'provider_type': 'not_a_real_provider',
+            'lti_configuration': {
+                'lti_1p1_client_key': 'this_is_a_key',
+                'lti_1p1_client_secret': 'this_is_a_secret',
+                'lti_1p1_launch_url': 'http://example.com',
+                'lti_config': {
+                    'additional_parameters': {
+                        'custom_instructor_email': 'email@example.com',
+                    },
+                },
+            },
         })
 
         self.assertEqual(response.status_code, 400)  # noqa: PT009
