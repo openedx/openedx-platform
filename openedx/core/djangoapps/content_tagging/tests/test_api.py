@@ -2,15 +2,23 @@
 import io
 import os
 import tempfile
+from unittest.mock import patch
 
 import ddt
 import pytest
 from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
-from openedx_tagging.models import ObjectTag
+from opaque_keys.edx.locator import CourseLocator, LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
+from openedx_catalog.api import create_course_run_for_modulestore_course_with, get_course_run
+from openedx_catalog.models_api import CourseRun
+from openedx_learning.api import associate_competency_criterion, create_competency_taxonomy
+from openedx_learning.models_api import CompetencyCriteriaGroup, CompetencyCriterion, RuleType
+from openedx_tagging.models import ObjectTag, Tag, Taxonomy
 from organizations.models import Organization
+
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from .. import api
 from ..utils import rules_cache
@@ -530,3 +538,220 @@ class TestExportImportTags(TaggedCourseMixin):
         assert object_tag.value == 'Tag 1.11'
         assert object_tag.taxonomy is None
         assert object_tag.export_id == '1-taxonomy-1-1'
+
+
+@ddt.ddt
+class TestCopyCourseTagsAndCriteria(ModuleStoreTestCase):
+    """
+    Tests for copy_course_tags_and_criteria().
+    """
+    MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
+
+    def setUp(self):
+        super().setUp()
+        self.org_a = Organization.objects.create(name="Organization A", short_name="orgA")
+        Organization.objects.create(name="Organization B", short_name="orgB")
+
+        self.taxonomy = api.create_taxonomy(name="Plain")
+        api.set_taxonomy_orgs(self.taxonomy, all_orgs=True)
+        api.add_tag_to_taxonomy(taxonomy=self.taxonomy, tag="Alpha")
+        api.add_tag_to_taxonomy(taxonomy=self.taxonomy, tag="Beta")
+
+        self.org_a_taxonomy = api.create_taxonomy(name="Org A only", orgs=[self.org_a])
+        api.add_tag_to_taxonomy(taxonomy=self.org_a_taxonomy, tag="Gamma")
+
+        self.competency_taxonomy = create_competency_taxonomy(name="Competencies")
+        api.set_taxonomy_orgs(self.competency_taxonomy, all_orgs=True)
+        self.competency = api.add_tag_to_taxonomy(taxonomy=self.competency_taxonomy, tag="Writing")
+
+        self.course = CourseFactory.create(org="orgA", number="course", run="run1", display_name="Source Course")
+        sequential = BlockFactory.create(parent=self.course, category="sequential")
+        vertical = BlockFactory.create(parent=sequential, category="vertical")
+        problem = BlockFactory.create(parent=vertical, category="problem")
+        self.source_key = self.course.id
+        self.sequential_key = self.source_key.make_usage_key("sequential", sequential.location.block_id)
+        self.problem_key = self.source_key.make_usage_key("problem", problem.location.block_id)
+        self.destination_key = CourseLocator(org="orgA", course="course", run="run2")
+
+        rules_cache.clear()
+
+    def _clone(self, destination_key, display_name="Rerun Course", **fields):
+        """Clone the source course to `destination_key`, as a rerun does."""
+        self.store.clone_course(
+            self.source_key, destination_key, self.user.id, fields={"display_name": display_name, **fields},
+        )
+
+    def _tag(self, object_key, taxonomy, values):
+        """Tag `object_key` with `values` from `taxonomy`."""
+        api.tag_object(object_id=str(object_key), taxonomy=taxonomy, tags=values)
+
+    def _values(self, object_key, taxonomy):
+        """Return the tag values `object_key` has from `taxonomy`."""
+        return [tag.value for tag in api.get_object_tags(str(object_key), taxonomy_id=taxonomy.id)]
+
+    def _in_destination(self, usage_key, destination_key=None):
+        """Return `usage_key` mapped into the destination course."""
+        return usage_key.map_into_course(destination_key or self.destination_key)
+
+    def _add_criterion(self):
+        """Give the source run a catalog row and a criterion for the problem, which tags it with the competency."""
+        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
+        associate_competency_criterion(
+            self.competency.id,
+            str(self.problem_key),
+            rule_type_override=RuleType.GRADE,
+            rule_payload_override={"op": "gte", "value": 0.8, "scale": "percent"},
+        )
+
+    @ddt.data(
+        ("competency_taxonomy", ["Writing"]),
+        ("taxonomy", ["Alpha", "Beta"]),
+    )
+    @ddt.unpack
+    def test_copies_course_and_block_tags(self, taxonomy_name, block_values):
+        taxonomy = getattr(self, taxonomy_name)
+        self._tag(self.source_key, taxonomy, block_values[:1])
+        self._tag(self.sequential_key, taxonomy, block_values)
+        self._clone(self.destination_key)
+        tag_count, taxonomy_count = Tag.objects.count(), Taxonomy.objects.count()
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert self._values(self.destination_key, taxonomy) == block_values[:1]
+        assert self._values(self._in_destination(self.sequential_key), taxonomy) == block_values
+        assert (Tag.objects.count(), Taxonomy.objects.count()) == (tag_count, taxonomy_count)
+
+    def test_copied_tags_are_editable(self):
+        self._tag(self.source_key, self.taxonomy, ["Alpha"])
+        self._tag(self.sequential_key, self.taxonomy, ["Beta"])
+        self._clone(self.destination_key)
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        copied = ObjectTag.objects.filter(
+            object_id__in=[str(self.destination_key), str(self._in_destination(self.sequential_key))],
+        )
+        assert copied.count() == 2
+        assert not copied.filter(is_copied=True).exists()
+
+        destination_sequential_key = self._in_destination(self.sequential_key)
+        self._tag(destination_sequential_key, self.taxonomy, ["Alpha"])
+        self._tag(self.destination_key, self.taxonomy, [])
+        assert self._values(self.sequential_key, self.taxonomy) == ["Beta"]
+        assert self._values(self.source_key, self.taxonomy) == ["Alpha"]
+
+        self._tag(self.sequential_key, self.taxonomy, [])
+        assert self._values(destination_sequential_key, self.taxonomy) == ["Alpha"]
+
+    def test_source_tags_unchanged(self):
+        self._tag(self.source_key, self.taxonomy, ["Alpha"])
+        self._tag(self.sequential_key, self.taxonomy, ["Alpha", "Beta"])
+        self._add_criterion()
+        source_tags = list(ObjectTag.objects.order_by("id").values())
+        self._clone(self.destination_key)
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert list(ObjectTag.objects.filter(id__in=[tag["id"] for tag in source_tags]).order_by("id").values()) == (
+            source_tags
+        )
+
+    def test_ignores_tags_of_course_with_prefixed_key(self):
+        # "run10" starts with "run1", so get_all_object_tags() also returns this course's block tags.
+        prefixed_key = CourseLocator(org="orgA", course="course", run="run10")
+        other_block_key = prefixed_key.make_usage_key("problem", "other_problem")
+        self._tag(other_block_key, self.taxonomy, ["Alpha"])
+        self._clone(self.destination_key)
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert not api.get_all_object_tags(self.destination_key)[0]
+
+    def test_skips_taxonomy_not_enabled_for_destination_org(self):
+        destination_key = CourseLocator(org="orgB", course="course", run="run2")
+        self._tag(self.source_key, self.org_a_taxonomy, ["Gamma"])
+        self._tag(self.sequential_key, self.org_a_taxonomy, ["Gamma"])
+        self._tag(self.sequential_key, self.taxonomy, ["Alpha"])
+        self._add_criterion()
+        api.set_taxonomy_orgs(self.competency_taxonomy, orgs=[self.org_a])
+        rules_cache.clear()
+        self._clone(destination_key)
+
+        with self.assertLogs(api.log, level="WARNING") as logs:
+            api.copy_course_tags_and_criteria(self.source_key, destination_key)
+
+        assert len(logs.records) == 2
+        for taxonomy in (self.org_a_taxonomy, self.competency_taxonomy):
+            assert sum(
+                taxonomy.name in message and str(self.source_key) in message and str(destination_key) in message
+                for message in logs.output
+            ) == 1
+        assert self._values(destination_key, self.org_a_taxonomy) == []
+        assert self._values(self._in_destination(self.sequential_key, destination_key), self.org_a_taxonomy) == []
+        assert self._values(self._in_destination(self.problem_key, destination_key), self.competency_taxonomy) == []
+        assert self._values(self._in_destination(self.sequential_key, destination_key), self.taxonomy) == ["Alpha"]
+        assert not CompetencyCriteriaGroup.objects.filter(course__course_key=destination_key).exists()
+
+    def test_copies_criteria_onto_destination_run(self):
+        self._add_criterion()
+        self._clone(self.destination_key)
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        course_level_group = CompetencyCriteriaGroup.objects.get(course__course_key=self.destination_key)
+        assert course_level_group.tag == self.competency
+        criterion = CompetencyCriterion.objects.get(group__parent=course_level_group)
+        assert criterion.object_tag.object_id == str(self._in_destination(self.problem_key))
+        assert self._values(self._in_destination(self.problem_key), self.competency_taxonomy) == ["Writing"]
+
+    def test_creates_destination_course_run_when_missing(self):
+        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
+        self._clone(self.destination_key, display_name="Rerun Course")
+        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert get_course_run(self.destination_key).title == "Rerun Course"
+
+    def test_destination_course_run_title_is_cut_to_the_column_length(self):
+        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
+        self._clone(self.destination_key, display_name="x" * 300)
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert get_course_run(self.destination_key).title == "x" * 255
+
+    @ddt.data(("fr", "fr"), ("not-a-language", "en"))
+    @ddt.unpack
+    def test_destination_catalog_course_language(self, course_language, expected_language):
+        # A new course number, so the copy also creates the catalog course, which is what stores the language.
+        destination_key = CourseLocator(org="orgA", course="course2", run="run1")
+        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
+        self._clone(destination_key, language=course_language)
+
+        api.copy_course_tags_and_criteria(self.source_key, destination_key)
+
+        assert get_course_run(destination_key).catalog_course.language_short == expected_language
+
+    def test_course_without_tags_or_criteria_succeeds(self):
+        self._clone(self.destination_key)
+        assert not CourseRun.objects.filter(course_key=self.source_key).exists()
+
+        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert not api.get_all_object_tags(self.destination_key)[0]
+        assert not CompetencyCriteriaGroup.objects.filter(course__course_key=self.destination_key).exists()
+        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()
+
+    def test_criteria_failure_rolls_back_tags(self):
+        self._tag(self.source_key, self.taxonomy, ["Alpha"])
+        self._tag(self.sequential_key, self.taxonomy, ["Beta"])
+        self._add_criterion()
+        self._clone(self.destination_key)
+
+        with patch.object(api, "copy_competency_criteria_for_course_rerun", side_effect=ObjectTag.DoesNotExist):
+            with pytest.raises(ObjectTag.DoesNotExist):
+                api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
+
+        assert not api.get_all_object_tags(self.destination_key)[0]
+        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()
