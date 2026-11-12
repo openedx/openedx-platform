@@ -11,7 +11,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz import authz as authz_permissions
 from organizations.models import Organization
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access

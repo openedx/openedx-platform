@@ -2,7 +2,7 @@
 Custom permissions for the content store views.
 """
 
-from openedx_authz.constants.permissions import COURSES_VIEW_PAGES_AND_RESOURCES
+from openedx_authz.authz import COURSES_VIEW_PAGES_AND_RESOURCES
 from rest_framework.permissions import BasePermission
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access

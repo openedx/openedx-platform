@@ -14,7 +14,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from opaque_keys.edx.keys import UsageKeyV2
-from openedx_authz.constants.permissions import COURSES_VIEW_LIBRARY_UPDATES
+from openedx_authz.authz import COURSES_VIEW_LIBRARY_UPDATES
 from rest_framework import permissions, serializers
 from rest_framework.decorators import api_view, permission_classes  # pylint: disable=unused-import
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied

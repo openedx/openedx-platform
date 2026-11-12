@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz import authz as authz_permissions
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
 from rest_framework import serializers as drf_serializers

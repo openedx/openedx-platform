@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import RequestFactory
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES

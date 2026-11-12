@@ -74,7 +74,7 @@ from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz import authz as authz_permissions
 from organizations.api import ensure_organization
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization

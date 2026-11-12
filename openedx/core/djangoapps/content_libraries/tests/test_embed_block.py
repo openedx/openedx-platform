@@ -8,7 +8,7 @@ import re
 import ddt
 import pytest
 from django.core.exceptions import ValidationError
-from openedx_authz.constants.roles import COURSE_AUDITOR
+from openedx_authz.authz import COURSE_AUDITOR
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin

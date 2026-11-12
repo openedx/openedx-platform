@@ -21,8 +21,8 @@ from django.test.client import Client
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants import roles
-from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz import authz as roles
+from openedx_authz.authz import VIEW_LIBRARY
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_content.models_api import LearningPackage
 from organizations.models import Organization

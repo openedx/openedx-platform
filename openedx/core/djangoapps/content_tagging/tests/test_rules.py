@@ -8,8 +8,8 @@ from django.test import TestCase
 from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
+from openedx_authz import authz as authz_permissions
 from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
-from openedx_authz.constants import permissions as authz_permissions
 from openedx_tagging.models import Tag
 from openedx_tagging.rules import ObjectTagPermissionItem
 

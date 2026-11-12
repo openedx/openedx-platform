@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_EDIT_DETAILS,
     COURSES_EDIT_SCHEDULE,
     COURSES_VIEW_SCHEDULE_AND_DETAILS,

@@ -8,23 +8,20 @@ Each check has the ``(user, course_key) -> bool`` signature.
 
 from django.contrib.auth.models import AbstractUser
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.applets.enrollments.constants import (
+from openedx_authz.authz import (
     COURSES_ENROLL_LEARNERS,
-    COURSES_UNENROLL_LEARNERS,
-    COURSES_VIEW_ENROLLMENTS,
-)
-from openedx_authz.applets.learner_administration.constants import (
     COURSES_MANAGE_COHORTS,
+    COURSES_MANAGE_COURSE_TEAM,
     COURSES_MANAGE_LEARNER_EXTENSIONS,
+    COURSES_MANAGE_LEARNER_GRADING,
+    COURSES_UNENROLL_LEARNERS,
     COURSES_VIEW_COHORTS,
     COURSES_VIEW_COURSE_INFO,
-    COURSES_VIEW_LEARNER_EXTENSIONS,
-)
-from openedx_authz.applets.learner_grading.constants import COURSES_MANAGE_LEARNER_GRADING, COURSES_VIEW_GRADEBOOK
-from openedx_authz.authz import (
-    COURSES_MANAGE_COURSE_TEAM,
     COURSES_VIEW_COURSE_TEAM,
+    COURSES_VIEW_ENROLLMENTS,
+    COURSES_VIEW_GRADEBOOK,
     COURSES_VIEW_GRADING_SETTINGS,
+    COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 
 from common.djangoapps.student.auth import has_course_author_access, has_studio_read_access

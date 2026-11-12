@@ -2,7 +2,7 @@
 Unit tests for the course's setting group configuration.
 """
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 

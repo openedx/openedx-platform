@@ -24,7 +24,7 @@ from edxval.api import (
     get_transcript_preferences,
 )
 from edxval.models import Video
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_STAFF
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.test import APIClient
 

@@ -33,8 +33,7 @@ try:
     from opaque_keys.edx.keys import CourseKey
     from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
     from openedx_authz.api.users import assign_role_to_user_in_scope
-    from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
-    from openedx_authz.constants.roles import COURSE_EDITOR
+    from openedx_authz.authz import COURSE_EDITOR, COURSES_VIEW_COURSE
     from openedx_authz.engine.enforcer import AuthzEnforcer
 
     from openedx.core.djangoapps.authz.scopes import (

@@ -7,11 +7,19 @@ from unittest.mock import Mock, patch
 import ddt
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz.applets.course_team_roles.constants import COURSE_DATA_RESEARCHER, COURSE_LIMITED_STAFF
-from openedx_authz.applets.enrollments.constants import COURSES_ENROLL_LEARNERS, COURSES_VIEW_ENROLLMENTS
-from openedx_authz.applets.learner_administration.constants import COURSES_MANAGE_COHORTS, COURSES_VIEW_COURSE_INFO
-from openedx_authz.applets.learner_grading.constants import COURSES_VIEW_GRADEBOOK
-from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_STAFF, COURSES_MANAGE_COURSE_TEAM
+from openedx_authz.authz import (
+    COURSE_ADMIN,
+    COURSE_AUDITOR,
+    COURSE_DATA_RESEARCHER,
+    COURSE_LIMITED_STAFF,
+    COURSE_STAFF,
+    COURSES_ENROLL_LEARNERS,
+    COURSES_MANAGE_COHORTS,
+    COURSES_MANAGE_COURSE_TEAM,
+    COURSES_VIEW_COURSE_INFO,
+    COURSES_VIEW_ENROLLMENTS,
+    COURSES_VIEW_GRADEBOOK,
+)
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.instructor.authz.api import (

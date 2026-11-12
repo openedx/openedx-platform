@@ -12,7 +12,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz import authz as authz_permissions
 from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError

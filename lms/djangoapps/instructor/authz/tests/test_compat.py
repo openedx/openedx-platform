@@ -5,12 +5,14 @@ Tests for the compatibility of the legacy roles with the Instructor Dashboard Au
 import ddt
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz.applets.course_team_roles.constants import (
+from openedx_authz.authz import (
+    COURSE_ADMIN,
+    COURSE_AUDITOR,
     COURSE_BETA_TESTER,
     COURSE_DATA_RESEARCHER,
     COURSE_LIMITED_STAFF,
+    COURSE_STAFF,
 )
-from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_STAFF
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.instructor.authz.compat import holds_legacy_role_compat_permission

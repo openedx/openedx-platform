@@ -22,7 +22,7 @@ from openedx_authz.api.data import (
     UserData,
 )
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_STAFF
+from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from organizations.api import add_organization
 from organizations.tests.factories import OrganizationFactory

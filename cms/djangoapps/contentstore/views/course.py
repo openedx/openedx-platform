@@ -30,7 +30,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator
 from openedx_authz.api import get_scopes_for_user_and_permission
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
     COURSES_MANAGE_PAGES_AND_RESOURCES,

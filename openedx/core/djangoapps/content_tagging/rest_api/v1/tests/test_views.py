@@ -16,8 +16,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
-from openedx_authz.constants import permissions as authz_permissions
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz import authz as authz_permissions
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_learning.api import create_competency_taxonomy
 from openedx_learning.models_api import CompetencyTaxonomy
 from openedx_tagging.models import Tag, Taxonomy

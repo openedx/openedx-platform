@@ -27,7 +27,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from edx_django_utils.monitoring import set_custom_attribute, set_custom_attributes_for_course_key
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
-from openedx_authz.constants.permissions import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
+from openedx_authz.authz import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
 from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus

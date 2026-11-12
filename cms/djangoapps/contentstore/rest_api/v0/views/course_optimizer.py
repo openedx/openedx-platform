@@ -4,7 +4,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_EDIT_COURSE_CONTENT
+from openedx_authz.authz import COURSES_EDIT_COURSE_CONTENT
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response

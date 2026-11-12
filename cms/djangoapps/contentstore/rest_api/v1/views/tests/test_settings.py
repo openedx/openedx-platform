@@ -5,7 +5,7 @@ import ddt
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_EDITOR
+from openedx_authz.authz import COURSE_EDITOR
 from rest_framework import status
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase

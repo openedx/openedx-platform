@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz import authz as authz_permissions
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection
 from rest_framework.decorators import action

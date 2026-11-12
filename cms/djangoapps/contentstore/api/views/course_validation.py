@@ -5,7 +5,7 @@ import dateutil
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from pytz import UTC
 from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView

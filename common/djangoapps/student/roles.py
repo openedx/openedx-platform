@@ -14,6 +14,7 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_authz import authz as authz_roles
 from openedx_authz.api import users as authz_api
 from openedx_authz.api.data import (
     CourseOverviewData,
@@ -21,7 +22,6 @@ from openedx_authz.api.data import (
     PlatformCourseOverviewGlobData,
     RoleAssignmentData,
 )
-from openedx_authz.constants import roles as authz_roles
 from organizations.api import get_organizations
 
 from common.djangoapps.student.models import CourseAccessRole

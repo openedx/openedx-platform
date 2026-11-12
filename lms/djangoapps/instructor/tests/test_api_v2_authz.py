@@ -8,15 +8,16 @@ from unittest.mock import patch
 
 import ddt
 from django.urls import reverse
-from openedx_authz.applets.course_team_roles.constants import (
+from openedx_authz.authz import (
+    COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
     COURSE_DATA_RESEARCHER,
     COURSE_EDITOR,
     COURSE_LIMITED_STAFF,
+    COURSE_STAFF,
+    COURSES_VIEW_COURSE_INFO,
 )
-from openedx_authz.applets.learner_administration.constants import COURSES_VIEW_COURSE_INFO
-from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 

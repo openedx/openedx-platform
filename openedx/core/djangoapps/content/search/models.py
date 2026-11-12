@@ -7,7 +7,7 @@ import logging
 from django.db import DatabaseError, models
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.django.models import LearningContextKeyField
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE, VIEW_LIBRARY
+from openedx_authz.authz import COURSES_VIEW_COURSE, VIEW_LIBRARY
 from rest_framework.request import Request
 
 from common.djangoapps.student.role_helpers import get_course_roles

@@ -29,7 +29,7 @@ from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
 from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_EDIT_COURSE_CONTENT,
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_PAGES_AND_RESOURCES,

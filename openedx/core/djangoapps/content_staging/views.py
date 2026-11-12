@@ -11,8 +11,8 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz import authz as authz_permissions
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
