@@ -2572,7 +2572,8 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
     }
     ```
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_LEARNER_EXTENSIONS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
