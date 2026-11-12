@@ -45,7 +45,10 @@ from drf_spectacular.utils import (
     extend_schema,
 )
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.paginators import DefaultPagination
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.paginators import DefaultPagination, IterablePaginationMixin
+from edx_rest_framework_extensions.scoping import FullScopePolicy, ScopedQuerysetMixin
+from edx_rest_framework_extensions.shaping import MinimalViewMixin
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions, status, viewsets
@@ -77,7 +80,6 @@ from openedx.core.djangoapps.enrollments.views import (
     EnrollmentUserThrottle,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
-from openedx.core.lib.api.mixins import StandardizedErrorMixin
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermissionIsAuthenticated
 
 log = logging.getLogger(__name__)
@@ -166,6 +168,27 @@ def _maybe_set_legacy_param_deprecation_header(request, response, alias_pairs):
     return response
 
 
+def _course_key(course_id, invalid_detail):
+    """
+    Return the CourseKey for a ``course_id`` URL argument.
+
+    The conforming routes pass a parsed CourseKey, used as is. The legacy routes
+    pass the raw string, parsed here; ``invalid_detail`` is the 400 detail when
+    it does not parse. A key that names only a version has no course run behind
+    it, and looking one up raises InvalidKeyError, so it is a 404.
+    """
+    if isinstance(course_id, CourseKey):
+        course_key = course_id
+    else:
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError as exc:
+            raise ValidationError(invalid_detail) from exc
+    if course_key.org is None:
+        raise NotFound(f"No course found for course ID '{course_id}'")
+    return course_key
+
+
 # ---------------------------------------------------------------------------
 # ADR 0036 — minimal enrollment view helper
 # ---------------------------------------------------------------------------
@@ -187,9 +210,17 @@ def _to_minimal_enrollment(enrollment_dict):
     return minimal
 
 
-def _is_minimal_view_requested(request) -> bool:
-    """Return True when the caller asked for the ADR 0036 minimal preset."""
-    return request.query_params.get("view") == "minimal"
+class _EnrollmentMinimalViewMixin(MinimalViewMixin):
+    """
+    ADR 0036 ``?view=minimal`` for enrollment payloads, on the shared
+    :class:`~edx_rest_framework_extensions.shaping.MinimalViewMixin`. The
+    enrollment preset is not a plain field projection — it collapses the
+    embedded ``course_details`` sub-object to a ``course_id`` string — so the
+    representation hook is overridden instead of setting ``minimal_fields``.
+    """
+
+    def to_minimal_representation(self, item):
+        return _to_minimal_enrollment(item)
 
 
 # ===========================================================================
@@ -197,7 +228,10 @@ def _is_minimal_view_requested(request) -> bool:
 # ===========================================================================
 @can_disable_rate_limit
 @extend_schema(tags=["openedx-platform-sdk"])
-class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissionMixIn):
+class EnrollmentViewSet(
+    StandardizedErrorMixin, _EnrollmentMinimalViewMixin, IterablePaginationMixin,
+    viewsets.ViewSet, ApiKeyPermissionMixIn,
+):
     """
     Canonical ViewSet for the v2 Enrollment API.
 
@@ -279,12 +313,13 @@ class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissi
             target_username=username,
             has_api_key=self.has_api_key_permissions(request),
         )
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(enrollments, request, view=self)
-        data = self.get_serializer(page, many=True).data
-        if _is_minimal_view_requested(request):
-            data = [_to_minimal_enrollment(item) for item in data]
-        return paginator.get_paginated_response(data)
+        # ADR 0032 pagination envelope; the ADR 0036 minimal preset is applied
+        # to the serialized page.
+        return self.paginate_iterable(
+            request,
+            enrollments,
+            serialize=lambda page: self.shape_minimal(self.get_serializer(page, many=True).data),
+        )
 
     # ------------------------------------------------------------------
     # create — POST /enrollment/
@@ -389,6 +424,10 @@ class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissi
         url_path="enrollment_allowed",
         permission_classes=[permissions.IsAdminUser],
         throttle_classes=[EnrollmentUserThrottle],
+        # GET returns a plain list. Actions inherit the viewset's
+        # pagination_class, which would otherwise make drf-spectacular publish
+        # a paginated envelope this endpoint never returns.
+        pagination_class=None,
     )
     def allowed(self, request):
         """Retrieve, create, or delete CourseEnrollmentAllowed records. Admin-only."""
@@ -425,7 +464,7 @@ class EnrollmentViewSet(StandardizedErrorMixin, viewsets.ViewSet, ApiKeyPermissi
 # Kept as a standalone APIView because the {username},{course_id} URL form
 # (comma-separated, both optional) is not expressible via DefaultRouter.
 @extend_schema(tags=["openedx-platform-sdk"])
-class EnrollmentRetrieveView(StandardizedErrorMixin, ApiKeyPermissionMixIn, APIView):
+class EnrollmentRetrieveView(StandardizedErrorMixin, _EnrollmentMinimalViewMixin, ApiKeyPermissionMixIn, APIView):
     """GET enrollment for a course (and optionally a named user)."""
 
     # ADR 0034 — JWT + cross-domain session (BearerAuthenticationAllowInactiveUser
@@ -479,10 +518,7 @@ class EnrollmentRetrieveView(StandardizedErrorMixin, ApiKeyPermissionMixIn, APIV
             # Hide existence of other users' enrollments.
             raise NotFound()
 
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except InvalidKeyError as exc:
-            raise ValidationError(f"No course '{course_id}' found for enrollment") from exc
+        course_key = _course_key(course_id, f"No course '{course_id}' found for enrollment")
 
         try:
             enrollment = CourseEnrollment.objects.get(user__username=username, course_id=course_key)
@@ -494,10 +530,7 @@ class EnrollmentRetrieveView(StandardizedErrorMixin, ApiKeyPermissionMixIn, APIV
                 f"'{username}' in course '{course_id}'"
             ) from exc
 
-        data = self.serializer_class(enrollment).data
-        if _is_minimal_view_requested(request):
-            data = _to_minimal_enrollment(data)
-        return Response(data)
+        return Response(self.shape_minimal(self.serializer_class(enrollment).data))
 
 
 # ===========================================================================
@@ -610,10 +643,7 @@ class CourseEnrollmentDetailView(StandardizedErrorMixin, APIView):
         course schedule and supported enrollment modes; pass
         ``?include_expired=1`` to include expired enrollment modes.
         """
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except InvalidKeyError as exc:
-            raise ValidationError(f"No course found for course ID '{course_id}'") from exc
+        course_key = _course_key(course_id, f"No course found for course ID '{course_id}'")
         try:
             course_overview = CourseOverview.get_from_id(course_key)
         except CourseOverview.DoesNotExist as exc:
@@ -661,8 +691,15 @@ class CourseEnrollmentDetailView(StandardizedErrorMixin, APIView):
         403: _RESP_FORBIDDEN,
     },
 )
-class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
-    """Admin-only paginated enrollment list with OEP-68 filter aliases."""
+class EnrollmentsAdminListView(ScopedQuerysetMixin, StandardizedErrorMixin, ListAPIView):
+    """
+    Admin-only paginated enrollment list with ``course_key``/``course_id`` filter aliases.
+
+    Authorization is layered: ``permission_classes`` gates access to the
+    endpoint, ``ScopedQuerysetMixin`` applies ``scoping_policy`` to the base
+    ``queryset``, and ``filter_queryset`` narrows the scoped rows by the
+    caller's query parameters.
+    """
 
     # ADR 0034 — JWT + cross-domain session (BearerAuthenticationAllowInactiveUser
     # removed per OEP-0042). EnrollmentCrossDomainSessionAuth retained because the
@@ -677,6 +714,12 @@ class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
     serializer_class = CourseEnrollmentsApiListSerializer
     pagination_class = EnrollmentsAdminListPagination
 
+    queryset = CourseEnrollment.objects.all().select_related("user", "course")
+    # Platform admins may see every enrollment, so the policy is a pass-through. The
+    # scoping layer stays wired so a narrower policy can be dropped in without touching
+    # the filtering below.
+    scoping_policy = FullScopePolicy()
+
     # ADR 0033 §3 — whitelist of allowed values for the ``ordering`` param.
     ALLOWED_ORDERING_FIELDS = frozenset({"created", "-created", "id", "-id"})
 
@@ -686,12 +729,12 @@ class EnrollmentsAdminListView(StandardizedErrorMixin, ListAPIView):
         ("course_ids", "course_keys"),
     )
 
-    def get_queryset(self):
+    def filter_queryset(self, queryset):
+        """Narrow the scoped queryset by the caller-supplied query parameters."""
         form = EnrollmentsAdminListForm(self.request.query_params)
         if not form.is_valid():
             raise ValidationError(form.errors)
 
-        queryset = CourseEnrollment.objects.all().select_related("user", "course")
         course_id = form.cleaned_data.get("course_id")
         course_ids = form.cleaned_data.get("course_ids")
         usernames = form.cleaned_data.get("username")

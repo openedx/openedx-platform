@@ -5,16 +5,22 @@ from unittest.mock import patch
 import ddt
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from edx_django_utils.cache import RequestCache
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
+from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_tagging.models import Tag
 from openedx_tagging.rules import ObjectTagPermissionItem
 
 from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import CourseStaffRole, OrgStaffRole
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 from .. import api
-from ..rules import can_change_object_tag_objectid, can_remove_object_tag_objectid
+from ..rules import can_change_object_tag_objectid, can_remove_object_tag_objectid, can_view_taxonomy, get_user_orgs
+from ..utils import rules_cache
 from .test_api import TestTaxonomyMixin
 
 User = get_user_model()
@@ -724,3 +730,228 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         with self.assertRaises(ValueError):  # noqa: PT027
             can_remove_object_tag_objectid(self.library_user, "")
+
+
+class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
+    """
+    Tests for can_change_object_tag_objectid's course-authz-aware branch.
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.superuser = User.objects.create(
+            username="superuser",
+            email="superuser@example.com",
+            is_superuser=True,
+        )
+        self.authz_user = User.objects.create(
+            username="authz_user",
+            email="authz_user@example.com",
+        )
+        self.legacy_user = User.objects.create(
+            username="legacy_user",
+            email="legacy_user@example.com",
+        )
+        self.org_admin_user = User.objects.create(
+            username="org_admin_user",
+            email="org_admin_user@example.com",
+        )
+
+        self.course_key = CourseLocator.from_string("course-v1:OeX+DemoX+Demo_Course")
+        self.xblock_key = BlockUsageLocator(
+            course_key=self.course_key,
+            block_type='problem',
+            block_id='block_id',
+        )
+        # Granted while the waffle flag is off, so this goes through the legacy role path.
+        add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        # org1's short_name ("OeX") matches self.course_key's org, so this is an org-level
+        # admin for the course's org, not merely a course-level role.
+        update_org_role(self.superuser, OrgStaffRole, self.org_admin_user, [self.org1.short_name])
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_course_switched_authz_only_role_allowed(self, mock_is_user_allowed):
+        """
+        A course switched to openedx-authz grants access via authz_api.is_user_allowed alone.
+        """
+        mock_is_user_allowed.return_value = True
+
+        result = can_change_object_tag_objectid(self.authz_user, str(self.course_key))
+
+        self.assertTrue(result)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once_with(
+            self.authz_user.username,
+            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            str(self.course_key),
+        )
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_course_switched_legacy_only_role_denied(self, mock_is_user_allowed):
+        """
+        A switched course does not fall back to a legacy role: the switch is exclusive, not
+        an OR with the legacy check.
+        """
+        mock_is_user_allowed.return_value = False
+
+        result = can_change_object_tag_objectid(self.legacy_user, str(self.course_key))
+
+        self.assertFalse(result)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once_with(
+            self.legacy_user.username,
+            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            str(self.course_key),
+        )
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_xblock_in_switched_course_authz_only_role_allowed(self, mock_is_user_allowed):
+        """
+        An xblock inside a switched course resolves through the same authz-only branch as
+        the course itself: should_use_course_authz_for_object resolves the xblock's usage
+        key down to its course key.
+        """
+        mock_is_user_allowed.return_value = True
+
+        result = can_change_object_tag_objectid(self.authz_user, str(self.xblock_key))
+
+        self.assertTrue(result)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once_with(
+            self.authz_user.username,
+            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            str(self.course_key),
+        )
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_course_not_switched_legacy_role_allowed(self, mock_is_user_allowed):
+        """
+        A course that hasn't been switched to openedx-authz keeps resolving through the
+        legacy role check, unaffected by this change.
+        """
+        result = can_change_object_tag_objectid(self.legacy_user, str(self.course_key))
+
+        self.assertTrue(result)  # noqa: PT009
+        mock_is_user_allowed.assert_not_called()
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_library_object_unchanged(self, mock_is_user_allowed):
+        """
+        Library objects are unaffected by this branch: should_use_course_authz_for_object
+        only recognizes CourseKeys, so the library check still resolves through
+        MANAGE_LIBRARY_TAGS even with the course-authz flag on.
+        """
+        mock_is_user_allowed.return_value = True
+        library_key = LibraryLocatorV2.from_string(f"lib:{self.org1.short_name}:test_library")
+
+        result = can_change_object_tag_objectid(self.legacy_user, str(library_key))
+
+        self.assertTrue(result)  # noqa: PT009
+        mock_is_user_allowed.assert_called_once_with(
+            self.legacy_user.username,
+            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            str(library_key),
+        )
+
+
+@patch("openedx.core.djangoapps.authz.scopes.get_scopes_for_user_and_permission")
+class TestRulesAuthzManageTagsOrgs(TestTaxonomyMixin, TestCase):
+    """
+    Tests for how get_user_orgs and can_view_taxonomy resolve orgs granted through openedx-authz
+    courses.manage_tags, which have no legacy CourseAccessRole equivalent.
+    """
+
+    def setUp(self):
+        super().setUp()
+        rules_cache.clear()
+        RequestCache.clear_all_namespaces()  # authz scopes are cached per request
+        self.superuser = User.objects.create(username="superuser", email="superuser@example.com", is_superuser=True)
+        self.authz_user = User.objects.create(username="authz_user", email="authz_user@example.com")
+        self.legacy_user = User.objects.create(username="legacy_user", email="legacy_user@example.com")
+        # org1's short_name ("OeX") matches this course's org.
+        self.course_key = CourseLocator.from_string("course-v1:OeX+DemoX+Demo_Course")
+        self.org2_only_taxonomy = api.create_taxonomy(name="Axim only")
+        api.set_taxonomy_orgs(self.org2_only_taxonomy, orgs=[self.org2])
+
+    @staticmethod
+    def _course_scope(course_key):
+        """Build the authz course scope for the given course key."""
+        return CourseOverviewData(external_key=str(course_key))
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_course_scope_grants_its_org(self, mock_get_scopes):
+        """A course-level manage_tags grant resolves to that course's org once the course has switched to authz."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert get_user_orgs(self.authz_user) == [self.org1]
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_course_scope_ignored_when_course_not_switched(self, mock_get_scopes):
+        """A course-level grant is ignored while the course still uses legacy access."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert not get_user_orgs(self.authz_user)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_org_glob_scope_grants_its_org(self, mock_get_scopes):
+        """An org-wide manage_tags grant resolves to that org when authz is enabled."""
+        CourseOverviewFactory(id=self.course_key, org=self.course_key.org)
+        CourseOverviewFactory(
+            id=CourseLocator(self.org2.short_name, "DemoX", "Demo_Course"), org=self.org2.short_name
+        )
+        mock_get_scopes.return_value = [OrgCourseOverviewGlobData(external_key="course-v1:OeX+*")]
+        assert get_user_orgs(self.authz_user) == [self.org1]
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_org_glob_scope_ignored_when_flag_off(self, mock_get_scopes):
+        """An org-wide grant is ignored when authz is not enabled."""
+        CourseOverviewFactory(id=self.course_key, org=self.course_key.org)
+        mock_get_scopes.return_value = [OrgCourseOverviewGlobData(external_key="course-v1:OeX+*")]
+        assert not get_user_orgs(self.authz_user)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_platform_glob_scope_grants_all_orgs(self, mock_get_scopes):
+        """A platform-wide manage_tags grant resolves to the orgs of all courses when authz is enabled."""
+        CourseOverviewFactory(id=self.course_key, org=self.course_key.org)
+        CourseOverviewFactory(
+            id=CourseLocator(self.org2.short_name, "DemoX", "Demo_Course"), org=self.org2.short_name
+        )
+        mock_get_scopes.return_value = [PlatformCourseOverviewGlobData(external_key="course-v1:*")]
+        assert set(get_user_orgs(self.authz_user)) == {self.org1, self.org2}
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True)
+    def test_can_view_taxonomy_for_authz_only_user(self, mock_get_scopes):
+        """The per-taxonomy check agrees with the list filter: authz-only users can open their org's taxonomies."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        assert can_view_taxonomy(self.authz_user, self.taxonomy_one_org)
+        assert can_view_taxonomy(self.authz_user, self.taxonomy_both_orgs)
+        assert not can_view_taxonomy(self.authz_user, self.org2_only_taxonomy)
+
+    @override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_legacy_course_role_counts_before_course_switches(self, mock_get_scopes):
+        """Legacy course staff still resolve the org while the course has not switched to authz."""
+        mock_get_scopes.return_value = []
+        add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        assert get_user_orgs(self.legacy_user) == [self.org1]
+
+    def test_legacy_course_role_ignored_once_course_switches(self, mock_get_scopes):
+        """
+        Legacy course staff with no authz role in a switched course don't see the org's taxonomies, matching
+        can_change_object_tag_objectid, which requires courses.manage_tags there.
+        """
+        mock_get_scopes.return_value = []
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False):
+            add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True):
+            legacy_user = User.objects.get(pk=self.legacy_user.pk)  # fresh instance, no cached role cache
+            assert not get_user_orgs(legacy_user)
+            assert not can_view_taxonomy(legacy_user, self.taxonomy_one_org)
+
+    def test_legacy_course_role_kept_with_authz_manage_tags(self, mock_get_scopes):
+        """A switched-course staff member who also holds manage_tags through authz still resolves the org."""
+        mock_get_scopes.return_value = [self._course_scope(self.course_key)]
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=False):
+            add_users(self.superuser, CourseStaffRole(self.course_key), self.legacy_user)
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=True):
+            legacy_user = User.objects.get(pk=self.legacy_user.pk)
+            assert get_user_orgs(legacy_user) == [self.org1]

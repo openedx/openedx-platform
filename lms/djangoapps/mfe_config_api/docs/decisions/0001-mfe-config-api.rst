@@ -16,7 +16,11 @@ Decision
 ********
 
 - A lightweight API will be created that returns the mfe configuration variables from the site configuration or django settings. `PR Discussion about django settings`_
-- The API will be enabled or disabled using the setting ``ENABLE_MFE_CONFIG_API``.
+- The API will always be available.  It was originally gated behind an
+  ``ENABLE_MFE_CONFIG_API`` toggle that defaulted to ``False``; that toggle was
+  removed by the `DEPR ticket for ENABLE_MFE_CONFIG_API`_ because the API only exposes
+  non-sensitive frontend configuration and returns nothing that an operator has
+  not explicitly configured.
 - The API will take the mfe configuration in the ``MFE_CONFIG`` keyset in the site configuration (admin > site configuration > your domain) or in django settings.
 - This API allows to consult the configurations by specific MFE. Making a request like ``/api/mfe_config/v1?mfe=mymfe`` will return the configuration defined in ``MFE_CONFIG_OVERRIDES["mymfe"]`` merged with the ``MFE_CONFIG`` configuration.
 - The API will have a mechanism to cache the response with ``MFE_CONFIG_API_CACHE_TIMEOUT`` variable.
@@ -70,3 +74,5 @@ References
 .. _Issue MFE runtime configuration in frontend-wg: https://github.com/openedx/frontend-wg/issues/103
 
 .. _PR Discussion about django settings: https://github.com/openedx/edx-platform/pull/30473#discussion_r916263245
+
+.. _DEPR ticket for ENABLE_MFE_CONFIG_API: https://github.com/openedx/openedx-platform/issues/38959

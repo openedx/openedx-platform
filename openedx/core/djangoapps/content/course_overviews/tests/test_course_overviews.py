@@ -566,6 +566,164 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
         assert inactive_course.id not in output_ids
         assert {active_course.id, missing_end_date.id} == output_ids
 
+    def test_get_all_courses_by_start_date_range(self):
+        """
+        Verify only courses starting within the given range are returned.
+        """
+        in_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_WEEK])
+        out_of_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_MONTH])
+        no_start_date_course = CourseFactory.create(emit_signals=True, start=None)
+
+        output_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                start_date_on_or_after=self.DATES[self.LAST_WEEK],
+                start_date_on_or_before=self.DATES[self.NEXT_MONTH] - datetime.timedelta(days=1),
+            )
+        }
+
+        assert out_of_range_course.id not in output_ids
+        assert no_start_date_course.id not in output_ids
+        assert {in_range_course.id} == output_ids
+
+    def test_get_all_courses_by_start_date_on_or_after_only(self):
+        """
+        Verify start_date_on_or_after alone includes courses starting on or after it, with no upper bound.
+        """
+        in_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_WEEK])
+        far_in_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_MONTH])
+        out_of_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.LAST_MONTH])
+        no_start_date_course = CourseFactory.create(emit_signals=True, start=None)
+
+        output_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                start_date_on_or_after=self.DATES[self.LAST_WEEK],
+            )
+        }
+
+        assert out_of_range_course.id not in output_ids
+        assert no_start_date_course.id not in output_ids
+        assert {in_range_course.id, far_in_range_course.id} == output_ids
+
+    def test_get_all_courses_by_start_date_on_or_before_only(self):
+        """
+        Verify start_date_on_or_before alone includes courses starting on or before it, with no lower bound.
+        """
+        in_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.LAST_WEEK])
+        far_in_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.LAST_MONTH])
+        out_of_range_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_MONTH])
+        no_start_date_course = CourseFactory.create(emit_signals=True, start=None)
+
+        output_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                start_date_on_or_before=self.DATES[self.NEXT_WEEK],
+            )
+        }
+
+        assert out_of_range_course.id not in output_ids
+        assert no_start_date_course.id not in output_ids
+        assert {in_range_course.id, far_in_range_course.id} == output_ids
+
+    def test_get_all_courses_by_start_date_excludes_no_start_date_course(self):
+        """
+        Verify a course with no start date is excluded whenever either date bound is set.
+        """
+        no_start_date_course = CourseFactory.create(emit_signals=True, start=None)
+
+        after_only_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                start_date_on_or_after=self.DATES[self.LAST_WEEK],
+            )
+        }
+        before_only_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                start_date_on_or_before=self.DATES[self.NEXT_WEEK],
+            )
+        }
+
+        assert no_start_date_course.id not in after_only_ids
+        assert no_start_date_course.id not in before_only_ids
+
+    def test_get_all_courses_by_start_date_boundary_inclusive(self):
+        """
+        Verify both bounds include a course starting at the exact instant and exclude one a microsecond outside.
+        """
+        boundary = datetime.datetime(2027, 7, 1, 12, 0, tzinfo=ZoneInfo("UTC"))
+        one_microsecond = datetime.timedelta(microseconds=1)
+        at_boundary = CourseFactory.create(emit_signals=True, start=boundary)
+        just_before = CourseFactory.create(emit_signals=True, start=boundary - one_microsecond)
+        just_after = CourseFactory.create(emit_signals=True, start=boundary + one_microsecond)
+
+        after_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                filter_={"id__in": [at_boundary.id, just_before.id, just_after.id]},
+                start_date_on_or_after=boundary,
+            )
+        }
+        before_ids = {
+            course.id for course in CourseOverview.get_all_courses(
+                filter_={"id__in": [at_boundary.id, just_before.id, just_after.id]},
+                start_date_on_or_before=boundary,
+            )
+        }
+
+        assert after_ids == {at_boundary.id, just_after.id}
+        assert before_ids == {at_boundary.id, just_before.id}
+
+    def test_get_all_courses_by_start_date_offset_instants(self):
+        """
+        Verify a course starting late on June 30 UTC is found by a July 1 UTC+4 day range, not the same
+        wall-clock range in UTC.
+        """
+        course = CourseFactory.create(
+            emit_signals=True, start=datetime.datetime(2027, 6, 30, 22, 0, tzinfo=ZoneInfo("UTC"))
+        )
+        utc_plus_4 = datetime.timezone(datetime.timedelta(hours=4))
+
+        local_day_ids = {
+            course_overview.id for course_overview in CourseOverview.get_all_courses(
+                start_date_on_or_after=datetime.datetime(2027, 7, 1, 0, 0, tzinfo=utc_plus_4),
+                start_date_on_or_before=datetime.datetime(2027, 7, 1, 23, 59, 59, 999999, tzinfo=utc_plus_4),
+            )
+        }
+        utc_day_ids = {
+            course_overview.id for course_overview in CourseOverview.get_all_courses(
+                start_date_on_or_after=datetime.datetime(2027, 7, 1, 0, 0, tzinfo=ZoneInfo("UTC")),
+                start_date_on_or_before=datetime.datetime(2027, 7, 1, 23, 59, 59, 999999, tzinfo=ZoneInfo("UTC")),
+            )
+        }
+
+        assert course.id in local_day_ids
+        assert course.id not in utc_day_ids
+
+    def test_get_all_courses_by_start_date_us_timezone(self):
+        """
+        Verify a course starting early on July 1 UTC is found by a June 30 UTC-4 day range.
+        """
+        course = CourseFactory.create(
+            emit_signals=True, start=datetime.datetime(2027, 7, 1, 2, 0, tzinfo=ZoneInfo("UTC"))
+        )
+        utc_minus_4 = datetime.timezone(datetime.timedelta(hours=-4))
+
+        output_ids = {
+            course_overview.id for course_overview in CourseOverview.get_all_courses(
+                start_date_on_or_after=datetime.datetime(2027, 6, 30, 0, 0, tzinfo=utc_minus_4),
+                start_date_on_or_before=datetime.datetime(2027, 6, 30, 23, 59, 59, 999999, tzinfo=utc_minus_4),
+            )
+        }
+
+        assert course.id in output_ids
+
+    def test_get_all_courses_by_start_date_params_absent(self):
+        """
+        Verify get_all_courses returns courses unfiltered by start date when neither param is given.
+        """
+        course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_WEEK])
+        other_course = CourseFactory.create(emit_signals=True, start=self.DATES[self.NEXT_MONTH])
+
+        output_ids = {course_overview.id for course_overview in CourseOverview.get_all_courses()}
+
+        assert {course.id, other_course.id} == output_ids
+
     def test_get_from_ids(self):
         """
         Assert that CourseOverviews.get_from_ids works as expected.

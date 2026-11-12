@@ -2,9 +2,10 @@
 
 import logging
 
-import edx_api_doc_tools as apidocs
 from django.http import HttpResponseBadRequest, HttpResponsePermanentRedirect
 from django.urls import reverse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,18 +27,19 @@ class ContainerHandlerView(APIView, ContainerHandlerMixin):
     View for container xblock requests to get vertical data.
     """
 
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter(
+            OpenApiParameter(
                 "usage_key_string",
-                apidocs.ParameterLocation.PATH,
+                OpenApiTypes.STR,
+                OpenApiParameter.PATH,
                 description="Container usage key",
             ),
         ],
         responses={
             200: ContainerHandlerSerializer,
-            401: "The requester is not authenticated.",
-            404: "The requested locator does not exist.",
+            401: OpenApiResponse(description="The requester is not authenticated."),
+            404: OpenApiResponse(description="The requested locator does not exist."),
         },
     )
     def get(self, request: Request, usage_key_string: str):

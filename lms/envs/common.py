@@ -497,7 +497,11 @@ LOG_POSTPAY_CALLBACKS = True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
 # .. toggle_description: Set to True to enable custom certificate templates which are configured via Django admin.
-# .. toggle_warning: None
+#   Templates are rendered with Mako.
+# .. toggle_warning: Mako templates can run arbitrary Python on the LMS server. Any user who can add or change a
+#   certificate template in Django admin (the certificates.add_certificatetemplate and
+#   certificates.change_certificatetemplate permissions) can run code as the LMS process. Only grant those permissions
+#   to users you would trust with shell access to the LMS.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2015-08-13
 # .. toggle_target_removal_date: None
@@ -793,6 +797,25 @@ ENABLE_AUTO_GENERATED_USERNAME = False
 # e.g. COURSE_BLOCKS_API_EXTRA_FIELDS = [  ('course', 'other_course_settings'), ("problem", "weight")  ]
 COURSE_BLOCKS_API_EXTRA_FIELDS = []
 
+# .. setting_name: XBLOCK_NOAUTH_HANDLER_ALLOWLIST
+# .. setting_default: LTI 1.1 outcome handlers and the video transcript handler (see below)
+# .. setting_description: Dotted paths to the XBlock handler methods that may be called through the
+#     unauthenticated ``handler_noauth`` URL. Requests for any other handler on that URL get a 404. Handlers
+#     on this URL always run as an anonymous user, so each one must do its own authentication (for example, an
+#     OAuth signature from an LTI tool) or serve only public data. Paths name the class that defines the method,
+#     e.g. ``'my_package.blocks.MyXBlock.my_callback_handler'``. Paths that cannot be imported are skipped.
+XBLOCK_NOAUTH_HANDLER_ALLOWLIST = [
+    # LTI 1.1 tools posting grades back; these verify the OAuth1 body signature.
+    'xmodule.lti_block._BuiltInLTIBlock.grade_handler',
+    'xmodule.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'xblock_lti.block.LTIBlock.grade_handler',
+    'xblock_lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'lti_consumer.lti_xblock.LtiConsumerXBlock.outcome_service_handler',
+    'lti_consumer.lti_xblock.LtiConsumerXBlock.result_service_handler',
+    # Video transcripts, fetched without a session by the mobile apps.
+    'xblock_video.video_handlers.VideoStudentViewHandlers.transcript',
+]
+
 # Used for A/B testing
 DEFAULT_GROUPS = []
 
@@ -806,7 +829,14 @@ RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 ############################# SET PATH INFORMATION #############################
 
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
+REPO_ROOT = PROJECT_ROOT.dirname()
+COMMON_ROOT = REPO_ROOT / "common"
+OPENEDX_ROOT = REPO_ROOT / "openedx"
+XMODULE_ROOT = REPO_ROOT / "xmodule"
+ENV_ROOT = REPO_ROOT.dirname()  # virtualenv dir /edx-platform is in
+COURSES_ROOT = ENV_ROOT / "data"
 NODE_MODULES_ROOT = REPO_ROOT / "node_modules"  # noqa: F405
+MEDIA_ROOT = ENV_ROOT / "media_root"
 
 # Where to look for a status message
 STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"  # noqa: F405
@@ -925,8 +955,11 @@ CERT_QUEUE = 'test-pull'
 
 ALTERNATE_WORKER_QUEUES = 'cms'
 
-DATA_DIR = '/edx/var/edxapp/data'
-
+# .. setting_name: MAINTENANCE_BANNER_TEXT
+# .. setting_default: None
+# .. setting_description: Specifies the text that is rendered on the maintenance banner.
+# .. setting_warning: Depends on the `open_edx_util.display_maintenance_warning` waffle switch.
+#   The banner is only rendered when the switch is activated.
 MAINTENANCE_BANNER_TEXT = None
 
 # Set certificate issued date format. It supports all formats supported by
@@ -1210,7 +1243,6 @@ MIDDLEWARE = [
 
     # Various monitoring middleware
     'edx_django_utils.monitoring.CachedCustomMonitoringMiddleware',
-    'edx_django_utils.monitoring.CodeOwnerMonitoringMiddleware',
     'edx_django_utils.monitoring.CookieMonitoringMiddleware',
     'edx_django_utils.monitoring.DeploymentMonitoringMiddleware',
     'edx_django_utils.monitoring.FrontendMonitoringMiddleware',
@@ -2052,7 +2084,6 @@ INSTALLED_APPS = [
     'openedx.features.calendar_sync',
     'openedx.features.course_bookmarks',
     'openedx.features.course_experience',
-    'openedx.features.enterprise_support.apps.EnterpriseSupportConfig',
     'openedx.features.course_duration_limits',
     'openedx.features.content_type_gating',
     'openedx.features.discounts',
@@ -2065,8 +2096,8 @@ INSTALLED_APPS = [
     'django_filters',
 
     # API Documentation
-    'drf_yasg',
     'drf_spectacular',
+    'drf_spectacular_sidecar',
 
     # edx-drf-extensions
     'csrf.apps.CsrfAppConfig',  # Enables frontend apps to retrieve CSRF tokens.
@@ -2122,6 +2153,9 @@ INSTALLED_APPS = [
     # Core models to represent courses
     "openedx_catalog",
 
+    # Competency criteria and student progress models
+    "openedx_learning",
+
     # Core apps that power libraries
     "openedx_content",
     *openedx_content_backcompat_apps_to_install(),
@@ -2145,24 +2179,34 @@ OPTIONAL_APPS += [  # noqa: F405
 
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
-######################### Django Rest Framework ########################
-
-SWAGGER_SETTINGS = {
-    'DEFAULT_INFO': 'openedx.core.apidocs.api_info',
-    'DEEP_LINKING': True,
-}
-
 ###################### drf-spectacular (LMS enrollment schema) ######################
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LMS Enrollment API',
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
+    # Mark legacy slashless enrollment addresses deprecated. The enum hook is
+    # drf-spectacular's default, restated because setting this key replaces
+    # the default list.
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums',
+        'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
+        'openedx.core.apidocs.untag_deprecated_operations',
+    ],
+    # Stripped from each path to derive its tags and operationId, so changing
+    # it renames every operationId. Paths themselves are emitted in full.
     'SCHEMA_PATH_PREFIX': '/api/enrollment',
-    'SCHEMA_PATH_PREFIX_TRIM': '/api/enrollment',
+    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
+    # than drf-spectacular's default unpinned jsdelivr CDN URLs, keeping them
+    # self-hosted and version-pinned as the drf-yasg bundles were.
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
     # SERVERS is environment-specific (LMS_ROOT_URL differs per env) and is
     # set in devstack.py / production.py.
 }
+# The colliding legacy Enrollment v2 address gets a distinct operationId (lms/lib/spectacular.py).
+REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'lms.lib.spectacular.LmsAutoSchema'  # noqa: F405
 
 
 STATIC_TEMPLATE_VIEW_DEFAULT_FILE_EXTENSION = 'html'
@@ -2641,40 +2685,21 @@ CCX_MAX_STUDENTS_ALLOWED = 200
 FINANCIAL_ASSISTANCE_MIN_LENGTH = 1250
 FINANCIAL_ASSISTANCE_MAX_LENGTH = 2500
 
-#### Registration form extension. ####
-# Only used if combined login/registration is enabled.
-# This can be used to add fields to the registration page.
-# It must be a path to a valid form, in dot-separated syntax.
-# IE: custom_form_app.forms.RegistrationExtensionForm
-# Note: If you want to use a model to store the results of the form, you will
-# need to add the model's app to the ADDL_INSTALLED_APPS array in your
-# lms.yml file.
-#
-# REGISTRATION_EXTENSION_FORM is deprecated but will continue to work for backward compatibility.
-# Sites using this setting will maintain the old behavior:
-# - Data is stored in UserProfile.meta JSON field
-# - No ability to update extended fields after registration via account settings API
-#
-# To get new capabilities (model-based storage), migrate to PROFILE_EXTENSION_FORM.
-REGISTRATION_EXTENSION_FORM = None  # DEPRECATED: Use PROFILE_EXTENSION_FORM instead
+##### User Profile Extension #####
 
-# PROFILE_EXTENSION_FORM is a Django ModelForm class used for extending user profiles
-# beyond the default fields. This setting enables new capabilities for profile management:
-# - Data is stored in a dedicated model (not just UserProfile.meta)
-# - Users can update their extended profile fields via the account settings API
+# PROFILE_EXTENSION_FORM is a Django ModelForm used to add extended user
+# fields to the platform. This setting integrates these fields into both
+# the registration form and the account settings api.
+
+# Usage:
+# - Set this to the dot-separated path of a valid ModelForm class.
+#   Example: PROFILE_EXTENSION_FORM = 'my_custom_app.forms.ExtendedProfileForm'
 #
-# This setting supersedes REGISTRATION_EXTENSION_FORM and provides more accurate naming
-# for profile extension functionality.
-#
-# Example: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
-#
-# The custom form's model should have:
-# - A OneToOneField to User (typically named 'user')
-# - Additional fields for extended profile data
-#
-# MIGRATION NOTE: If you're currently using REGISTRATION_EXTENSION_FORM (deprecated),
-# your custom fields will continue working as before (data in meta field).
-# To get the new capabilities, migrate to PROFILE_EXTENSION_FORM.
+# Requirements:
+# 1. Linked Model: The form must be based on a model with a OneToOneField to
+#    the User (typically named 'user').
+# 2. Installed Apps: Ensure the app containing your model is included in
+#    the ADDL_INSTALLED_APPS array.
 PROFILE_EXTENSION_FORM = None
 
 # Identifier included in the User Agent from Open edX mobile apps.
@@ -2889,6 +2914,12 @@ CATALOG_MICROFRONTEND_URL = None
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based instructor app.
 INSTRUCTOR_MICROFRONTEND_URL = None
+# .. setting_name: CCX_COACH_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based CCX Coach app. The CCX Coach
+#   experience is served by the Instructor Dashboard MFE; the CCX Coach v2 API uses this to
+#   build absolute tab URLs returned in the course metadata payload.
+CCX_COACH_MICROFRONTEND_URL = None
 # .. setting_name: COMMUNICATIONS_MICROFRONTEND_URL
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based communications app.
@@ -3065,18 +3096,6 @@ DISCUSSION_MODERATION_CLOSE_REASON_CODES = {
 IS_ELIGIBLE_FOR_FINANCIAL_ASSISTANCE_URL = '/core/api/course_eligibility/'
 FINANCIAL_ASSISTANCE_APPLICATION_STATUS_URL = "/core/api/financial_assistance_application/status/"
 CREATE_FINANCIAL_ASSISTANCE_APPLICATION_URL = '/core/api/financial_assistance_applications'
-
-# .. toggle_name: ENABLE_MFE_CONFIG_API
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Set to True to enable MFE Config API. This is disabled by
-#   default.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2022-05-20
-# .. toggle_target_removal_date: None
-# .. toggle_warnings: None
-# .. toggle_tickets: None
-ENABLE_MFE_CONFIG_API = False
 
 # .. setting_name: MFE_CONFIG
 # .. setting_implementation: DjangoSetting

@@ -100,6 +100,10 @@ from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_gene
 from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
 from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
+from openedx.core.lib.log_utils import (
+    get_standalone_pii_or_redacted_for_log,
+    get_username_or_pii_safe_user_id_for_log,
+)
 
 from . import provider
 
@@ -661,7 +665,7 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # However, we will log a warning for this case:
             logger.warning(
                 '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
-                'Username: {username}'.format(username=user.username)
+                'User: {user}'.format(user=get_username_or_pii_safe_user_id_for_log(user))
             )
 
 
@@ -853,8 +857,8 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
         if changed:
             logger.info(
                 '[THIRD_PARTY_AUTH] User performed SSO and data was synchronized. '  # noqa: UP032
-                'Username: {username}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
-                    username=user.username,
+                'User: {user}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
+                    user=get_username_or_pii_safe_user_id_for_log(user),
                     provider=current_provider.name,
                     updated_keys=list(changed.keys())
                 )
@@ -883,7 +887,9 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                     email.send()
                 except SMTPException:
                     logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032  # pylint: disable=line-too-long
-                                     'notification email. Username: {username}'.format(username=user.username))
+                                     'notification email. User: {user}'.format(
+                                         user=get_username_or_pii_safe_user_id_for_log(user)
+                                     ))
 
 
 def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
@@ -982,17 +988,17 @@ def get_username(strategy, details, backend, user=None, *args, **kwargs):  # pyl
             username = short_username + '-' + username_suffix_generator(this_uuid_length)
             final_username = slug_func(clean_func(username[:max_length]))
             logger.info(
-                '[THIRD_PARTY_AUTH] New username candidnate generated: '
-                f'input_username={input_username}, '
+                '[THIRD_PARTY_AUTH] New username candidate generated: '
+                f'input_username={get_standalone_pii_or_redacted_for_log(input_username)}, '
                 f'suffix_length={this_uuid_length}, '
-                f'final_username={final_username}'
+                f'final_username={get_standalone_pii_or_redacted_for_log(final_username)}'
             )
     else:
         final_username = storage.user.get_username(user)
     logger.info(
         '[THIRD_PARTY_AUTH] get_username complete: '
-        f'details={details}, '
-        f'final_username={final_username}'
+        f'details={get_standalone_pii_or_redacted_for_log(details)}, '
+        f'final_username={get_standalone_pii_or_redacted_for_log(final_username)}'
     )
     return {'username': final_username}
 

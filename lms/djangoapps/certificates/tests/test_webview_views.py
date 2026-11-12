@@ -2,6 +2,7 @@
 
 
 import datetime
+import json
 from unittest import skipUnless
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
@@ -588,6 +589,161 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # Test course overrides
         self.assertContains(response, "/static/certificates/images/course_override_logo.png")
 
+    def _get_cert_with_overrides(self, overrides):
+        """
+        Set the course's cert_html_view_overrides and return the rendered certificate response.
+        """
+        self._add_course_certificates(count=1, signatory_count=1, is_active=True)
+        self.course.cert_html_view_overrides = overrides
+        self.course.save()
+        self.update_course(self.course, self.user.id)
+        test_url = get_certificate_url(
+            user_id=self.user.id,
+            course_id=str(self.course.id),
+            uuid=self.cert.verify_uuid
+        )
+        return self.client.get(test_url)
+
+    def _get_cert_content(self, overrides):
+        """
+        Render the certificate with `overrides` applied and return its decoded body.
+        """
+        response = self._get_cert_with_overrides(overrides)
+        assert response.status_code == 200
+        return response.content.decode('utf-8')
+
+    def _render_custom_template(self, template_body, overrides):
+        """
+        Render the certificate with a custom template whose body is `template_body`, and return
+        its decoded body.
+        """
+        CertificateTemplate(
+            name='custom template',
+            template=f'<html><body>{template_body}</body></html>',
+            mode='honor',
+            course_key=None,
+            is_active=True,
+        ).save()
+        with patch('lms.djangoapps.certificates.api.get_course_organization_id') as mock_get_org_id:
+            mock_get_org_id.return_value = None
+            return self._get_cert_content(overrides)
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_default_copyright_text_is_rendered(self):
+        assert '©' in self._get_cert_content({})
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_copyright_text_override_is_escaped(self):
+        payload = '<img src=x onerror=alert(1)>'
+        content = self._get_cert_content({'copyright_text': payload})
+        assert payload not in content
+        assert '&lt;img src=x onerror=alert(1)&gt;' in content
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_copyright_text_from_site_configuration_is_escaped(self):
+        """
+        Breaking change: copyright_text used to be the one context value rendered without
+        escaping, so an operator could put markup in it.  It is now escaped like every other
+        value.
+        """
+        configuration = json.loads(CertificateHtmlViewConfigurationFactory.configuration)
+        configuration['honor']['copyright_text'] = '<b>Operator copyright</b>'
+        CertificateHtmlViewConfigurationFactory.create(configuration=json.dumps(configuration))
+        content = self._get_cert_content({})
+        assert '<b>Operator copyright</b>' not in content
+        assert '&lt;b&gt;Operator copyright&lt;/b&gt;' in content
+
+    @ddt.data(
+        'javascript:alert(1)',
+        'JavaScript:alert(1)',
+        'java\tscript:alert(1)',
+        ' javascript:alert(1)',
+        'vbscript:alert(1)',
+    )
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_script_scheme_override_is_dropped(self, url):
+        content = self._get_cert_content({'company_tos_url': url})
+        assert 'alert(1)' not in content
+        # The site configuration's value is used instead.
+        assert 'href="https://www.edx.org/edx-terms-service"' in content
+
+    @ddt.data(
+        'https://example.com/tos?a=1&b=2',
+        '/tos',
+        'data:image/png;base64,iVBORw0KGgo=',
+    )
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_safe_url_override_is_kept(self, url):
+        content = self._get_cert_content({'company_tos_url': url})
+        assert 'href="{}"'.format(url.replace('&', '&amp;')) in content
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True, SOCIAL_SHARING_SETTINGS={'CERTIFICATE_TWITTER': True})
+    def test_url_override_in_javascript_is_not_html_escaped(self):
+        """
+        Overrides reach the context unmodified, so a URL rendered into a JavaScript string is
+        escaped for that context only and is not corrupted by HTML escaping.
+        """
+        url = 'https://twitter.com/intent/tweet?text=hi&url=x'
+        assert js_escaped_string(url) in self._get_cert_content({'twitter_url': url})
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True, SOCIAL_SHARING_SETTINGS={'CERTIFICATE_TWITTER': True})
+    def test_boolean_override_keeps_its_type(self):
+        """
+        Overrides are not coerced to strings, so a template conditional still reads a boolean
+        override as a boolean rather than as the always-truthy string "False".
+        """
+        assert 'Share on Twitter' not in self._get_cert_content({'twitter_share_enabled': False})
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_mapping_override_keeps_its_type(self):
+        """
+        Overrides are not coerced to strings, so a template can still read a mapping override
+        with .get() instead of raising AttributeError.
+        """
+        response = self._get_cert_with_overrides({'certificate_data': {'signatories': []}})
+        assert response.status_code == 200
+
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
+    @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
+    def test_override_is_escaped_in_custom_template(self, mock_get_course_run_details):
+        mock_get_course_run_details.return_value = self.mock_course_run_details
+        payload = '<script>alert(1)</script>'
+        content = self._render_custom_template(
+            'name: ${accomplishment_copy_course_name}',
+            {'accomplishment_copy_course_name': payload},
+        )
+        assert payload not in content
+        assert 'name: &lt;script&gt;alert(1)&lt;/script&gt;' in content
+
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
+    @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
+    def test_non_string_override_is_escaped_in_custom_template(self, mock_get_course_run_details):
+        """
+        Overrides are arbitrary JSON, so a value can be a list or a mapping.  Templates escape
+        whatever they render, including the string a container renders as.
+        """
+        mock_get_course_run_details.return_value = self.mock_course_run_details
+        content = self._render_custom_template(
+            'name: ${accomplishment_copy_course_name}',
+            {'accomplishment_copy_course_name': ['<script>alert(1)</script>']},
+        )
+        assert '<script>alert(1)</script>' not in content
+        assert '&lt;script&gt;alert(1)&lt;/script&gt;' in content
+
+    @override_settings(CUSTOM_CERTIFICATE_TEMPLATES_ENABLED=True, CERTIFICATES_HTML_VIEW=True)
+    @patch('lms.djangoapps.certificates.views.webview.get_course_run_details')
+    def test_custom_template_can_opt_out_of_escaping(self, mock_get_course_run_details):
+        """
+        Breaking change: custom templates now escape every value they render.  An operator who
+        deliberately renders markup can opt out per expression with Mako's `n` filter.
+        """
+        mock_get_course_run_details.return_value = self.mock_course_run_details
+        content = self._render_custom_template(
+            'name: ${accomplishment_copy_course_name | n}',
+            {'accomplishment_copy_course_name': '<b>bold</b>'},
+        )
+        assert 'name: <b>bold</b>' in content
+
     @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_html_view_valid_certificate(self):
         self._add_course_certificates(count=1, signatory_count=2)
@@ -610,6 +766,26 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         self.cert.save()
         response = self.client.get(test_url)
         self.assertContains(response, str(self.cert.verify_uuid))
+
+    @override_settings(CERTIFICATES_HTML_VIEW=True)
+    def test_render_html_view_without_about_url(self):
+        """
+        Tests that the certificate renders when no About page URL is configured
+        anywhere: not in the HTML view configuration, the site configuration or
+        the marketing URLs. The "Learn more" link is left out rather than the
+        template failing on an undefined name.
+        """
+        CertificateHtmlViewConfigurationFactory.create(enabled=False)
+        self._add_course_certificates(count=1, signatory_count=1)
+        test_url = get_certificate_url(
+            user_id=self.user.id,
+            course_id=str(self.course.id),
+            uuid=self.cert.verify_uuid
+        )
+        response = self.client.get(test_url)
+        self.assertContains(response, str(self.cert.verify_uuid))
+        self.assertContains(response, 'class="about-item about-edx"')
+        self.assertNotContains(response, 'Learn more about')
 
     @override_settings(CERTIFICATES_HTML_VIEW=True)
     def test_render_certificate_only_for_downloadable_status(self):

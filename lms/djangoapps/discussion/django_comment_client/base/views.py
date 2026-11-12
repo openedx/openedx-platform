@@ -508,6 +508,11 @@ def permitted(func):
         course_key = CourseKey.from_string(kwargs['course_id'])
         content, user_group_id, content_user_group_id = fetch_content()
 
+        # Roles are checked against the course in the URL, so the content has to belong to that course.
+        content_course_id = content.get('course_id') if content else None
+        if content_course_id and str(content_course_id) != str(course_key):
+            return JsonError("unauthorized", status=401)
+
         if check_permissions_by_view(request.user, course_key, content,
                                      request.view_name, user_group_id, content_user_group_id):
             return func(request, *args, **kwargs)

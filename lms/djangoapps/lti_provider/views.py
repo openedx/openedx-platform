@@ -217,14 +217,10 @@ def get_custom_parameters(params: dict[str]) -> dict[str]:
 def render_courseware(request, usage_key):
     """
     Render the content requested for the LTI launch.
-    TODO: This method depends on the current refactoring work on the
-    courseware/courseware.html template. It's signature may change depending on
-    the requirements for that template once the refactoring is complete.
 
-    Return an HttpResponse object that contains the template and necessary
-    context to render the courseware.
+    Return an HttpResponse object that contains the chromeless rendering of the
+    requested XBlock (via ``render_xblock``) for embedding in the consuming LTI tool.
     """
-    # return an HttpResponse object that contains the template and necessary context to render the courseware.
     from lms.djangoapps.courseware.views.views import render_xblock
     return render_xblock(request, str(usage_key), check_if_enrolled=False, disable_staff_debug_info=True)
 

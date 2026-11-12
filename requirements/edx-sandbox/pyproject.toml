@@ -1,0 +1,60 @@
+[project]
+name = "edx-sandbox"
+version = "0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "chem", # A helper library for chemistry calculations
+    "cryptography", # Implementations of assorted cryptography algorithms
+    "lxml[html_clean]", # XML parser
+    "matplotlib", # 2D plotting library
+    "networkx", # Utilities for creating, manipulating, and studying network graphs
+    "nltk", # Natural language processing; used by the chem package
+    "openedx-calc",
+    "pyparsing", # Python Parsing module
+    "random2", # Implementation of random module that works identically under Python 2 and 3
+    "scipy", # Math, science, and engineering library
+    "sympy", # Symbolic math library
+    "codejail-includes", # CodeJail manages execution of untrusted code in secure sandboxes.
+]
+
+[tool.uv]
+# This isn't installed as a package itself -- it's just a locked dependency
+# set that gets resolved into codejail's isolated sandbox venv.
+package = false
+
+#  DO NOT EDIT constraint-dependencies DIRECTLY.
+#  This list is managed by `edx_lint write_uv_constraints`
+#  and will be overwritten the next time `make upgrade` is run.
+#  - GLOBAL constraints: edit edx_lint/files/common_constraints.txt
+#  - REPO-SPECIFIC constraints: edit [tool.edx_lint].uv_constraints in this file
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+    "numpy<2.0.0",
+    "lxml==5.3.2",
+    "setuptools<82",
+]
+[tool.edx_lint]
+# Only the subset of the root pyproject.toml's constraints that are actually
+# relevant to this environment's dependencies. uv/edx-lint have no equivalent
+# to pip-compile's "-c ../constraints.txt" cross-project chaining, so these
+# are independently maintained from the root ones -- see README.rst.
+uv_constraints = [
+    # Needed at least until elasticsearch (used by the main edx-platform app,
+    # not this environment) is upgraded past 7.15 -- see the root
+    # pyproject.toml's [tool.edx_lint].uv_constraints for the full rationale.
+    "numpy<2.0.0",
+    # lxml and xmlsec need to be constrained because the latest version builds
+    # against a newer version of libxml2 than what we're running with -- see
+    # the root pyproject.toml's [tool.edx_lint].uv_constraints for the full
+    # rationale.
+    "lxml==5.3.2",
+    # setuptools 82.0.0 removed pkg_resources from its distribution, but fs
+    # (pyfilesystem2) still uses pkg_resources for namespace package
+    # declarations -- see the root pyproject.toml's
+    # [tool.edx_lint].uv_constraints for the full rationale.
+    "setuptools<82",
+]

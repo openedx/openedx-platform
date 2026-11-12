@@ -19,6 +19,17 @@ openedx-platform is recommended because the repository is very large.
 ```bash
 git clone --depth=1 https://github.com/openedx/openedx-platform.git
 cd openedx-platform
+```
+
+With [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uv sync --project scripts/structures_pruning --frozen
+```
+
+Or, without uv:
+
+```bash
 virtualenv venv
 source venv/bin/activate
 pip install -r ./scripts/structures_pruning/requirements/base.txt
@@ -28,19 +39,22 @@ Then you can use python to run the scripts, and view the integrated
 help.
 
 ```bash
-python scripts/structures_pruning/structures.py --help
+uv run --project scripts/structures_pruning python scripts/structures_pruning/structures.py --help
 ```
+
+(or, without uv and with the virtualenv above activated: `python scripts/structures_pruning/structures.py --help`)
 
 # Development
 
-For development, you can also install the testing requirements:
+With uv:
+
+```bash
+uv run --project scripts/structures_pruning --group test pytest scripts/structures_pruning
+```
+
+Or, without uv, install the testing requirements and run pytest directly:
 
 ```bash
 pip install -r scripts/structures_pruning/requirements/testing.txt
-```
-
-Run the test cases using pytest:
-
-```bash
 pytest scripts/structures_pruning
 ```

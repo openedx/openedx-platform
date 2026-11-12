@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
+from openedx_learning.api import is_competency_taxonomy
+from openedx_tagging.api import TaxonomyType
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     ObjectTagsByTaxonomySerializer,
@@ -97,6 +99,21 @@ class TaxonomyOrgSerializer(TaxonomySerializer):
         model = TaxonomySerializer.Meta.model
         fields = TaxonomySerializer.Meta.fields + ["orgs", "all_orgs"]
         read_only_fields = ["orgs", "all_orgs"]
+
+    def to_representation(self, instance) -> dict:
+        """
+        Serialize the taxonomy, adding the computed ``taxonomy_type`` (read side).
+
+        ``taxonomy_type`` is also a write-only field inherited from ``TaxonomySerializer``,
+        used only as create-time input, so DRF excludes it from the base representation.
+        This adds it back for reads, computed from whether the taxonomy is backed by a
+        CompetencyTaxonomy, via the CBE app's own public API.
+        """
+        data = super().to_representation(instance)
+        data["taxonomy_type"] = (
+            TaxonomyType.COMPETENCY.value if is_competency_taxonomy(instance) else TaxonomyType.TAGS.value
+        )
+        return data
 
 
 class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):

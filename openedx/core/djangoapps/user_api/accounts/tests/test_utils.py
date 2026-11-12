@@ -7,6 +7,7 @@ Includes tests for social links, social-auth PII redaction, completion, etc.
 from contextlib import contextmanager
 
 import ddt
+import pytest
 from completion import models
 from completion.test_utils import CompletionWaffleTestMixin
 from django.db import connection
@@ -16,15 +17,17 @@ from django.test.utils import CaptureQueriesContext, override_settings
 from django.utils import timezone
 from social_django.models import UserSocialAuth
 
-from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models import CourseEnrollment, is_email_retired
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.accounts.signals import redact_social_auth_pii_before_deletion
 from openedx.core.djangoapps.user_api.accounts.utils import (
     REDACTED_SOCIAL_AUTH_UID_PREFIX,
     redact_and_delete_historical_social_auth,
     redact_and_delete_social_auth,
+    release_retired_learner_email,
     retrieve_last_sitewide_block_completed,
 )
+from openedx.core.djangoapps.user_api.models import RetirementState, RetirementStateError, UserRetirementStatus
 from openedx.core.djangolib.testing.utils import assert_redact_before_delete, skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
@@ -35,6 +38,11 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
 )
 
 from ..utils import format_social_link, validate_social_link
+from .retirement_helpers import (  # noqa: F401  # pylint: disable=unused-import
+    RetirementTestCase,
+    create_retirement_status,
+    setup_retirement_states,
+)
 
 
 # Use a context manager to guarantee signal reconnection between tests.
@@ -296,3 +304,88 @@ class RedactAndDeleteHistoricalSocialAuthTest(TestCase):
         )
         assert not self.historical_social_auth_model.objects.filter(user=self.user).exists()
         assert self.historical_social_auth_model.objects.filter(user=other_user).exists()
+
+
+class ReleaseRetiredLearnerEmailTest(RetirementTestCase):
+    """
+    Tests for release_retired_learner_email().
+    """
+
+    def _retire_user_to_state(self, user, state_name):
+        return create_retirement_status(user, state=RetirementState.objects.get(state_name=state_name))
+
+    def test_releases_email_when_retirement_complete(self):
+        user = UserFactory(email='retired__user_abc123@retired.invalid')
+        self._retire_user_to_state(user, 'COMPLETE')
+
+        release_retired_learner_email(user)
+
+        user.refresh_from_db()
+        assert user.email == f'retired__uid_{user.id}@retired.invalid'
+
+    def test_raises_when_retirement_still_in_progress(self):
+        user = UserFactory(email='retired__user_abc123@retired.invalid')
+        self._retire_user_to_state(user, 'RETIRING_LMS')
+
+        with pytest.raises(RetirementStateError, match=r"retirement is in state 'RETIRING_LMS', not COMPLETE"):
+            release_retired_learner_email(user)
+
+        # A rejected release must not touch the email.
+        user.refresh_from_db()
+        assert user.email == 'retired__user_abc123@retired.invalid'
+
+    def test_is_idempotent(self):
+        user = UserFactory(email='retired__user_abc123@retired.invalid')
+        self._retire_user_to_state(user, 'COMPLETE')
+
+        release_retired_learner_email(user)
+        user.refresh_from_db()
+        released_email = user.email
+
+        release_retired_learner_email(user)
+        user.refresh_from_db()
+        assert user.email == released_email
+
+    def test_releases_email_when_status_row_archived(self):
+        user = UserFactory(email='retired__user_abc123@retired.invalid')
+
+        release_retired_learner_email(user)
+
+        user.refresh_from_db()
+        assert user.email == f'retired__uid_{user.id}@retired.invalid'
+
+    def test_raises_when_user_does_not_appear_retired(self):
+        user = UserFactory(email='still.active@example.com')
+
+        with pytest.raises(RetirementStateError, match=r'does not appear to be a retired user') as exc_info:
+            release_retired_learner_email(user)
+
+        # Raised via "raise ... from exc" off the DoesNotExist - confirm the chain, not just the message.
+        assert isinstance(exc_info.value.__cause__, UserRetirementStatus.DoesNotExist)
+
+        # A rejected release must not touch the email.
+        user.refresh_from_db()
+        assert user.email == 'still.active@example.com'
+
+    def test_releases_email_unblocks_reregistration_with_original_email(self):
+        """
+        Regression coverage for the actual point of this feature: is_email_retired()
+        is what the registration path (student.signals.receivers.on_user_updated)
+        checks to block signup with a previously-retired address, and it works by
+        looking for a User row whose email still equals a salted hash of the
+        candidate address. Releasing the email must clear that match, or learners
+        stay locked out of re-registering with their original email forever.
+        """
+        original_email = 'learner@example.com'
+        user = UserFactory(email=original_email)
+        retirement = self._retire_user_to_state(user, 'COMPLETE')
+
+        # Mimic what the real retirement pipeline does to the auth_user row:
+        # swap the email for its retired-hash value.
+        user.email = retirement.retired_email
+        user.save(update_fields=['email'])
+        assert is_email_retired(original_email)
+
+        release_retired_learner_email(user)
+
+        assert not is_email_retired(original_email)

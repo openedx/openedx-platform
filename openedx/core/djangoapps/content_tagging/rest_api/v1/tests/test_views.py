@@ -18,6 +18,8 @@ from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_learning.api import create_competency_taxonomy
+from openedx_learning.models_api import CompetencyTaxonomy
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
@@ -34,6 +36,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.djangoapps.content_libraries.api import AccessLevel, create_library, set_library_user_permissions
 from openedx.core.djangoapps.content_tagging import api as tagging_api
@@ -520,14 +523,78 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
             if user_attr == "staffA":
                 assert response.data["orgs"] == [self.orgA.short_name]
 
+    def test_create_competency_taxonomy(self) -> None:
+        """
+        Posting taxonomy_type="competency" creates a CompetencyTaxonomy linked to
+        the new Taxonomy.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Nursing Competencies", "export_id": "nursing-competencies", "taxonomy_type": "competency"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_create_competency_taxonomy_duplicate_export_id_returns_400(self) -> None:
+        """
+        A validation failure in the competency branch (duplicate export_id, via
+        full_clean()) returns a 400, like the "tags" branch, not an unhandled 500.
+        """
+        self.client.force_authenticate(user=self.staff)
+        self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Existing", "export_id": "duplicate-export-id"},
+            format="json",
+        )
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Nursing Competencies", "export_id": "duplicate-export-id", "taxonomy_type": "competency"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @ddt.data("tags", None)
+    def test_create_taxonomy_tags_or_omitted_creates_no_competency_row(self, taxonomy_type: str | None) -> None:
+        """
+        Posting taxonomy_type="tags", or omitting it, creates a plain Taxonomy and
+        no CompetencyTaxonomy row.
+        """
+        create_data = {"name": "Plain Taxonomy", "export_id": "plain-taxonomy"}
+        if taxonomy_type is not None:
+            create_data["taxonomy_type"] = taxonomy_type
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(TAXONOMY_ORG_LIST_URL, create_data, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert not CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_create_taxonomy_rejects_invalid_type(self) -> None:
+        """
+        An unsupported taxonomy_type (e.g. "system") 400s and names taxonomy_type
+        as the invalid field.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_ORG_LIST_URL,
+            {"name": "Rejected", "export_id": "rejected", "taxonomy_type": "system"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "taxonomy_type" in response.data
+
     @ddt.data(
         ('staff', 10),
-        ("content_creatorA", 22),
-        ("library_staffA", 22),
-        ("library_userA", 22),
-        ("instructorA", 22),
-        ("course_instructorA", 22),
-        ("course_staffA", 22),
+        # Non-admin users now also cost one extra query to check for orgs granted through
+        # openedx-authz's courses.manage_tags (_get_authz_manage_tags_orgs, via get_user_orgs).
+        ("content_creatorA", 23),
+        ("library_staffA", 23),
+        ("library_userA", 23),
+        ("instructorA", 23),
+        ("course_instructorA", 25),
+        ("course_staffA", 25),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -547,6 +614,24 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
             assert taxonomy["can_change_taxonomy"] == user.is_staff  # Note: taxonomy.read_only only affects its tags,
             assert taxonomy["can_delete_taxonomy"] == user.is_staff  # not the metadata about the taxonomy.
             assert taxonomy["can_tag_object"]
+
+    def test_list_taxonomy_type_mixed(self) -> None:
+        """
+        The list endpoint reports "taxonomy_type" per row for a mixed set of taxonomies:
+        plain taxonomies as "tags", a competency taxonomy as "competency", and never null.
+        """
+        competency_taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        set_taxonomy_orgs(taxonomy=competency_taxonomy, all_orgs=False, orgs=[self.orgA])
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_LIST_URL, {"org": self.orgA.short_name, "page_size": 20})
+        assert response.status_code == status.HTTP_200_OK
+
+        taxonomy_types_by_name = {t["name"]: t["taxonomy_type"] for t in response.data["results"]}
+        assert taxonomy_types_by_name["t1"] == "tags"
+        assert taxonomy_types_by_name["ro1"] == "tags"
+        assert taxonomy_types_by_name["Nursing Competencies"] == "competency"
+        assert None not in taxonomy_types_by_name.values()
 
 
 @ddt.ddt
@@ -867,6 +952,39 @@ class TestTaxonomyDetailViewSet(TestTaxonomyDetailExportMixin, APITestCase):
                 taxonomy.pk,
                 **(TaxonomySerializer(taxonomy, context=context)).data,
             )
+
+    def test_detail_taxonomy_type_tags_for_plain_taxonomy(self) -> None:
+        """
+        A plain taxonomy's detail response reports taxonomy_type "tags".
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=self.t1.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "tags"
+
+    def test_detail_taxonomy_type_tags_for_read_only_taxonomy(self) -> None:
+        """
+        A read-only taxonomy (maintained by the system or an external integration, per
+        Taxonomy.read_only's docstring) still reports taxonomy_type "tags": is_competency_taxonomy()
+        keys off the presence of a CompetencyTaxonomy row, not off read_only.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=self.ro1.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "tags"
+        assert response.data["read_only"] is True
+
+    def test_detail_taxonomy_type_competency(self) -> None:
+        """
+        A competency taxonomy's detail response reports taxonomy_type "competency".
+        """
+        competency_taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        set_taxonomy_orgs(taxonomy=competency_taxonomy, all_orgs=True)
+
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(TAXONOMY_ORG_DETAIL_URL.format(pk=competency_taxonomy.pk))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["taxonomy_type"] == "competency"
 
 
 @skip_unless_cms
@@ -1951,16 +2069,16 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         ('staff', 'courseA', 10),
         ('staff', 'libraryA', 13),
         ('staff', 'collection_key', 13),
-        ("content_creatorA", 'courseA', 14, False),
-        ("content_creatorA", 'libraryA', 17, False),
-        ("content_creatorA", 'collection_key', 17, False),
-        ("library_staffA", 'libraryA', 17, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 17, False),
-        ("library_userA", 'libraryA', 17, False),
-        ("library_userA", 'collection_key', 17, False),
-        ("instructorA", 'courseA', 14),
-        ("course_instructorA", 'courseA', 14),
-        ("course_staffA", 'courseA', 14),
+        ("content_creatorA", 'courseA', 15, False),
+        ("content_creatorA", 'libraryA', 18, False),
+        ("content_creatorA", 'collection_key', 18, False),
+        ("library_staffA", 'libraryA', 18, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 18, False),
+        ("library_userA", 'libraryA', 18, False),
+        ("library_userA", 'collection_key', 18, False),
+        ("instructorA", 'courseA', 15),
+        ("course_instructorA", 'courseA', 15),
+        ("course_staffA", 'courseA', 15),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -2332,6 +2450,78 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
         assert response.status_code == status.HTTP_200_OK
 
 
+class TestTaxonomyOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestCase, APITestCase):
+    """
+    Test TaxonomyOrgView (GET /taxonomies/?org=X) with authz permissions.
+
+    Regression tests for openedx-authz#448: a user who only holds an openedx-authz role
+    (e.g. course_editor) with no legacy org role used to get an empty list, even for
+    global taxonomies, because UserOrgFilterBackend only knew about legacy roles.
+    """
+
+    authz_roles_to_assign = [COURSE_EDITOR.external_key]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.course_org, _ = Organization.objects.get_or_create(short_name=self.course_key.org)
+
+        self.org_taxonomy = tagging_api.create_taxonomy(
+            name="Org Taxonomy", description="Taxonomy scoped to the course org", orgs=[self.course_org],
+        )
+        self.disabled_org_taxonomy = tagging_api.create_taxonomy(
+            name="Disabled Org Taxonomy", description="Disabled taxonomy scoped to the course org",
+            enabled=False, orgs=[self.course_org],
+        )
+
+    def _list_url(self, org=None):
+        url = TAXONOMY_ORG_LIST_URL
+        return f"{url}?org={org}" if org else url
+
+    def test_course_editor_sees_org_taxonomies(self):
+        """A course editor (authz-only, no legacy org role) sees enabled taxonomies for their course's org."""
+        response = self.authorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert self.org_taxonomy.pk in taxonomy_ids
+        assert self.disabled_org_taxonomy.pk not in taxonomy_ids
+
+    def test_course_editor_doesnt_see_other_org_taxonomies(self):
+        """A course editor doesn't get access to a different org's taxonomies through this permission."""
+        other_org_taxonomy = tagging_api.create_taxonomy(
+            name="Other Org Taxonomy", description="Taxonomy scoped to an unrelated org",
+        )
+        other_org, _ = Organization.objects.get_or_create(short_name="OtherOrgForTaxonomy")
+        set_taxonomy_orgs(other_org_taxonomy, orgs=[other_org])
+
+        response = self.authorized_client.get(self._list_url(other_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert other_org_taxonomy.pk not in taxonomy_ids
+
+    def test_no_role_user_still_denied(self):
+        """A user with no role at all, legacy or authz, still gets nothing for the org."""
+        response = self.unauthorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == []
+
+    def test_authz_role_ignored_when_course_toggle_disabled(self):
+        """
+        A course_editor assignment doesn't grant access ahead of that course's own authz
+        toggle being enabled: legacy access stays authoritative until it flips.
+        """
+        with patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, "is_enabled", return_value=False):
+            response = self.authorized_client.get(self._list_url(self.course_org.short_name))
+        assert response.status_code == status.HTTP_200_OK
+        taxonomy_ids = {t["id"] for t in response.data["results"]}
+        assert self.org_taxonomy.pk not in taxonomy_ids
+
+
 @skip_unless_cms
 @ddt.ddt
 class TestDownloadTemplateView(APITestCase):
@@ -2501,6 +2691,68 @@ class TestCreateImportView(ImportTaxonomyMixin, APITestCase):
 
         # Check if the taxonomy was not created
         assert not Taxonomy.objects.filter(name="Imported Taxonomy name").exists()
+
+    def test_import_competency_taxonomy(self) -> None:
+        """
+        Importing with taxonomy_type="competency" creates a CompetencyTaxonomy
+        linked to the new Taxonomy.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Competency",
+                "taxonomy_description": "Imported Competency description",
+                "taxonomy_export_id": "imported-competency",
+                "taxonomy_type": "competency",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_import_without_type_creates_no_competency_row(self) -> None:
+        """
+        Importing without taxonomy_type creates a plain Taxonomy and no
+        CompetencyTaxonomy row.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Plain",
+                "taxonomy_description": "Imported Plain description",
+                "taxonomy_export_id": "imported-plain",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert not CompetencyTaxonomy.objects.filter(pk=response.data["id"]).exists()
+
+    def test_import_rejects_invalid_type(self) -> None:
+        """
+        An unsupported taxonomy_type (e.g. "system") 400s on import and names
+        taxonomy_type as the invalid field.
+        """
+        file = self._get_file([{"id": "tag_1", "value": "Tag 1"}], "json")
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.post(
+            TAXONOMY_CREATE_IMPORT_URL,
+            {
+                "taxonomy_name": "Imported Rejected",
+                "taxonomy_description": "Imported Rejected description",
+                "taxonomy_export_id": "imported-rejected",
+                "taxonomy_type": "system",
+                "file": file,
+            },
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "taxonomy_type" in response.data
 
     @ddt.data(
         "csv",

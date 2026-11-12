@@ -4,8 +4,10 @@ Unit tests for reset_student_course task
 
 from unittest.mock import Mock, call, patch
 
+import ddt
 from django.conf import settings
 from django.core import mail
+from django.test import TestCase, override_settings
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import SupportStaffRole
@@ -13,7 +15,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tests.test_submitting_problems import TestSubmittingProblems
 from lms.djangoapps.support.models import CourseResetAudit
-from lms.djangoapps.support.tasks import reset_student_course
+from lms.djangoapps.support.tasks import reset_student_course, send_reset_course_completion_email
 from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.tests.factories import BlockFactory
@@ -248,3 +250,51 @@ class ResetStudentCourse(TestSubmittingProblems):
             course_reset_audit = CourseResetAudit.objects.get(course_enrollment=self.enrollment)
             self.assertIsNone(course_reset_audit.completed_at)  # noqa: PT009
             self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.FAILED)  # noqa: PT009
+
+
+@ddt.ddt
+@patch('lms.djangoapps.support.tasks.log')
+@patch('lms.djangoapps.support.tasks.ace')
+class SendResetCourseCompletionEmailLogTest(TestCase):
+    """
+    The course reset email logs identify the user by id when SQUELCH_PII_IN_LOGS is enabled, and by email otherwise.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory.create()
+        self.course = Mock(display_name='Demo Course', id='course-v1:edX+Demo+2026')
+
+    def _expected_identifier(self, squelch_pii):
+        return f'user {self.user.id if squelch_pii else self.user.email}'
+
+    @ddt.data(True, False)
+    def test_success_logs(self, squelch_pii, mock_ace, mock_log):
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            assert send_reset_course_completion_email(self.course, self.user) is True
+
+        mock_ace.send.assert_called_once()
+        identifier = self._expected_identifier(squelch_pii)
+        assert mock_log.info.call_args_list == [
+            call(f'Sending whole course reset email to {identifier} from course Demo Course '
+                 f'(CourseId: {self.course.id})'),
+            call(f'Whole course reset email sent successfully to {identifier} from course Demo Course '
+                 f'(CourseId: {self.course.id})'),
+        ]
+        if squelch_pii:
+            logged = ' '.join(str(c) for c in mock_log.mock_calls)
+            assert self.user.email not in logged
+            assert self.user.profile.name not in logged
+
+    @ddt.data(True, False)
+    def test_failure_log(self, squelch_pii, mock_ace, mock_log):
+        error = Exception('ace failure')
+        error.response = {'Error': {'Code': 'Throttling'}}
+        mock_ace.send.side_effect = error
+        with override_settings(SQUELCH_PII_IN_LOGS=squelch_pii):
+            assert send_reset_course_completion_email(self.course, self.user) is False
+
+        mock_log.exception.assert_called_once_with(
+            f'Whole course reset email to {self._expected_identifier(squelch_pii)} from course Demo Course '
+            f'(CourseId: {self.course.id}) failed.Error: Throttling'
+        )

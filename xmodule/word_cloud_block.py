@@ -14,7 +14,7 @@ from django.conf import settings
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, Dict, Integer, List, Scope, String
-from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
+from xblock_word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
 
 from xmodule.editing_block import EditingMixin
 from xmodule.raw_block import EmptyDataRawMixin
@@ -53,7 +53,7 @@ class _BuiltInWordCloudBlock(  # pylint: disable=abstract-method
 
     .. deprecated:: 2026-03
        This built-in word cloud block is deprecated. Please use the extracted ``WordCloudBlock``
-       from ``xblocks_contrib.word_cloud`` instead.
+       from ``xblock_word_cloud`` instead.
     """
 
     is_extracted = False
@@ -334,7 +334,7 @@ if not settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
     warnings.warn(
         "The built-in `xmodule.word_cloud_block` WordCloudBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_WORD_CLOUD_BLOCK` (set it to True) to use "
-        "`xblocks_contrib.word_cloud.WordCloudBlock` instead. "
+        "`xblock_word_cloud.WordCloudBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_WORD_CLOUD_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,

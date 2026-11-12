@@ -11,6 +11,10 @@ class CommonInitializationConfig(AppConfig):  # pylint: disable=missing-class-do
     verbose_name = 'Common Initialization'
 
     def ready(self):
+        # Registers the drf-spectacular extensions for serializers the schema
+        # generator cannot introspect on its own.
+        from openedx.core.lib.api import schema_extensions  # pylint: disable=unused-import  # noqa: F401
+
         # Common settings validations for the LMS and CMS.
         from . import checks  # pylint: disable=unused-import  # noqa: F401
         self._add_mimetypes()

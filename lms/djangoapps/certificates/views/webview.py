@@ -4,6 +4,7 @@ Certificate HTML webview.
 
 
 import logging
+import re
 import urllib
 from datetime import datetime
 from uuid import uuid4
@@ -173,7 +174,7 @@ def _update_context_with_basic_info(context, course_id, platform_name, configura
 
     # Translators:  'All rights reserved' is a legal term used in copyrighting to protect published content
     reserved = _("All rights reserved")
-    context['copyright_text'] = '&copy; {year} {platform_name}. {reserved}.'.format(  # noqa: UP032
+    context['copyright_text'] = '© {year} {platform_name}. {reserved}.'.format(  # noqa: UP032
         year=datetime.now(pytz.timezone(settings.TIME_ZONE)).year,
         platform_name=platform_name,
         reserved=reserved
@@ -215,7 +216,7 @@ def _update_context_with_basic_info(context, course_id, platform_name, configura
                                                   'that they can be validated independently by anyone with the '
                                                   '{platform_name} public key. For independent verification, '
                                                   '{platform_name} uses what is called a '
-                                                  '"detached signature"&quot;".').format(platform_name=platform_name)
+                                                  '"detached signature".').format(platform_name=platform_name)
 
     context['certificate_verify_urltext'] = _("Validate this certificate for yourself")
 
@@ -457,6 +458,59 @@ def render_cert_by_uuid(request, certificate_uuid):
         raise Http404 from e
 
 
+# URL schemes that execute script in the page's own origin.  A certificate override that parses
+# as one of these is dropped: HTML escaping does not neutralise them, because they contain no
+# characters that escaping touches.
+_SCRIPT_URL_SCHEMES = frozenset(['javascript', 'vbscript'])
+
+# Browsers ignore leading C0 control characters and spaces when parsing a URL, and strip tabs,
+# carriage returns and newlines from anywhere in it, so we do the same before reading the scheme.
+_URL_IGNORED_LEADING_CHARS = ''.join(chr(code) for code in range(0x21))
+_URL_SCHEME_RE = re.compile(r'^([a-zA-Z][a-zA-Z0-9+.\-]*):')
+
+
+def _has_script_scheme(value):
+    """
+    Return True if a browser would read `value` as a URL with a script-executing scheme.
+
+    This deliberately models the browser's scheme parsing rather than using `urllib.parse`, which
+    raises on some malformed URLs and would force us to choose between dropping unparseable plain
+    text and letting a malformed `javascript:` URL through.
+    """
+    candidate = value
+    for char in '\t\r\n':
+        candidate = candidate.replace(char, '')
+    match = _URL_SCHEME_RE.match(candidate.lstrip(_URL_IGNORED_LEADING_CHARS))
+    return bool(match) and match.group(1).lower() in _SCRIPT_URL_SCHEMES
+
+
+def _drop_unsafe_cert_html_view_overrides(overrides, course_id):
+    """
+    Return the course's `cert_html_view_overrides` with unsafe values removed.
+
+    These values come from Studio Advanced Settings, so any course author can set them, and they
+    replace context values that certificate templates render into arbitrary positions, including
+    `href` attributes.  Templates HTML-escape the values they render, which stops an override from
+    injecting markup, but escaping cannot stop a `javascript:` URL from running when it is used as
+    a link, so those are dropped here and the configured value is used instead.
+
+    Values are otherwise passed through untouched: escaping them here would corrupt URLs rendered
+    into JavaScript strings, and would turn non-string overrides into strings, breaking the
+    templates that read them as booleans or dictionaries.
+    """
+    safe_overrides = {}
+    for key, value in overrides.items():
+        if isinstance(value, str) and _has_script_scheme(value):
+            log.warning(
+                "Ignoring certificate override %s for course %s: its value is a script-executing URL.",
+                key,
+                course_id,
+            )
+            continue
+        safe_overrides[key] = value
+    return safe_overrides
+
+
 @handle_500(
     template_path="certificates/server-error.html",
     test_func=lambda request: request.GET.get('preview', None)
@@ -588,7 +642,7 @@ def render_html_view(request, course_id, certificate=None):  # pylint: disable=t
         context.update(get_certificate_footer_context())
 
         # Append/Override the existing view context values with any course-specific static values from Advanced Settings
-        context.update(course.cert_html_view_overrides)
+        context.update(_drop_unsafe_cert_html_view_overrides(course.cert_html_view_overrides, course_id))
 
         # Track certificate view events
         _track_certificate_events(request, course, user, user_certificate)
@@ -697,7 +751,7 @@ def _render_valid_certificate(request, context, custom_template=None):
             custom_template.template,
             output_encoding='utf-8',
             input_encoding='utf-8',
-            default_filters=['decode.utf8'],
+            default_filters=['decode.utf8', 'h'],
             encoding_errors='replace',
         )
         context = RequestContext(request, context)

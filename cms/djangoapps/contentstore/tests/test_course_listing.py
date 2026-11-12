@@ -4,11 +4,13 @@ by reversing group name formats.
 """
 
 import random
+from datetime import timedelta
 from unittest.mock import Mock, patch
 
 import ddt
 from ccx_keys.locator import CCXLocator
 from django.test import RequestFactory
+from django.utils import timezone
 from opaque_keys.edx.locations import CourseLocator
 from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.api.users import assign_role_to_user_in_scope
@@ -21,7 +23,6 @@ from cms.djangoapps.contentstore.views.course import (
     _accessible_courses_iter_for_tests,
     _accessible_courses_list_from_groups,
     _accessible_courses_summary_iter,
-    _get_course_keys_from_scopes,
     get_courses_accessible_to_user,
 )
 from common.djangoapps.course_action_state.models import CourseRerunState
@@ -37,6 +38,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.scopes import get_authz_course_keys_from_scopes
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
@@ -188,6 +190,44 @@ class TestCourseListing(ModuleStoreTestCase):
         # Now count the db queries for staff
         with self.assertNumQueries(2):
             list(_accessible_courses_summary_iter(self.request))
+
+    def test_start_date_filters_reach_get_courses_accessible_to_user(self):
+        """
+        Verify start_date_on_or_after/start_date_on_or_before query params reach
+        CourseOverview.get_all_courses through get_courses_accessible_to_user and allowed_query_params.
+        """
+        GlobalStaff().add_users(self.user)
+
+        today = timezone.now()
+        in_range_course_key = self.store.make_course_key('Org', 'InRangeCourse', 'Run')
+        CourseFactory.create(
+            org=in_range_course_key.org, number=in_range_course_key.course, run=in_range_course_key.run
+        )
+        in_range_course = CourseOverviewFactory.create(id=in_range_course_key, org=in_range_course_key.org, start=today)
+
+        out_of_range_course_key = self.store.make_course_key('Org', 'OutOfRangeCourse', 'Run')
+        CourseFactory.create(
+            org=out_of_range_course_key.org, number=out_of_range_course_key.course, run=out_of_range_course_key.run
+        )
+        out_of_range_course = CourseOverviewFactory.create(
+            id=out_of_range_course_key, org=out_of_range_course_key.org, start=today + timedelta(days=60)
+        )
+
+        request = self.factory.get('/course', {
+            'start_date_on_or_after': (today - timedelta(days=1)).isoformat(),
+            'start_date_on_or_before': (today + timedelta(days=1)).isoformat(),
+        })
+        request.user = self.user
+        # Since a date param is present, _apply_course_query_filters also runs get_bool_param,
+        # which reads request.query_params; only DRF's Request provides that, and production
+        # traffic carrying these params reaches get_courses_accessible_to_user through a DRF view.
+        request.query_params = request.GET
+
+        courses, __ = get_courses_accessible_to_user(request)
+        course_ids = {course.id for course in courses}
+
+        self.assertIn(in_range_course.id, course_ids)  # noqa: PT009
+        self.assertNotIn(out_of_range_course.id, course_ids)  # noqa: PT009
 
     def test_course_limited_staff_course_listing(self):
         # Setup a new course
@@ -923,7 +963,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
             assert result_ids == expected_ids
 
-    def test_get_course_keys_from_scopes_with_platform_scope(self):
+    def test_get_authz_course_keys_from_scopes_with_platform_scope(self):
         """
         Platform-wide scopes should resolve to all courses with AuthZ enabled
         when the global toggle is disabled.
@@ -936,11 +976,13 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = get_authz_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(authz_keys) | set(legacy_keys)
 
-    def test_get_course_keys_from_scopes_with_platform_scope_global_flag_enabled(self):
+    def test_get_authz_course_keys_from_scopes_with_platform_scope_global_flag_enabled(self):
         """
         Platform-wide scopes should return all courses when the global AuthZ toggle
         is enabled, regardless of per-course toggle state.
@@ -953,11 +995,13 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys, global_enabled=True),
         ):
-            course_keys = _get_course_keys_from_scopes([PlatformCourseOverviewGlobData(external_key="course-v1:*")])
+            course_keys = get_authz_course_keys_from_scopes([
+                PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key())
+            ])
 
         assert course_keys == set(CourseOverview.get_all_courses().values_list("id", flat=True))
 
-    def test_get_course_keys_from_scopes_platform_scope_short_circuits(self):
+    def test_get_authz_course_keys_from_scopes_platform_scope_short_circuits(self):
         """
         When a platform-wide scope is present, org and course scopes should be
         ignored and only the platform scope resolution should apply.
@@ -970,10 +1014,10 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             "is_enabled",
             side_effect=self._mock_authz_toggle(enabled_keys),
         ):
-            course_keys = _get_course_keys_from_scopes(
+            course_keys = get_authz_course_keys_from_scopes(
                 [
-                    OrgCourseOverviewGlobData(external_key="course-v1:Org1+*"),
-                    PlatformCourseOverviewGlobData(external_key="course-v1:*"),
+                    OrgCourseOverviewGlobData(external_key=OrgCourseOverviewGlobData.build_external_key("Org1")),
+                    PlatformCourseOverviewGlobData(external_key=PlatformCourseOverviewGlobData.build_external_key()),
                 ]
             )
 

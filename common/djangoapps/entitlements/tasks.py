@@ -7,7 +7,6 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings  # pylint: disable=unused-import  # noqa: F401
 from django.contrib.auth import get_user_model
-from edx_django_utils.monitoring import set_code_owner_attribute
 
 from common.djangoapps.entitlements.models import CourseEntitlement, CourseEntitlementSupportDetail
 
@@ -24,7 +23,6 @@ User = get_user_model()
 
 
 @shared_task(bind=True, ignore_result=True)
-@set_code_owner_attribute
 def expire_old_entitlements(self, start, end, logid='...'):
     """
     This task is designed to be called to process a bundle of entitlements
@@ -69,7 +67,6 @@ def expire_old_entitlements(self, start, end, logid='...'):
 
 
 @shared_task(bind=True)
-@set_code_owner_attribute
 def expire_and_create_entitlements(self, entitlement_ids, support_username):
     """
     Expire entitlements older than one year.

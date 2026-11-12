@@ -3,8 +3,9 @@ Public rest API endpoints for contentstore API video assets (outside authoring A
 """
 import logging
 
-import edx_api_doc_tools as apidocs
 from django.conf import settings
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,15 +33,15 @@ class CourseVideosView(DeveloperErrorViewMixin, APIView):
     """
     View for course videos.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
             200: CourseVideosSerializer,
-            401: "The requester is not authenticated",
-            403: "The requester cannot access the specified course",
-            404: "The requested course does not exist",
+            401: OpenApiResponse(description="The requester is not authenticated"),
+            403: OpenApiResponse(description="The requester cannot access the specified course"),
+            404: OpenApiResponse(description="The requested course does not exist"),
         },
     )
     @verify_course_exists()
@@ -143,16 +144,16 @@ class VideoUsageView(DeveloperErrorViewMixin, APIView):
     """
     View for course video usage locations.
     """
-    @apidocs.schema(
+    @extend_schema(
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
-            apidocs.string_parameter("edx_video_id", apidocs.ParameterLocation.PATH, description="edX Video ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
+            OpenApiParameter("edx_video_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="edX Video ID"),
         ],
         responses={
             200: VideoUsageSerializer,
-            401: "The requester is not authenticated",
-            403: "The requester cannot access the specified course",
-            404: "The requested course does not exist",
+            401: OpenApiResponse(description="The requester is not authenticated"),
+            403: OpenApiResponse(description="The requester cannot access the specified course"),
+            404: OpenApiResponse(description="The requested course does not exist"),
         },
     )
     @verify_course_exists()
@@ -200,17 +201,17 @@ class VideoDownloadView(DeveloperErrorViewMixin, APIView):
     """
     throttle_classes = (VideoDownloadThrottle,)
 
-    @apidocs.schema(
-        body=VideoDownloadSerializer,
+    @extend_schema(
+        request=VideoDownloadSerializer,
         parameters=[
-            apidocs.string_parameter("course_id", apidocs.ParameterLocation.PATH, description="Course ID"),
+            OpenApiParameter("course_id", OpenApiTypes.STR, OpenApiParameter.PATH, description="Course ID"),
         ],
         responses={
-            200: "In case of success, a 200.",
-            401: "The requester is not authenticated",
-            403: "The requester cannot access the specified course",
-            404: "The requested course does not exist",
-            429: "The requester has exceeded the per-user rate limit",
+            200: OpenApiResponse(description="In case of success, a 200."),
+            401: OpenApiResponse(description="The requester is not authenticated"),
+            403: OpenApiResponse(description="The requester cannot access the specified course"),
+            404: OpenApiResponse(description="The requested course does not exist"),
+            429: OpenApiResponse(description="The requester has exceeded the per-user rate limit"),
         },
     )
     @verify_course_exists()

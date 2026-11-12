@@ -6,6 +6,8 @@
     <div class="about-edx-copy copy copy-meta">
         <p>${company_about_description}</p>
 
-        <a class="action" href="${company_about_url}">${company_about_urltext}</a>
+        % if company_about_url is not UNDEFINED:
+            <a class="action" href="${company_about_url}">${company_about_urltext}</a>
+        % endif
     </div>
 </section>

@@ -4,14 +4,18 @@ Unit tests for the vertical block.
 
 from urllib.parse import quote
 
+import ddt
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from xblock.core import XBlock
 from xblock.utils.studio_editable import NestedXBlockSpec, StudioContainerWithNestedXBlocksMixin
 from xblock.validation import ValidationMessage
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
 from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -273,6 +277,39 @@ class ContainerHandlerViewTest(BaseXBlockContainer):
         self.assertIn('html', group_types)  # noqa: PT009
         self.assertIn('problem', group_types)  # noqa: PT009
         self.assertIn('video', group_types)  # noqa: PT009
+
+
+@ddt.ddt
+class ContainerHandlerViewAuthzTest(CourseAuthoringAuthzTestMixin, BaseXBlockContainer):
+    """
+    Regression test for openedx-authz#384: ContainerHandlerView (the endpoint the
+    Authoring MFE's unit page calls to render a unit) required legacy write access
+    via _get_item_in_course(), so AuthZ-native roles with no legacy equivalent
+    (course_auditor, course_editor) got a 403 despite holding COURSES_VIEW_COURSE.
+    """
+
+    view_name = "container_handler"
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_view_unit_container(self, role_key):
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        self.client.login(username=role_user.username, password=self.password)
+        response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 class ContainerVerticalViewTest(BaseXBlockContainer):

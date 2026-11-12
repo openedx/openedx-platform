@@ -19,6 +19,36 @@
                 window.edx.HtmlUtils = HtmlUtils;
                 window.edx.StringUtils = StringUtils;
             });
+
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['\\(', '\\)'],
+                    ['[mathjaxinline]', '[/mathjaxinline]']
+                ],
+                displayMath: [
+                    ['\\[', '\\]'],
+                    ['[mathjax]', '[/mathjax]']
+                ],
+                autoload: {
+                    color: [],
+                    colorv2: ['color']
+                },
+                packages: {'[+]': ['noerrors']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process',
+                menuOptions: {
+                    settings: {
+                        collapsible: true
+                    },
+                },
+            },
+            loader: {
+                load: ['input/asciimath', '[tex]/noerrors']
+            }
+        };
     }
 
     requirejs.config({
@@ -69,7 +99,7 @@
             'domReady': 'xmodule_js/common_static/js/vendor/domReady',
             'URI': 'xmodule_js/common_static/js/vendor/URI.min',
             'mock-ajax': 'xmodule_js/common_static/js/vendor/mock-ajax',
-            mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js?config=TeX-MML-AM_SVG&delayStartupUntil=configured', // eslint-disable-line max-len
+            mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@4.1.2/tex-mml-chtml.js?noext',
             'youtube': '//www.youtube.com/player_api?noext',
             'js/src/ajax_prefix': 'xmodule_js/common_static/js/src/ajax_prefix',
             'js/spec/test_utils': 'js/spec/test_utils'
@@ -172,15 +202,6 @@
             },
             'mathjax': {
                 exports: 'MathJax',
-                init: function() {
-                    window.MathJax.Hub.Config({
-                        tex2jax: {
-                            inlineMath: [['\\(', '\\)'], ['[mathjaxinline]', '[/mathjaxinline]']],
-                            displayMath: [['\\[', '\\]'], ['[mathjax]', '[/mathjax]']]
-                        }
-                    });
-                    return window.MathJax.Hub.Configured();
-                }
             },
             'accessibility': {
                 exports: 'accessibility',

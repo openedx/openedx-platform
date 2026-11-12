@@ -24,7 +24,7 @@ from edx_django_utils import monitoring
 from edx_django_utils.cache import RequestCache
 
 # Import this just to export it
-from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import  # noqa: F401
+from pymongo.errors import DuplicateKeyError
 
 from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
 from openedx.core.lib.cache_utils import request_cached
@@ -741,7 +741,28 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # Also write to MongoDB, so we can switch back to using it if this new MySQL version doesn't work well.
         # NOTE: This is REQUIRED for pruning (structures.py) to run safely. Don't remove this write until
         # pruning is modified to read from SplitModulestoreCourseIndex to get active versions.
-        super().insert_course_index(course_index, course_context)
+        try:
+            super().insert_course_index(course_index, course_context)
+        except DuplicateKeyError:
+            # A MongoDB doc already exists for this org/course/run, but MySQL is the source of truth for
+            # which courses exist and new_index.save() above has already succeeded, so we know no MySQL row
+            # existed for this key. The MongoDB doc is therefore stale: it is left behind whenever an
+            # earlier request got this far and then had its MySQL transaction rolled back, since MongoDB
+            # writes are not covered by ATOMIC_REQUESTS. Drop it and retry, otherwise this course could
+            # never be created again -- every attempt would fail here identically, and the rollback leaves
+            # no MySQL trace to explain why.
+            stale_docs = self.course_index.delete_many({
+                'org': course_index['org'],
+                'course': course_index['course'],
+                'run': course_index['run'],
+            }).deleted_count
+            log.warning(
+                "Removed %d stale MongoDB active_versions doc(s) for %s/%s/%s which had no "
+                "SplitModulestoreCourseIndex row. This usually means an earlier attempt to create this "
+                "course wrote to MongoDB and then had its MySQL transaction rolled back.",
+                stale_docs, course_index['org'], course_index['course'], course_index['run'],
+            )
+            super().insert_course_index(course_index, course_context)
 
     def update_course_index(self, course_index, from_index=None, course_context=None):  # pylint: disable=arguments-differ
         """
