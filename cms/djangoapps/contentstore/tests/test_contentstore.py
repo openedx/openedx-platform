@@ -27,7 +27,7 @@ from path import Path as path
 
 from cms.djangoapps.contentstore.config import waffle
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, get_url, parse_json
-from cms.djangoapps.contentstore.utils import delete_course, reverse_course_url, reverse_url
+from cms.djangoapps.contentstore.utils import delete_course, get_unit_url, reverse_course_url, reverse_url
 from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
 from common.djangoapps.student import auth
@@ -1462,6 +1462,7 @@ class ContentStoreTest(ContentStoreTestCase):
         unit_key = course_key.make_usage_key('vertical', 'test_vertical')
         resp = self.client.get_html(get_url('container_handler', unit_key))
         self.assertEqual(resp.status_code, 302)  # noqa: PT009
+        self.assertEqual(resp.url, get_unit_url(course_key, unit_key))  # noqa: PT009
 
         def delete_item(category, name):
             """ Helper method for testing the deletion of an xblock item. """

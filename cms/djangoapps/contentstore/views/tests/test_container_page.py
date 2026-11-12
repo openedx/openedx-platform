@@ -12,6 +12,7 @@ from pytz import UTC
 
 import cms.djangoapps.contentstore.views.component as views
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
+from cms.djangoapps.contentstore.utils import get_unit_url
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
@@ -192,6 +193,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
             usage_key_string=str(self.vertical.location)
         )
         self.assertEqual(response.status_code, 302)  # noqa: PT009
+        self.assertEqual(response.url, get_unit_url(self.course.id, self.vertical.location))  # noqa: PT009
 
         # A split_test block has children, so it has its own Studio page and also redirects.
         response = views.container_handler(
@@ -200,6 +202,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         )
         self.assertEqual(response.status_code, 302)  # noqa: PT009
         split_test_url = response.url
+        self.assertEqual(split_test_url, get_unit_url(self.course.id, self.child_container.location))  # noqa: PT009
 
         response = views.container_handler(
             request=request,
