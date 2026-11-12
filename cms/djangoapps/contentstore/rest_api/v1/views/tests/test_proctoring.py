@@ -7,8 +7,7 @@ import ddt
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.permissions import COURSES_VIEW_ADVANCED_SETTINGS
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF, COURSES_VIEW_ADVANCED_SETTINGS
 from rest_framework import status
 from rest_framework.test import APITestCase
 

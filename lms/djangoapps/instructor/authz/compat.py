@@ -15,7 +15,7 @@ the legacy role had.
 from django.contrib.auth.models import AbstractUser
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz import api as authz_api
-from openedx_authz.applets.course_team_roles.constants import (
+from openedx_authz.authz import (
     COURSES_LEGACY_BETA_TESTER_PERMISSIONS,
     COURSES_LEGACY_DATA_RESEARCHER_PERMISSIONS,
     COURSES_LEGACY_LIMITED_STAFF_ROLE_PERMISSIONS,

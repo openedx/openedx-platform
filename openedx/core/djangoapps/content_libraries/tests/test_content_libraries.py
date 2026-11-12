@@ -21,8 +21,7 @@ from django.test.client import Client
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants import roles
-from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz.authz import LIBRARY_ADMIN, LIBRARY_AUTHOR, LIBRARY_CONTRIBUTOR, LIBRARY_USER, VIEW_LIBRARY
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_content.models_api import LearningPackage
 from organizations.models import Organization
@@ -2476,16 +2475,16 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
 
         authz_api.assign_role_to_user_in_scope(
             self.library_admin.username,
-            roles.LIBRARY_ADMIN.external_key, self.lib_id)
+            LIBRARY_ADMIN.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_author.username,
-            roles.LIBRARY_AUTHOR.external_key, self.lib_id)
+            LIBRARY_AUTHOR.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_contributor.username,
-            roles.LIBRARY_CONTRIBUTOR.external_key, self.lib_id)
+            LIBRARY_CONTRIBUTOR.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_user.username,
-            roles.LIBRARY_USER.external_key, self.lib_id)
+            LIBRARY_USER.external_key, self.lib_id)
         AuthzEnforcer.get_enforcer().load_policy()  # Load policies to simulate fresh start
 
     def tearDown(self):

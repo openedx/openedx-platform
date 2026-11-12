@@ -18,7 +18,7 @@ from django.conf import settings  # pylint: disable=unused-import
 from django.contrib.auth.models import AnonymousUser
 from edx_django_utils.monitoring import function_trace
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from xblock.core import XBlock
 
 from common.djangoapps.student import auth

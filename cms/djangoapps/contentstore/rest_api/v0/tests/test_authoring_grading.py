@@ -3,7 +3,7 @@ Unit tests for authoring grading views.
 """
 import json
 
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx_authz.authz import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants.roles import COURSE_AUDITOR
+from openedx_authz.authz import COURSE_AUDITOR
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin

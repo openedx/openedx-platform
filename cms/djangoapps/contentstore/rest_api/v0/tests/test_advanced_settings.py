@@ -9,7 +9,7 @@ from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from rest_framework.test import APIClient
 

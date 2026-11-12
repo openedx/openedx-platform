@@ -9,7 +9,7 @@ from bridgekeeper.rules import UNIVERSAL, Attribute, ManyRelation, Relation, Rul
 from django.conf import settings
 from django.db.models import Q
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz.authz import VIEW_LIBRARY
 
 from openedx.core.djangoapps.content_libraries.models import ContentLibraryPermission
 

@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz.authz import COURSES_VIEW_LIBRARY_UPDATES, PUBLISH_LIBRARY_CONTENT
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
 from rest_framework import serializers as drf_serializers
@@ -83,7 +83,7 @@ class LibraryContainerView(GenericAPIView):
         Get information about a container
         """
         if not user_has_course_permission_for_upstream(
-            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, container_key
+            request, COURSES_VIEW_LIBRARY_UPDATES.identifier, container_key
         ):
             api.require_permission_for_library_key(
                 container_key.lib_key,
@@ -191,7 +191,7 @@ class LibraryContainerChildrenView(GenericAPIView):
         """
         published = request.GET.get('published', 'false').lower() == 'true'
         if not user_has_course_permission_for_upstream(
-            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, container_key
+            request, COURSES_VIEW_LIBRARY_UPDATES.identifier, container_key
         ):
             api.require_permission_for_library_key(
                 container_key.lib_key,
@@ -377,7 +377,7 @@ class LibraryContainerPublishView(GenericAPIView):
         api.require_permission_for_library_key(
             container_key.lib_key,
             request.user,
-            authz_permissions.PUBLISH_LIBRARY_CONTENT
+            PUBLISH_LIBRARY_CONTENT
         )
         api.publish_container_changes(container_key, request.user.id)
         # If we need to in the future, we could return a list of all the child containers/components that were

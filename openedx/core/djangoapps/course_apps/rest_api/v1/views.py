@@ -9,7 +9,7 @@ from edx_django_utils.plugins import PluginError
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )

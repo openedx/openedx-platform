@@ -4,7 +4,7 @@ Integration tests verifying authz permissions for legacy textbook handler views.
 import json
 
 from django.test import Client
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url

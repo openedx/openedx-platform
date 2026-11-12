@@ -17,7 +17,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import AssetKey, CourseKey
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_CREATE_FILES,
     COURSES_DELETE_FILES,
     COURSES_EDIT_FILES,

@@ -74,7 +74,7 @@ from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz.authz import EDIT_LIBRARY_CONTENT, PUBLISH_LIBRARY_CONTENT
 from organizations.api import ensure_organization
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -528,7 +528,7 @@ class LibraryCommitView(APIView):
         api.require_permission_for_library_key(
             key,
             request.user,
-            authz_permissions.PUBLISH_LIBRARY_CONTENT
+            PUBLISH_LIBRARY_CONTENT
         )
         api.publish_changes(key, request.user.id)
         return Response({})
@@ -562,7 +562,7 @@ class LibraryPasteClipboardView(GenericAPIView):
         Import the contents of the user's clipboard and paste them into the Library
         """
         library_key = LibraryLocatorV2.from_string(lib_key_str)
-        api.require_permission_for_library_key(library_key, request.user, authz_permissions.EDIT_LIBRARY_CONTENT)
+        api.require_permission_for_library_key(library_key, request.user, EDIT_LIBRARY_CONTENT)
 
         try:
             result = api.import_staged_content_from_user_clipboard(library_key, request.user)

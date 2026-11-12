@@ -12,7 +12,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_http_methods
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_EDIT_COURSE_CONTENT,
     COURSES_MANAGE_TAGS,
     COURSES_VIEW_COURSE,

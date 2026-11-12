@@ -14,7 +14,7 @@ from django.conf import settings
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import AssetKey
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR
+from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR
 from PIL import Image
 from pytz import UTC
 from rest_framework.test import APIClient

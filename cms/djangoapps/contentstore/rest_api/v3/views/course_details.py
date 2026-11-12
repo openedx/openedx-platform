@@ -35,7 +35,7 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
 from edx_rest_framework_extensions.shaping import MinimalViewMixin, project
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_EDIT_DETAILS,
     COURSES_EDIT_SCHEDULE,
     COURSES_VIEW_SCHEDULE_AND_DETAILS,

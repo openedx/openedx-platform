@@ -10,7 +10,7 @@ from typing import Literal
 from opaque_keys.edx.keys import LearningContextKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
 from openedx_authz.api import is_user_allowed
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_CREATE_FILES,
     COURSES_EDIT_COURSE_CONTENT,
     COURSES_EDIT_FILES,

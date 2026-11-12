@@ -1,28 +1,25 @@
 """
 AuthZ permission identifiers used by the Instructor Dashboard.
 
-The permissions are defined by openedx-authz (``openedx_authz.applets.*.constants``);
+The permissions are defined by openedx-authz (``openedx_authz.authz``);
 use them directly (``COURSES_VIEW_COURSE_INFO.identifier``). This module
 only groups their identifiers.
 """
 
-from openedx_authz.applets.enrollments.constants import (
+from openedx_authz.authz import (
     COURSES_ENROLL_LEARNERS,
-    COURSES_UNENROLL_LEARNERS,
-    COURSES_VIEW_ENROLLMENTS,
-)
-from openedx_authz.applets.learner_administration.constants import (
     COURSES_MANAGE_COHORTS,
+    COURSES_MANAGE_COURSE_TEAM,
     COURSES_MANAGE_LEARNER_EXTENSIONS,
+    COURSES_MANAGE_LEARNER_GRADING,
+    COURSES_UNENROLL_LEARNERS,
     COURSES_VIEW_COHORTS,
     COURSES_VIEW_COURSE_INFO,
-    COURSES_VIEW_LEARNER_EXTENSIONS,
-)
-from openedx_authz.applets.learner_grading.constants import COURSES_MANAGE_LEARNER_GRADING, COURSES_VIEW_GRADEBOOK
-from openedx_authz.authz import (
-    COURSES_MANAGE_COURSE_TEAM,
     COURSES_VIEW_COURSE_TEAM,
+    COURSES_VIEW_ENROLLMENTS,
+    COURSES_VIEW_GRADEBOOK,
     COURSES_VIEW_GRADING_SETTINGS,
+    COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 
 # Every permission of the Instructor Dashboard. Holding any of them grants access

@@ -10,9 +10,14 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz.applets.enrollments.constants import COURSES_VIEW_ENROLLMENTS
-from openedx_authz.applets.learner_grading.constants import COURSES_VIEW_GRADEBOOK
-from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF, COURSES_MANAGE_COURSE_TEAM, COURSES_VIEW_COURSE_TEAM
+from openedx_authz.authz import (
+    COURSE_ADMIN,
+    COURSE_STAFF,
+    COURSES_MANAGE_COURSE_TEAM,
+    COURSES_VIEW_COURSE_TEAM,
+    COURSES_VIEW_ENROLLMENTS,
+    COURSES_VIEW_GRADEBOOK,
+)
 from rest_framework.test import APIRequestFactory
 
 from common.djangoapps.student.tests.factories import UserFactory

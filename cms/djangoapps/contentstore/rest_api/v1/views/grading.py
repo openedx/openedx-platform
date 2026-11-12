@@ -4,7 +4,7 @@ from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS, COURSES_VIEW_GRADING_SETTINGS
+from openedx_authz.authz import COURSES_EDIT_GRADING_SETTINGS, COURSES_VIEW_GRADING_SETTINGS
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView

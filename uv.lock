@@ -4601,7 +4601,7 @@ wheels = [
 
 [[package]]
 name = "openedx-authz"
-version = "3.1.0"
+version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -4623,9 +4623,9 @@ dependencies = [
     { name = "openedx-filters" },
     { name = "pycasbin" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/97/2d0002ddfee0afe9e107039fdc003516a16fd8c046c74420a5972fef91a4/openedx_authz-3.1.0.tar.gz", hash = "sha256:b92fa5fae00901de47c6c15507c8ca6161b0bb2be415f46f23ba8271f1f59958", size = 899136, upload-time = "2026-11-06T17:33:39.323Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/0f/9932017434250208ad98f1d7249df8981d31e4764ecdc3ce792a1ff3831a/openedx_authz-3.2.0.tar.gz", hash = "sha256:a73eae34802263a383157f95b8127f105a1bda291aed93eaa11e7f649c7f54f3", size = 907845, upload-time = "2026-11-11T14:45:20.141Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/dc/b1f570e7cb81b9756605f285cce0807b0e1711b97b96c80150f7465de40d/openedx_authz-3.1.0-py3-none-any.whl", hash = "sha256:ba92f5b6dcb88d84d80d0f6f6870dbc051f85d9a13c293843b84362b6fb726a4", size = 238196, upload-time = "2026-11-06T17:33:37.83Z" },
+    { url = "https://files.pythonhosted.org/packages/74/6a/aa930bf7e8433d436880b9a720294bd4c7d57a46dfcbf13df7745fa07fd7/openedx_authz-3.2.0-py3-none-any.whl", hash = "sha256:2d023310d5ba1dd9b1f5af50066fa661f85ce03daf6fd71b5cc128485e457442", size = 238293, upload-time = "2026-11-11T14:45:18.302Z" },
 ]
 
 [[package]]
