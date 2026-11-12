@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import QuerySet
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_authz import authz as authz_permissions
+from openedx_authz.authz import CREATE_LIBRARY_COLLECTION, DELETE_LIBRARY_COLLECTION, EDIT_LIBRARY_COLLECTION
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection
 from rest_framework.decorators import action
@@ -115,7 +115,7 @@ class LibraryCollectionsView(ModelViewSet):
         api.require_permission_for_library_key(
             content_library.library_key,
             request.user,
-            authz_permissions.CREATE_LIBRARY_COLLECTION
+            CREATE_LIBRARY_COLLECTION
         )
         create_serializer = ContentLibraryCollectionUpdateSerializer(data=request.data)
         create_serializer.is_valid(raise_exception=True)
@@ -154,7 +154,7 @@ class LibraryCollectionsView(ModelViewSet):
         api.require_permission_for_library_key(
             content_library.library_key,
             request.user,
-            authz_permissions.EDIT_LIBRARY_COLLECTION
+            EDIT_LIBRARY_COLLECTION
         )
         collection_key = kwargs["key"]
 
@@ -181,7 +181,7 @@ class LibraryCollectionsView(ModelViewSet):
         api.require_permission_for_library_key(
             content_library.library_key,
             request.user,
-            authz_permissions.DELETE_LIBRARY_COLLECTION
+            DELETE_LIBRARY_COLLECTION
         )
         collection = super().get_object()
         assert collection.learning_package_id
@@ -202,7 +202,7 @@ class LibraryCollectionsView(ModelViewSet):
         api.require_permission_for_library_key(
             content_library.library_key,
             request.user,
-            authz_permissions.EDIT_LIBRARY_COLLECTION
+            EDIT_LIBRARY_COLLECTION
         )
         assert content_library.learning_package_id
         collection_key = kwargs["key"]
@@ -224,7 +224,7 @@ class LibraryCollectionsView(ModelViewSet):
         api.require_permission_for_library_key(
             content_library.library_key,
             request.user,
-            authz_permissions.EDIT_LIBRARY_COLLECTION
+            EDIT_LIBRARY_COLLECTION
         )
         collection_key = kwargs["key"]
 

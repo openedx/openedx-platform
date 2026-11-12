@@ -12,7 +12,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz import authz as authz_permissions
+from openedx_authz.authz import COURSES_VIEW_LIBRARY_UPDATES, PUBLISH_LIBRARY_CONTENT
 from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
@@ -124,7 +124,7 @@ class LibraryBlockView(APIView):
         """
         key = LibraryUsageLocatorV2.from_string(usage_key_str)
         if not user_has_course_permission_for_upstream(
-            request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, key
+            request, COURSES_VIEW_LIBRARY_UPDATES.identifier, key
         ):
             api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
         result = api.get_library_block(key, include_collections=True)
@@ -363,7 +363,7 @@ class LibraryBlockPublishView(APIView):
         api.require_permission_for_library_key(
             key.lib_key,
             request.user,
-            authz_permissions.PUBLISH_LIBRARY_CONTENT
+            PUBLISH_LIBRARY_CONTENT
         )
         api.publish_component_changes(key, request.user.id)
         return Response({})

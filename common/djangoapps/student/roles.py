@@ -14,7 +14,6 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
-from openedx_authz import authz as authz_roles
 from openedx_authz.api import users as authz_api
 from openedx_authz.api.data import (
     CourseOverviewData,
@@ -22,6 +21,7 @@ from openedx_authz.api.data import (
     PlatformCourseOverviewGlobData,
     RoleAssignmentData,
 )
+from openedx_authz.authz import LEGACY_COURSE_ROLE_EQUIVALENCES
 from organizations.api import get_organizations
 
 from common.djangoapps.student.models import CourseAccessRole
@@ -42,11 +42,11 @@ ROLE_CACHE_UNGROUPED_ROLES__KEY = 'ungrouped'
 
 
 def get_authz_role_from_legacy_role(legacy_role: str) -> str:
-    return authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.get(legacy_role, None)
+    return LEGACY_COURSE_ROLE_EQUIVALENCES.get(legacy_role, None)
 
 
 def get_legacy_role_from_authz_role(authz_role: str) -> str:
-    return next((k for k, v in authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
+    return next((k for k, v in LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
 
 
 def enable_authz_course_authoring(course_key: CourseKey | None = None, role: str | None = None) -> bool:

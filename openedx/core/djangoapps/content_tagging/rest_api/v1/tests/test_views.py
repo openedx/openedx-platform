@@ -16,8 +16,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
-from openedx_authz import authz as authz_permissions
-from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF, MANAGE_LIBRARY_TAGS
 from openedx_learning.api import create_competency_taxonomy
 from openedx_learning.models_api import CompetencyTaxonomy
 from openedx_tagging.models import Tag, Taxonomy
@@ -1740,7 +1739,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         mock_is_user_allowed.assert_called_with(
             self.library_userA.username,
-            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            MANAGE_LIBRARY_TAGS.identifier,
             self.libraryA,
         )
         mock_has_studio_write_access.assert_not_called()

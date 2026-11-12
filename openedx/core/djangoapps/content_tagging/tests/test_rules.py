@@ -8,8 +8,8 @@ from django.test import TestCase
 from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
-from openedx_authz import authz as authz_permissions
 from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
+from openedx_authz.authz import COURSES_MANAGE_TAGS, MANAGE_LIBRARY_TAGS
 from openedx_tagging.models import Tag
 from openedx_tagging.rules import ObjectTagPermissionItem
 
@@ -646,7 +646,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.library_user.username,
-            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            MANAGE_LIBRARY_TAGS.identifier,
             str(self.library_key),
         )
 
@@ -687,7 +687,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.library_user.username,
-            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            MANAGE_LIBRARY_TAGS.identifier,
             str(self.library_key),
         )
 
@@ -783,7 +783,7 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.authz_user.username,
-            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            COURSES_MANAGE_TAGS.identifier,
             str(self.course_key),
         )
 
@@ -801,7 +801,7 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         self.assertFalse(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.legacy_user.username,
-            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            COURSES_MANAGE_TAGS.identifier,
             str(self.course_key),
         )
 
@@ -820,7 +820,7 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.authz_user.username,
-            authz_permissions.COURSES_MANAGE_TAGS.identifier,
+            COURSES_MANAGE_TAGS.identifier,
             str(self.course_key),
         )
 
@@ -851,7 +851,7 @@ class TestRulesCourseAuthzPermissions(TestTaxonomyMixin, TestCase):
         self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.legacy_user.username,
-            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            MANAGE_LIBRARY_TAGS.identifier,
             str(library_key),
         )
 

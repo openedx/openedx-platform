@@ -11,7 +11,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz import authz as authz_permissions
+from openedx_authz.authz import COURSES_MANAGE_TAGS, MANAGE_LIBRARY_TAGS
 from organizations.models import Organization
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
@@ -162,7 +162,7 @@ def _get_authz_manage_tags_orgs(user: UserType, orgs: list[Organization]) -> lis
     if not orgs:
         return []
 
-    org_names = get_authz_course_org_names(user, authz_permissions.COURSES_MANAGE_TAGS.identifier)
+    org_names = get_authz_course_org_names(user, COURSES_MANAGE_TAGS.identifier)
     return [org for org in orgs if org.short_name in org_names]
 
 
@@ -273,7 +273,7 @@ def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
     # however, org-level admins are also allowed to perform these operations.
     if isinstance(context_key, LibraryLocatorV2) and authz_api.is_user_allowed(
         user.username,
-        authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+        MANAGE_LIBRARY_TAGS.identifier,
         str(context_key),
     ):
         return True
@@ -281,7 +281,7 @@ def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
     should_use_authz, course_key = should_use_course_authz_for_object(object_id)
     if should_use_authz:
         return authz_api.is_user_allowed(
-            user.username, authz_permissions.COURSES_MANAGE_TAGS.identifier, str(course_key)
+            user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
         )
 
     # For other contexts (courses, xblocks, etc.), use general write or org-admin access
@@ -356,7 +356,7 @@ def can_remove_object_tag_objectid(user: UserType, object_id: str) -> bool:
     # however, org-level admins are also allowed to perform these operations.
     if isinstance(context_key, LibraryLocatorV2) and authz_api.is_user_allowed(
         user.username,
-        authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+        MANAGE_LIBRARY_TAGS.identifier,
         str(context_key),
     ):
         return True
