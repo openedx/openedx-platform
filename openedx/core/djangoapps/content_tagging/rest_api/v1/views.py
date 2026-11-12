@@ -7,7 +7,7 @@ import functools
 from typing import TYPE_CHECKING
 
 from django.core import exceptions
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.authz import COURSES_VIEW_COURSE
@@ -103,8 +103,8 @@ class TaxonomyOrgView(TaxonomyView):
         # Prefetch taxonomyorgs so we can check permissions
         queryset = queryset.prefetch_related("taxonomyorg_set__org")
 
-        # Annotate with tags_count to avoid selecting all the tags
-        queryset = queryset.annotate(tags_count=Count("tag", distinct=True))
+        # Annotate with tags_count to avoid selecting all the tags. The count leaves archived tags out.
+        queryset = queryset.annotate(tags_count=Count("tag", filter=Q(tag__archived=False), distinct=True))
 
         # Select the competency taxonomy relation (if any) so is_competency_taxonomy()
         # costs no extra query per row when serializing taxonomy_type.

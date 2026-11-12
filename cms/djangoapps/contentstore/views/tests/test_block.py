@@ -31,6 +31,7 @@ from openedx_authz.authz import (
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.testing import OpenEdxEventsTestMixin
+from openedx_tagging.models import ObjectTag
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
@@ -1544,6 +1545,13 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         # Tag the child block
         tagging_api.tag_object(str(source_block.location), taxonomyA, ["two"],)
 
+        # Disable a taxonomy; disabled is not archived, so its tags are still duplicated.
+        taxonomyB.enabled = False
+        taxonomyB.save()
+
+        # Archive one of the chapter's associations; it must not be duplicated.
+        ObjectTag.objects.filter(object_id=str(source_chapter.location), _value="four").update(archived=True)
+
         # Duplicate the chapter (and its children)
         dupe_location = duplicate_block(
             parent_usage_key=source_course.location,
@@ -1558,16 +1566,21 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         expected_chapter_tags = [
             f'<ObjectTag> {str(dupe_chapter.location)}: A=one',
             f'<ObjectTag> {str(dupe_chapter.location)}: A=two',
-            f'<ObjectTag> {str(dupe_chapter.location)}: B=four',
             f'<ObjectTag> {str(dupe_chapter.location)}: B=three',
         ]
-        dupe_chapter_tags = [str(object_tag) for object_tag in tagging_api.get_object_tags(str(dupe_chapter.location))]
+        # get_object_tags() hides disabled taxonomies, so read the rows directly.
+        dupe_chapter_tags = sorted(str(object_tag) for object_tag in ObjectTag.objects.filter(
+            object_id=str(dupe_chapter.location)
+        ))
         assert dupe_chapter_tags == expected_chapter_tags
         expected_block_tags = [
             f'<ObjectTag> {str(dupe_block.location)}: A=two',
         ]
         dupe_block_tags = [str(object_tag) for object_tag in tagging_api.get_object_tags(str(dupe_block.location))]
         assert dupe_block_tags == expected_block_tags
+
+        # The archived association is left in place on the source.
+        assert ObjectTag.objects.get(object_id=str(source_chapter.location), _value="four").archived is True
 
 
 @ddt.ddt
