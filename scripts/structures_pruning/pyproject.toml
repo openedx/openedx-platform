@@ -30,5 +30,5 @@ constraint-dependencies = [
     "elasticsearch<7.14.0",
     "social-auth-app-django<6.0.0",
     "social-auth-core<5.0.0",
-    "pip<26.2.1",
+    "pip<=26.2.2",
 ]
