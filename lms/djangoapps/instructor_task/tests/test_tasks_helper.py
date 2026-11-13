@@ -38,7 +38,11 @@ from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFact
 from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.grades.course_data import CourseData
-from lms.djangoapps.grades.models import PersistentCourseGrade, PersistentSubsectionGradeOverride
+from lms.djangoapps.grades.models import (
+    PersistentCourseGrade,
+    PersistentSubsectionGrade,
+    PersistentSubsectionGradeOverride,
+)
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
 from lms.djangoapps.grades.transformer import GradesTransformer
 from lms.djangoapps.instructor_analytics.basic import UNAVAILABLE, list_problem_responses
@@ -896,6 +900,48 @@ class TestProblemGradeReport(TestReportMixin, InstructorTaskModuleTestCase):
         self.student_1 = self.create_student('üser_1')
         self.student_2 = self.create_student('üser_2')
         self.csv_header_row = ['Student ID', 'Email', 'Username', 'Enrollment Status', 'Grade']
+
+    @override_settings(RATELIMIT_ENABLE=False)
+    def test_query_count_per_learner(self):
+        """
+        Pin the report's query count at two cohort sizes, with every learner
+        holding persisted course and subsection grades.
+
+        The report reads course_grade.problem_scores, which walks every graded
+        subsection, so the fixture has a graded problem that every learner has
+        answered. Without one the report has no problem columns and never reads
+        a subsection grade.
+
+        The count is 8N + 16 (56 at 5 learners, 216 at 25), against 11N + 14
+        (69, 289) before _ProblemGradeBulkContext prefetched the persisted
+        grades and enrollment states. What still scales is read per learner
+        while computing problem scores: courseware state, submission scores and
+        the course access checks.
+        """
+        vertical = BlockFactory.create(
+            parent_location=self.problem_section.location,
+            category='vertical',
+            metadata={'graded': True},
+            display_name='Problem Vertical'
+        )
+        self.define_option_problem('Problem1', parent=vertical)
+        learners = [self.student_1, self.student_2]
+        for learner in learners:
+            self.submit_student_answer(learner.username, 'Problem1', ['Option 1'])
+
+        for extra_learners, expected_queries in ((3, 56), (20, 216)):
+            for i in range(extra_learners):
+                learner = self.create_student(f'query_count_üser_{extra_learners}_{i}')
+                self.submit_student_answer(learner.username, 'Problem1', ['Option 1'])
+                learners.append(learner)
+            assert PersistentSubsectionGrade.objects.filter(course_id=self.course.id).count() == len(learners)
+
+            bs_api.update_course_in_cache(self.course.id)
+            RequestCache.clear_all_namespaces()
+
+            with patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task'):
+                with self.assertNumQueries(expected_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+                    ProblemGradeReport.generate(None, None, self.course.id, {}, 'graded')
 
     @patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task')
     @ddt.data(True, False)
