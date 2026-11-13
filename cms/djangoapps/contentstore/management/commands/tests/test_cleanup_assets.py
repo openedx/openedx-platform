@@ -67,11 +67,12 @@ class ExportAllCourses(ModuleStoreTestCase):
         course_filter = course.id.make_asset_key("asset", None)
         query = location_to_query(course_filter, wildcard=True, tag=XASSET_LOCATION_TAG)
         query['_id.name'] = all_assets[0]['_id']['name']
-        asset_doc = self.content_store.fs_files.find_one(query)
+        fs_files = self.content_store.legacy_store.fs_files
+        asset_doc = fs_files.find_one(query)
         asset_doc['_id']['name'] = '._example_test.txt'
-        self.content_store.fs_files.insert_one(asset_doc)
+        fs_files.insert_one(asset_doc)
         asset_doc['_id']['name'] = '.DS_Store'
-        self.content_store.fs_files.insert_one(asset_doc)
+        fs_files.insert_one(asset_doc)
 
         # check that now course has four assets
         all_assets, count = self.content_store.get_all_content_for_course(course.id)
