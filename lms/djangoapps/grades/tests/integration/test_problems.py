@@ -5,7 +5,6 @@ import itertools
 import ddt
 import pytz
 from crum import set_current_request
-from django.test.utils import override_settings
 from xblock_problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -13,7 +12,6 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin
 from openedx.core.djangolib.testing.utils import get_mock_request
-from xmodule.capa_block import reset_class
 from xmodule.graders import ProblemScore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
@@ -42,14 +40,12 @@ class _TestMultipleProblemTypesSubsectionScoresBase(SharedModuleStoreTestCase):
 
     @classmethod
     def setUpClass(cls):
-        reset_class()
         super().setUpClass()
         cls.load_scoreable_course()
         chapter1 = cls.course.get_children()[0]
         cls.seq1 = chapter1.get_children()[0]
 
     def setUp(self):
-        reset_class()
         super().setUp()
         self.student = UserFactory.create(is_staff=False, username='test_student', password=self.TEST_PASSWORD)
         self.client.login(username=self.student.username, password=self.TEST_PASSWORD)
@@ -106,13 +102,7 @@ class _TestMultipleProblemTypesSubsectionScoresBase(SharedModuleStoreTestCase):
         assert score.all_total.possible == (possible_per_block * block_count)
 
 
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
 class ExtractedTestMultipleProblemTypesSubsectionScores(_TestMultipleProblemTypesSubsectionScoresBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
-class BuiltInTestMultipleProblemTypesSubsectionScores(_TestMultipleProblemTypesSubsectionScoresBase):
     __test__ = True
 
 
@@ -132,7 +122,6 @@ class _TestVariedMetadataBase(ProblemSubmissionTestMixin, ModuleStoreTestCase):
     }
 
     def setUp(self):
-        reset_class()
         super().setUp()
         self.course = CourseFactory.create()
         with self.store.bulk_operations(self.course.id):
@@ -229,13 +218,7 @@ class _TestVariedMetadataBase(ProblemSubmissionTestMixin, ModuleStoreTestCase):
         assert score.graded_total.possible == expected_possible
 
 
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
 class ExtractedTestVariedMetadata(_TestVariedMetadataBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
-class BuiltInTestVariedMetadata(_TestVariedMetadataBase):
     __test__ = True
 
 
@@ -249,7 +232,6 @@ class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
 
     @classmethod
     def setUpClass(cls):
-        reset_class()
         super().setUpClass()
         cls.course = CourseFactory.create()
         with cls.store.bulk_operations(cls.course.id):
@@ -269,7 +251,6 @@ class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
                 )
 
     def setUp(self):
-        reset_class()
         super().setUp()
         self.user = UserFactory()
         self.addCleanup(set_current_request, None)
@@ -350,11 +331,5 @@ class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
         self._verify_grades(raw_earned, raw_possible, weight, expected_score)
 
 
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
 class ExtractedTestWeightedProblems(_TestWeightedProblemsBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
-class BuiltInTestWeightedProblems(_TestWeightedProblemsBase):
     __test__ = True

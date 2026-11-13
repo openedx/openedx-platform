@@ -52,6 +52,7 @@ from xblock.runtime import (  # pylint: disable=wrong-import-order
     Mixologist,  # pylint: disable=wrong-import-order
 )
 from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
+from xblock_problem import ProblemBlock
 from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,  # pylint: disable=reimported
 )
@@ -96,7 +97,6 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFa
 from openedx.core.lib.courses import course_image_url
 from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule.capa_block import ProblemBlock
 from xmodule.contentstore.django import contentstore
 from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
 from xmodule.lti_block import LTIBlock
