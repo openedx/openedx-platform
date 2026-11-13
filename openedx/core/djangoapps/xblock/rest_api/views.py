@@ -116,8 +116,20 @@ def embed_block_view(request, usage_key: UsageKeyV2, view_name: str):
     ):
         check_permission = None
 
+    # Forwarded to the runtime so any static asset URLs it renders into this block's
+    # content (e.g. <img> tags) can carry it too: LibraryComponentAssetView does its own
+    # upstream-link check when the browser requests those directly, so it's safe to pass
+    # through unconditionally even when the bypass above didn't apply.
+    downstream_block_id = request.GET.get("downstream_block_id")
+
     try:
-        block = load_block(usage_key, request.user, check_permission=check_permission, version=version)
+        block = load_block(
+            usage_key,
+            request.user,
+            check_permission=check_permission,
+            version=version,
+            downstream_block_id=downstream_block_id,
+        )
     except NoSuchUsage as exc:
         raise NotFound(f"{usage_key} not found") from exc
 
