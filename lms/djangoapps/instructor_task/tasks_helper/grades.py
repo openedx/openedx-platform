@@ -26,11 +26,7 @@ from lms.djangoapps.certificates.api import get_certificates_for_course_and_user
 from lms.djangoapps.course_blocks.api import get_course_block_access_transformers, get_course_blocks
 from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from lms.djangoapps.grades.api import (
-    CourseGradeFactory,
-    clear_prefetched_grade_overrides_and_visible_blocks,
-    prefetch_course_and_subsection_grades,
-)
+from lms.djangoapps.grades.api import CourseGradeFactory, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.api import context as grades_context
 from lms.djangoapps.instructor_analytics.basic import list_problem_responses
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
@@ -524,19 +520,9 @@ class GradeReportBase:
 
     def _clear_caches(self):
         """
-        Clear per-learner caches after a batch of learners has been processed.
-
-        RequestCache is only flushed when the task ends, so anything keyed per
-        learner accumulates for the whole run. The grade prefetches are keyed
-        per course and replaced on each batch, but the visible-blocks and
-        subsection-override caches are keyed per (user, course) and are only
-        ever added to -- and nothing reads an entry again once that learner's
-        row has been written.
-
-        Subclasses that need to drop additional caches should override this and
-        call super().
+        Override if a report type wants to clear caches after a batch of learners has
+        been processed
         """
-        clear_prefetched_grade_overrides_and_visible_blocks()
 
     def _batched_rows(self):
         """
@@ -831,7 +817,6 @@ class ProblemGradeReport(GradeReportBase):
         return success_rows, error_rows
 
     def _clear_caches(self):
-        super()._clear_caches()
         get_cache('get_enrollment').clear()
         get_cache(CourseEnrollment.MODE_CACHE_NAMESPACE).clear()
 
