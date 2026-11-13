@@ -4,7 +4,9 @@ import logging
 import os
 import re
 import uuid
+from collections.abc import Sequence
 from io import BytesIO
+from typing import Any, Literal, overload
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
 
 from opaque_keys import InvalidKeyError
@@ -349,17 +351,109 @@ class StaticContentStream(StaticContent):  # pylint: disable=missing-class-docst
 
 
 class ContentStore:
-    '''
-    Abstraction for all ContentStore providers (e.g. MongoDB)
-    '''
-    def save(self, content):
+    """
+    Abstraction for all ContentStore providers.
+
+    This is the interface that the rest of the platform uses (via
+    ``xmodule.contentstore.django.contentstore()``) to store and retrieve
+    course "Files" (assets).
+
+    Implemented by ``RoutingContentStore``, which in turn sends requests to
+    either ``MongoContentStore`` (legacy) or the newer shim that wraps
+    ``openedx_content``.
+    """
+
+    # Methods that act on a single asset
+
+    def save(self, content: StaticContent) -> StaticContent:
+        """
+        Save the given ``StaticContent``, replacing any existing asset with the same location.
+
+        Returns the content.
+        """
         raise NotImplementedError
 
-    def find(self, filename):
+    @overload
+    def find(
+        self, location: AssetKey, throw_on_not_found: Literal[True] = True, as_stream: Literal[False] = False
+    ) -> StaticContent: ...
+
+    @overload
+    def find(
+        self, location: AssetKey, throw_on_not_found: Literal[True] = True, *, as_stream: Literal[True]
+    ) -> StaticContentStream: ...
+
+    @overload
+    def find(
+        self, location: AssetKey, throw_on_not_found: bool = True, as_stream: bool = False
+    ) -> StaticContent | None: ...
+
+    def find(
+        self, location: AssetKey, throw_on_not_found: bool = True, as_stream: bool = False
+    ) -> StaticContent | None:
+        """
+        Get the asset with the given ``AssetKey``.
+
+        Returns a ``StaticContent``, or a ``StaticContentStream`` if ``as_stream`` is True. If the asset doesn't exist,
+        raises ``NotFoundError``, or returns ``None`` if ``throw_on_not_found`` is False.
+        """
         raise NotImplementedError
 
-    def get_all_content_for_course(self, course_key, start=0, maxresults=-1, sort=None, filter_params=None):
-        '''
+    def delete(self, location: AssetKey) -> None:
+        """
+        Delete the asset with the given ``AssetKey``. Deleting an asset that doesn't exist is not an error.
+        """
+        raise NotImplementedError
+
+    def get_attrs(self, location: AssetKey) -> dict[str, Any]:
+        """
+        Get a dict of all the attributes of the asset with the given ``AssetKey``, including built-in attributes such
+        as ``length`` and ``uploadDate``.
+
+        Raises ``NotFoundError`` if the asset doesn't exist.
+        """
+        raise NotImplementedError
+
+    def set_attrs(self, location: AssetKey, attr_dict: dict[str, Any]) -> None:
+        """
+        Set several attributes (e.g. ``locked``) of the asset with the given ``AssetKey``.
+
+        Raises ``NotFoundError`` if the asset doesn't exist, or ``AttributeError`` if any of the attributes are
+        built-in attributes which cannot be changed.
+        """
+        raise NotImplementedError
+
+    def get_attr(self, location: AssetKey, attr: str, default: Any = None) -> Any:
+        """
+        Get the value of one attribute of the asset with the given ``AssetKey``, or ``default`` if it's not set.
+
+        Raises ``NotFoundError`` if the asset doesn't exist.
+        """
+        return self.get_attrs(location).get(attr, default)
+
+    def set_attr(self, location: AssetKey, attr: str, value: Any = True) -> None:
+        """
+        Set one attribute of the asset with the given ``AssetKey``. See ``set_attrs()``.
+        """
+        self.set_attrs(location, {attr: value})
+
+    def export(self, location: AssetKey, output_directory: str) -> None:
+        """
+        Write the asset with the given ``AssetKey`` to a file in ``output_directory``.
+        """
+        raise NotImplementedError
+
+    # Methods that act on all the assets of a course
+
+    def get_all_content_for_course(
+        self,
+        course_key: CourseKey,
+        start: int = 0,
+        maxresults: int = -1,
+        sort: Sequence[tuple[str, int]] | None = None,
+        filter_params: dict[str, Any] | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """
         Returns a list of static assets for a course, followed by the total number of assets.
         By default all assets are returned, but start and maxresults can be provided to limit the query.
 
@@ -369,27 +463,67 @@ class ContentStore:
             displayname: The human-readable name of the asset
             uploadDate (datetime.datetime): The date and time that the file was uploadDate
             contentType: The mimetype string of the asset
-            md5: An md5 hash of the asset content
-        '''
+            length: The size of the asset, in bytes
+            locked: Whether the asset is restricted to enrolled users
+            thumbnail_location: The location of the asset's thumbnail, if any
+            import_path: The path that the asset was imported from, if any
+        """
         raise NotImplementedError
 
-    def delete_all_course_assets(self, course_key):
+    def get_all_content_thumbnails_for_course(self, course_key: CourseKey) -> list[dict[str, Any]]:
+        """
+        Returns a list of all the thumbnails for a course, in the same format as ``get_all_content_for_course()``.
+        """
+        raise NotImplementedError
+
+    def export_all_for_course(self, course_key: CourseKey, output_directory: str, assets_policy_file: str) -> None:
+        """
+        Export all of the course's assets to ``output_directory``, and their attributes to ``assets_policy_file``.
+        """
+        raise NotImplementedError
+
+    def delete_all_course_assets(self, course_key: CourseKey) -> None:
         """
         Delete all of the assets which use this course_key as an identifier
         :param course_key:
         """
         raise NotImplementedError
 
-    def copy_all_course_assets(self, source_course_key, dest_course_key):
+    def copy_all_course_assets(self, source_course_key: CourseKey, dest_course_key: CourseKey) -> None:
         """
         Copy all the course assets from source_course_key to dest_course_key
         """
         raise NotImplementedError
 
-    def generate_thumbnail(self, content, tempfile_path=None, dimensions=None):
+    # Methods that act on all courses, or on the store itself
+
+    def remove_redundant_content_for_courses(self) -> int:
+        """
+        Delete redundant files (Mac OS metadata files like ".DS_Store") from all courses.
+
+        Returns the number of assets deleted.
+        """
+        raise NotImplementedError
+
+    def close_connections(self) -> None:
+        """
+        Close any database connections held by this store.
+        """
+
+    def _drop_database(self, database: bool = True, collections: bool = True, connections: bool = True) -> None:
+        """
+        Delete all data in this store. Only for use in tests.
+        """
+
+    def generate_thumbnail(
+        self,
+        content: StaticContent,
+        tempfile_path: str | None = None,
+        dimensions: tuple[int, int] | None = None,
+    ) -> tuple[StaticContent | None, AssetKey]:
         """Create a thumbnail for a given image.
 
-        Returns a tuple of (StaticContent, AssetKey)
+        Returns a tuple of (StaticContent, AssetKey). The StaticContent is None if no thumbnail was created.
 
         `content` is the StaticContent representing the image you want to make a
         thumbnail out of.
@@ -429,6 +563,7 @@ class ContentStore:
                 # My understanding is that PIL will maintain aspect ratios while restricting
                 # the max-height/width to be whatever you pass in as 'size'
                 # @todo: move the thumbnail size to a configuration setting?!?
+                source: BytesIO | str
                 if tempfile_path is None:
                     source = BytesIO(content.data)
                 else:
@@ -445,7 +580,7 @@ class ContentStore:
                     if not dimensions:
                         dimensions = (128, 128)
 
-                    thumbnail_image.thumbnail(dimensions, Image.LANCZOS)
+                    thumbnail_image.thumbnail(dimensions, Image.Resampling.LANCZOS)
                     thumbnail_image.save(thumbnail_file, 'JPEG')
                     thumbnail_file.seek(0)
 
@@ -463,7 +598,7 @@ class ContentStore:
 
         return thumbnail_content, thumbnail_file_location
 
-    def ensure_indexes(self):
+    def ensure_indexes(self) -> None:
         """
         Ensure that all appropriate indexes are created that are needed by this modulestore, or raise
         an exception if unable to.
