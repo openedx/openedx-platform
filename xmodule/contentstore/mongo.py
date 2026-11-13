@@ -161,7 +161,7 @@ class MongoContentStore(ContentStore):
         # Deletes of non-existent files are considered successful
         self.fs.delete(location_or_id)
 
-    def find(self, location, throw_on_not_found=True, as_stream=False):  # pylint: disable=arguments-differ
+    def find(self, location, throw_on_not_found=True, as_stream=False):
         content_id, __ = self.asset_db_key(location)
 
         try:
@@ -354,30 +354,6 @@ class MongoContentStore(ContentStore):
             asset_id = asset.get('content_son', asset['_id'])
             asset['asset_key'] = course_key.make_asset_key(asset_id['category'], asset_id['name'])
         return assets, count
-
-    def set_attr(self, asset_key, attr, value=True):
-        """
-        Add/set the given attr on the asset at the given location. Does not allow overwriting gridFS built in
-        attrs such as _id, md5, uploadDate, length. Value can be any type which pymongo accepts.
-
-        Returns nothing
-
-        Raises NotFoundError if no such item exists
-        Raises AttributeError is attr is one of the build in attrs.
-
-        :param asset_key: an AssetKey
-        :param attr: which attribute to set
-        :param value: the value to set it to (any type pymongo accepts such as datetime, number, string)
-        """
-        self.set_attrs(asset_key, {attr: value})
-
-    def get_attr(self, location, attr, default=None):
-        """
-        Get the value of attr set on location. If attr is unset, it returns default. Unlike set, this accessor
-        does allow getting the value of reserved keywords.
-        :param location: a c4x asset location
-        """
-        return self.get_attrs(location).get(attr, default)
 
     def set_attrs(self, location, attr_dict):
         """
