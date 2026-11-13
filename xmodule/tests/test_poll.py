@@ -2,13 +2,13 @@
 
 import json
 
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
+from xblock_poll_question import PollBlock
 
 from openedx.core.lib.safe_lxml import etree
-from xmodule import poll_block
 
 from . import get_test_system
 from .test_import import DummyModuleStoreRuntime
@@ -21,7 +21,7 @@ class _PollBlockTestBase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.poll_block_class = poll_block.reset_class()
+        cls.poll_block_class = PollBlock
 
     raw_field_data = {
         'poll_answers': {'Yes': 1, 'Dont_know': 0, 'No': 0},
@@ -92,11 +92,5 @@ class _PollBlockTestBase(TestCase):
         assert child_texts[(- 1)] == '< 18'
 
 
-@override_settings(USE_EXTRACTED_POLL_QUESTION_BLOCK=True)
 class PollBlockTestExtracted(_PollBlockTestBase):
-    __test__ = True
-
-
-@override_settings(USE_EXTRACTED_POLL_QUESTION_BLOCK=False)
-class PollBlockTestBuiltIn(_PollBlockTestBase):
     __test__ = True
