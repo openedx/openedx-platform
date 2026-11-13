@@ -5,6 +5,7 @@ from django.test import TestCase, override_settings
 from django.urls import path
 
 from openedx.core.apidocs import cached_schema_view
+from openedx.core.djangolib.testing.utils import unresolved_references
 
 
 class CmsModuleTests(TestCase):
@@ -28,6 +29,20 @@ class CmsModuleTests(TestCase):
         """
         response = self.client.get('/api-docs/schema/')
         assert response.status_code == 200
+
+    def test_every_reference_in_each_served_document_resolves(self):
+        """
+        Each document this service serves defines every component it refers to.
+
+        A component appended through the settings is copied in as written, so
+        one pointing at a model that only another document defines leaves a
+        reference that a client generator refuses.
+        """
+        for address in ('/api-docs/schema/', '/authoring-api/schema/'):
+            response = self.client.get(address, HTTP_ACCEPT='application/vnd.oai.openapi+json')
+            assert response.status_code == 200, address
+            unresolved = unresolved_references(response.json())
+            assert not unresolved, (address, unresolved)
 
     @override_settings(
         OPENAPI_CACHE_TIMEOUT=60,

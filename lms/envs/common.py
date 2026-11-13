@@ -64,6 +64,10 @@ from openedx_content.settings_api import openedx_content_backcompat_apps_to_inst
 from path import Path as path
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
+from openedx.core.djangoapps.user_api.schema_components import (
+    CREDENTIAL_SCHEMES,
+    KEPT_COMPONENT_SCHEMAS,
+)
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
@@ -2179,23 +2183,43 @@ OPTIONAL_APPS += [  # noqa: F405
 
 add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
-###################### drf-spectacular (LMS enrollment schema) ######################
+###################### drf-spectacular (LMS API schema) ######################
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'LMS Enrollment API',
+    'TITLE': 'LMS API',
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'PREPROCESSING_HOOKS': ['lms.lib.spectacular.lms_api_filter'],
-    # Mark legacy slashless enrollment addresses deprecated. The enum hook is
-    # drf-spectacular's default, restated because setting this key replaces
-    # the default list.
+    # Mark superseded addresses deprecated. The enum hook is drf-spectacular's
+    # default, restated because setting this key replaces the default list.
     'POSTPROCESSING_HOOKS': [
         'drf_spectacular.hooks.postprocess_schema_enums',
         'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',
+        'openedx.core.djangoapps.user_api.schema.mark_superseded_user_paths',
         'openedx.core.apidocs.untag_deprecated_operations',
     ],
+    # Carried by every document built from these settings; Studio generates the
+    # identical model from its own description of the operation.
+    'APPEND_COMPONENTS': {
+        'schemas': dict(KEPT_COMPONENT_SCHEMAS),
+        # How a caller sends each credential the operations of this service
+        # take beside the session cookie. The generator describes the cookie
+        # and nothing else, so an operation taking a token names these and a
+        # client generated from the document can offer the caller a way to
+        # send it.
+        'securitySchemes': dict(CREDENTIAL_SCHEMES),
+    },
+    # Pinned so a second same-named choice field cannot rename these sets; each
+    # names its model so it never claims a plain name another field may need.
+    'ENUM_NAME_OVERRIDES': {
+        'RetirementErasureScopeEnum': 'openedx.core.djangoapps.user_api.v2.serializers.ERASURE_SCOPE_CHOICES',
+        'RetirementBatchResultOutcomeEnum':
+            'openedx.core.djangoapps.user_api.v2.serializers.BATCH_OUTCOME_CHOICES',
+        'ReplacementOutcomeEnum':
+            'openedx.core.djangoapps.user_api.v2.serializers.REPLACEMENT_OUTCOME_CHOICES',
+    },
     # Stripped from each path to derive its tags and operationId, so changing
     # it renames every operationId. Paths themselves are emitted in full.
-    'SCHEMA_PATH_PREFIX': '/api/enrollment',
+    'SCHEMA_PATH_PREFIX': r'/api/(enrollment|user)',
     # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
     # than drf-spectacular's default unpinned jsdelivr CDN URLs, keeping them
     # self-hosted and version-pinned as the drf-yasg bundles were.

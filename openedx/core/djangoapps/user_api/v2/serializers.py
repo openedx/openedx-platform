@@ -1,0 +1,1582 @@
+"""Serializers for version 2 of the User API."""
+
+import re
+
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.urls import reverse
+from drf_spectacular.utils import extend_schema_field
+from edx_rest_framework_extensions.errors import ErrorResponseSerializer
+from rest_framework import serializers
+from rest_framework.fields import empty
+from rest_framework.settings import api_settings
+from rest_framework.validators import ProhibitSurrogateCharactersValidator
+
+from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification
+from openedx.core.djangoapps.user_api.models import RetirementState, UserOrgTag, UserPreference
+from openedx.core.djangoapps.user_authn.views.registration_form import contains_html, contains_url
+from openedx.core.lib.api.serializers import CourseKeyField
+
+from .paginators import UserApiPagination
+
+#: Value of the ``view`` query parameter that embeds the owning user in each preference.
+FULL_VIEW = "full"
+
+#: Value of the ``view`` query parameter that reduces a user to its identifying fields.
+MINIMAL_VIEW = "minimal"
+
+#: Properties the ``minimal`` preset keeps of a directory entry.
+USER_MINIMAL_FIELDS = ("id", "username", "email")
+
+#: Properties the ``minimal`` preset keeps of a stored preference.
+PREFERENCE_MINIMAL_FIELDS = ("username", "key", "value")
+
+#: Context member naming the users whose whole directory entry a response may
+#: carry, by id. A directory entry belongs to the user collection, so which
+#: entries a caller may be given is that collection's decision; the view
+#: settles it for a whole page and leaves the answer here, so that reading it
+#: costs no query per row.
+EMBEDDABLE_OWNER_IDS = "embeddable_owner_ids"
+
+
+class ErrorResponse(ErrorResponseSerializer):  # pylint: disable=abstract-method
+    """
+    The body of every unsuccessful response.
+
+    ``type`` is a URI naming the kind of failure, ``title`` names it in one
+    line, ``status`` repeats the HTTP status code and ``detail`` explains what
+    happened; ``errors`` lists the per-field messages of a rejected parameter.
+    """
+
+
+class RetiredAccountErrorResponse(ErrorResponse):  # pylint: disable=abstract-method
+    """
+    The body of a refusal that also reports what is left of a retired account.
+
+    The two members below are carried only when the account was selected by an
+    email address it held before being retired; every other refusal at this
+    status carries the standard members alone.
+    """
+
+    can_cancel_retirement = serializers.BooleanField(
+        required=False,
+        help_text=(
+            "Whether the retirement can still be reversed, which it can only while it is inside "
+            "the cooling-off period."
+        ),
+    )
+    retirement_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text=(
+            "Identifies the retirement to a caller able to reverse it, or null when there is "
+            "nothing left to reverse."
+        ),
+    )
+
+
+class _KeptFieldsMixin:
+    """
+    Describes an object reduced to the properties named in ``kept_fields``.
+
+    The response presets reduce an already serialized object, so a preset's
+    shape has a describing serializer of its own rather than a serializing one.
+    """
+
+    #: Names of the properties the preset returns.
+    kept_fields = ()
+
+    def get_fields(self):
+        """Return the declared fields narrowed to the ones the preset returns."""
+        fields = super().get_fields()
+        return {name: field for name, field in fields.items() if name in self.kept_fields}
+
+
+class _OptionalFieldsMixin:
+    """
+    Describes an object whose every property is optional.
+
+    A caller that selects properties with ``fields`` decides which ones come
+    back, so none of them is guaranteed to be present.
+    """
+
+    def get_fields(self):
+        """Return the declared fields, none of them mandatory."""
+        fields = super().get_fields()
+        for field in fields.values():
+            field.required = False
+            field.read_only = False
+        return fields
+
+
+def full_view_requested(request):
+    """Return True when the caller asked for the embedded-user response preset."""
+    if request is None:
+        return False
+    params = getattr(request, "query_params", None)
+    if params is None:
+        params = getattr(request, "GET", {})
+    return params.get("view") == FULL_VIEW
+
+
+class UserDirectorySerializer(serializers.ModelSerializer):
+    """A user of the platform directory, addressed by username."""
+
+    id = serializers.IntegerField(
+        read_only=True,
+        help_text="Database identifier of the user. Addresses in this API use the username instead.",
+    )
+    url = serializers.HyperlinkedIdentityField(
+        view_name="user_v2:user_detail",
+        lookup_field="username",
+        help_text="Absolute URL of this user's directory entry.",
+    )
+    email = serializers.EmailField(read_only=True, help_text="Registered email address of the user.")
+    username = serializers.CharField(read_only=True, help_text="Unique name the user is addressed by.")
+    name = serializers.SerializerMethodField(
+        help_text="Full name recorded on the user's profile, or null when the user has no profile.",
+    )
+    preferences = serializers.SerializerMethodField(
+        help_text="The user's stored preferences, as a mapping of preference key to value.",
+    )
+
+    class Meta:
+        model = User
+        fields = ("id", "url", "email", "name", "username", "preferences")
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_name(self, user):
+        """Return the profile name, or None for a user who has no profile row."""
+        profile = getattr(user, "profile", None)
+        return profile.name if profile is not None else None
+
+    @extend_schema_field(serializers.DictField(child=serializers.CharField()))
+    def get_preferences(self, user):
+        """Return the user's preferences as a key-to-value mapping."""
+        return UserPreference.get_all_preferences(user)
+
+
+class UserDirectoryMinimalSerializer(_KeptFieldsMixin, UserDirectorySerializer):
+    """A directory entry reduced to the properties that identify the user."""
+
+    kept_fields = USER_MINIMAL_FIELDS
+
+
+class UserDirectoryProjectionSerializer(_OptionalFieldsMixin, UserDirectorySerializer):
+    """A directory entry reduced to the properties the caller selected."""
+
+
+class UserPreferenceRecordSerializer(serializers.ModelSerializer):
+    """
+    A stored preference, identified by the user that owns it and its key.
+
+    ``user`` carries the owner's whole directory entry and is included only
+    when the caller asks for the ``full`` response preset and is one the
+    caller may be given; by default the owner appears as the ``username``
+    string alone.
+    """
+
+    url = serializers.SerializerMethodField(help_text="Absolute URL of this preference.")
+    username = serializers.CharField(
+        source="user.username",
+        read_only=True,
+        help_text="Username of the user this preference belongs to.",
+    )
+    key = serializers.CharField(read_only=True, help_text="Name of the preference.")
+    value = serializers.CharField(read_only=True, help_text="Stored value of the preference.")
+    user = serializers.SerializerMethodField(
+        help_text=(
+            "Directory entry of the owning user; null unless the full response preset is asked "
+            "for and the entry is one the caller may be given."
+        ),
+    )
+
+    class Meta:
+        model = UserPreference
+        fields = ("username", "key", "value", "url", "user")
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.URLField())
+    def get_url(self, preference):
+        """Return the member address of this preference."""
+        path = reverse(
+            "user_v2:user_preference_detail",
+            kwargs={"username": preference.user.username, "key": preference.key},
+        )
+        request = self.context.get("request")
+        return request.build_absolute_uri(path) if request is not None else path
+
+    @extend_schema_field(UserDirectorySerializer(allow_null=True))
+    def get_user(self, preference):
+        """Embed the owner's entry when the caller asked for the full preset and may be given it."""
+        if not full_view_requested(self.context.get("request")):
+            return None
+        if preference.user_id not in (self.context.get(EMBEDDABLE_OWNER_IDS) or ()):
+            return None
+        return UserDirectorySerializer(preference.user, context=self.context).data
+
+
+class UserPreferenceRecordMinimalSerializer(_KeptFieldsMixin, UserPreferenceRecordSerializer):
+    """A stored preference reduced to its owner, its name and its value."""
+
+    kept_fields = PREFERENCE_MINIMAL_FIELDS
+
+
+class UserPreferenceRecordProjectionSerializer(_OptionalFieldsMixin, UserPreferenceRecordSerializer):
+    """A stored preference reduced to the properties the caller selected."""
+
+
+class TimeZoneSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A time zone and the way it is displayed to a learner."""
+
+    time_zone = serializers.CharField(help_text="Name of the time zone, for example ``US/Pacific``.")
+    description = serializers.CharField(
+        help_text="Display form of the time zone, for example ``US/Pacific (PST, UTC-0800)``.",
+    )
+
+
+class TimeZoneQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Query parameters accepted by the time-zone list."""
+
+    country_code = serializers.RegexField(
+        r"^[A-Za-z]{2}$",
+        required=False,
+        # An empty value narrows nothing, the way an empty value of any other
+        # parameter does, and is accepted rather than held to the pattern.
+        allow_blank=True,
+        error_messages={
+            "invalid": "Enter a two-letter ISO 3166-1 alpha-2 country code, for example FR.",
+        },
+        help_text=(
+            "Two-letter ISO 3166-1 alpha-2 country code, case-insensitive. "
+            "Every time zone is returned when it is omitted or left empty, and when "
+            "the code names a country with no time zones of its own."
+        ),
+    )
+
+
+#: Value of the ``view`` query parameter that returns only the fields the
+#: account's owner shares with everybody.
+SHARED_VIEW = "shared"
+
+#: Properties the ``minimal`` preset keeps of an account.
+ACCOUNT_MINIMAL_FIELDS = ("username", "email", "name", "profile_image")
+
+#: Properties the ``ordering`` parameter of the account list accepts.
+ACCOUNT_SORT_FIELDS = ("username",)
+
+#: The order the account list uses when it is asked for none. Usernames are
+#: unique, so sorting by one settles every row: the same selection asked for
+#: twice is cut into the same pages.
+ACCOUNT_DEFAULT_SORT = ACCOUNT_SORT_FIELDS[0]
+
+
+class AccountProfileImageSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Where a user's profile image can be fetched, in each size the site renders."""
+
+    has_image = serializers.BooleanField(
+        help_text="Whether the user has uploaded an image. The URLs below are a default image when it is false.",
+    )
+    image_url_full = serializers.URLField(required=False, help_text="Address of the image at its largest size.")
+    image_url_large = serializers.URLField(required=False, help_text="Address of the image at its large size.")
+    image_url_medium = serializers.URLField(required=False, help_text="Address of the image at its medium size.")
+    image_url_small = serializers.URLField(required=False, help_text="Address of the image at its smallest size.")
+
+
+class AccountLanguageSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A language the user has told the site they speak."""
+
+    code = serializers.CharField(help_text="Language code, for example ``en`` or ``pt-br``.")
+
+
+class AccountSocialLinkSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A link to one of the user's profiles on another site."""
+
+    platform = serializers.CharField(help_text="Name of the site, for example ``facebook`` or ``linkedin``.")
+    social_link = serializers.CharField(
+        allow_blank=True, help_text="Address of the user's profile on that site.",
+    )
+
+
+class AccountExtendedFieldSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """One of the extra profile fields this site collects."""
+
+    field_name = serializers.CharField(help_text="Name the site configured the field under.")
+    field_value = serializers.JSONField(
+        help_text=(
+            "Value the user gave, in the shape this site stores it in: a string for a field "
+            "collected as text, and whatever the field holds otherwise. It is an empty string "
+            "when the field is unanswered and null where the site stores no value at all."
+        ),
+    )
+
+
+class AccountSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    A user's account and profile.
+
+    Which properties a response carries depends on who asks: a user reading
+    their own account, and a staff caller reading anyone's, receive every
+    property below; anyone else receives the ones the account's owner shares,
+    which is why all but ``username``, ``profile_image`` and ``account_privacy``
+    are marked optional here.
+    """
+
+    username = serializers.CharField(help_text="Unique name the user is addressed by.")
+    profile_image = AccountProfileImageSerializer(
+        allow_null=True,
+        help_text="Where the user's profile image can be fetched, null for an account without a profile.",
+    )
+    account_privacy = serializers.CharField(
+        help_text=(
+            "How much of this account other learners may see: `all_users`, `private`, or `custom` "
+            "when the owner chose field by field."
+        ),
+    )
+    email = serializers.EmailField(required=False, help_text="Address the site writes to the user at.")
+    id = serializers.IntegerField(
+        required=False,
+        help_text="Numeric identifier of the user. Addresses in this API use the username instead.",
+    )
+    name = serializers.CharField(
+        required=False, allow_null=True, help_text="Full name the user gave, as it appears on certificates.",
+    )
+    bio = serializers.CharField(required=False, allow_null=True, help_text="Short self-description.")
+    country = serializers.CharField(
+        required=False, allow_null=True, help_text="Two-letter ISO 3166-1 alpha-2 code of the user's country.",
+    )
+    state = serializers.CharField(
+        required=False, allow_null=True, help_text="Code of the state or territory, recorded for the United States.",
+    )
+    date_joined = serializers.DateTimeField(required=False, help_text="When the account was created.")
+    last_login = serializers.DateTimeField(
+        required=False, allow_null=True, help_text="When the user last signed in, null if they never have.",
+    )
+    is_active = serializers.BooleanField(
+        required=False, help_text="Whether the user has confirmed their email address.",
+    )
+    gender = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Gender the user selected: `m`, `f`, `o`, or null when unanswered.",
+    )
+    year_of_birth = serializers.IntegerField(
+        required=False, allow_null=True, help_text="Year the user was born, null when unanswered.",
+    )
+    level_of_education = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text=(
+            "Highest level of education the user selected: `p` for a doctorate, `m` for a "
+            "master's or professional degree, `b` for a bachelor's degree, `a` for an associate "
+            "degree, `hs` for secondary or high school, `jhs` for junior secondary or middle "
+            "school, `el` for elementary or primary school, `none` for no formal education, or "
+            "`other`. Null when unanswered, and an account registered long ago may carry a code "
+            "the site no longer offers."
+        ),
+    )
+    goals = serializers.CharField(
+        required=False, allow_null=True, help_text="What the user said they want from the site.",
+    )
+    mailing_address = serializers.CharField(required=False, allow_null=True, help_text="Postal address the user gave.")
+    phone_number = serializers.CharField(
+        required=False, allow_null=True, help_text="Digits, optionally led by a `+`, or null when unanswered.",
+    )
+    language_proficiencies = AccountLanguageSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text=(
+            "Languages the user speaks, ordered by language code, null for an account without a profile."
+        ),
+    )
+    social_links = AccountSocialLinkSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text=(
+            "The user's profiles on other sites, ordered by platform, null for an account without a profile."
+        ),
+    )
+    extended_profile = AccountExtendedFieldSerializer(
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text=(
+            "The extra profile fields this site collects, in configured order, null for an "
+            "account without a profile."
+        ),
+    )
+    requires_parental_consent = serializers.BooleanField(
+        required=False,
+        allow_null=True,
+        help_text=(
+            "Whether the user is too young to share a profile without a guardian's consent, null "
+            "for an account without a profile."
+        ),
+    )
+    pending_name_change = serializers.CharField(
+        required=False, allow_null=True, help_text="Name the user has asked to change to, null when none is pending.",
+    )
+    verified_name = serializers.CharField(
+        required=False, allow_null=True, help_text="Name verified against the user's photo identification.",
+    )
+    secondary_email = serializers.EmailField(
+        required=False, allow_null=True, help_text="Recovery address, present only where the site collects one.",
+    )
+    secondary_email_enabled = serializers.BooleanField(
+        required=False,
+        allow_null=True,
+        help_text="Whether this site collects a recovery address, null where it collects none.",
+    )
+    course_certificates = serializers.DictField(
+        required=False,
+        allow_null=True,
+        help_text="Always null here; certificates are served by the certificates API.",
+    )
+    time_zone = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Always null here; the time-zone preference is served by the preferences API.",
+    )
+
+
+class AccountMinimalSerializer(_KeptFieldsMixin, AccountSerializer):
+    """An account reduced to the properties that identify its owner."""
+
+    kept_fields = ACCOUNT_MINIMAL_FIELDS
+
+
+class AccountProjectionSerializer(_OptionalFieldsMixin, AccountSerializer):
+    """An account reduced to the properties the caller selected."""
+
+
+class AccountQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Query parameters accepted by the account list."""
+
+    username = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=False,
+        help_text=(
+            "Comma-separated usernames. A name no account holds is left out of the page rather than refused. "
+            "Omit this and the other selectors to receive your own account."
+        ),
+    )
+    email = serializers.EmailField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=False,
+        help_text="Address of the one account to return. Only staff may select an account this way.",
+    )
+    lms_user_id = serializers.IntegerField(
+        required=False,
+        help_text="Numeric identifier of the one account to return. Only staff may select an account this way.",
+    )
+    view = serializers.ChoiceField(
+        choices=[
+            (MINIMAL_VIEW, "The properties that identify the account's owner"),
+            (SHARED_VIEW, "The properties the owner shares with everybody"),
+        ],
+        required=False,
+        allow_blank=True,
+        help_text=(
+            "Response preset. `minimal` reduces each account to the properties that identify its owner; "
+            "`shared` returns only the properties the owner shares with everybody, even to a caller who "
+            "may see more. Omit it, or send it empty, to receive everything the caller may see."
+        ),
+    )
+    ordering = serializers.ChoiceField(
+        choices=[
+            *((field, f"{field}, ascending") for field in ACCOUNT_SORT_FIELDS),
+            *((f"-{field}", f"{field}, descending") for field in ACCOUNT_SORT_FIELDS),
+        ],
+        required=False,
+        allow_blank=True,
+        default=ACCOUNT_DEFAULT_SORT,
+        error_messages={
+            "invalid_choice": (
+                f"Sort by any of: {', '.join(ACCOUNT_SORT_FIELDS)}, each optionally prefixed with '-'."
+            ),
+        },
+        help_text=(
+            "Property to sort the page by, prefixed with `-` to sort descending. Omit it, or "
+            f"send it empty, to sort by ascending `{ACCOUNT_DEFAULT_SORT}`. Usernames are unique, "
+            "so a selection asked for twice is cut into the same pages."
+        ),
+    )
+
+
+class _TextField(serializers.CharField):
+    """
+    Text that is only taken as text.
+
+    The base field spells out a number or a decimal as the digits that write
+    it, so a property sent as ``5`` arrives as ``"5"`` and is stored. Here a
+    value of any other type is refused, naming the property that carried it.
+    """
+
+    def to_internal_value(self, data):
+        """Return the text sent, or refuse a value that is not text."""
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class AccountUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The properties of an account a user may change.
+
+    The request body is a merge patch, so every property is optional and only
+    the ones present are changed; sending null clears a property that allows it.
+    An empty text is taken for each property that accepts one, because what it
+    means there -- clearing the property, or a value the property cannot hold
+    -- is settled where the change is carried out.
+    """
+
+    email = serializers.EmailField(
+        required=False,
+        help_text="New address. The change takes effect only once the user confirms it from a message sent there.",
+    )
+    secondary_email = serializers.EmailField(
+        required=False, help_text="New recovery address, confirmed the same way as the primary one.",
+    )
+    name = _TextField(
+        required=False,
+        allow_blank=True,
+        help_text="Full name. A change may need identity verification before it takes effect.",
+    )
+    bio = _TextField(
+        required=False, allow_blank=True, help_text="Short self-description. Send an empty text to clear it.",
+    )
+    country = _TextField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Two-letter ISO 3166-1 alpha-2 code of the user's country.",
+    )
+    state = _TextField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Code of the state or territory, recorded for the United States.",
+    )
+    city = _TextField(required=False, allow_null=True, allow_blank=True, help_text="City the user lives in.")
+    gender = _TextField(
+        required=False, allow_null=True, allow_blank=True, help_text="Gender the user selects: `m`, `f` or `o`.",
+    )
+    year_of_birth = serializers.IntegerField(required=False, allow_null=True, help_text="Year the user was born.")
+    level_of_education = _TextField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text=(
+            "Highest level of education: `p` for a doctorate, `m` for a master's or professional "
+            "degree, `b` for a bachelor's degree, `a` for an associate degree, `hs` for secondary "
+            "or high school, `jhs` for junior secondary or middle school, `el` for elementary or "
+            "primary school, `none` for no formal education, or `other`."
+        ),
+    )
+    goals = _TextField(
+        required=False, allow_null=True, allow_blank=True, help_text="What the user wants from the site.",
+    )
+    mailing_address = _TextField(
+        required=False, allow_null=True, allow_blank=True, help_text="Postal address.",
+    )
+    phone_number = _TextField(
+        required=False,
+        allow_blank=True,
+        help_text="Digits, optionally led by a `+`. Send an empty text to clear it.",
+    )
+    language_proficiencies = AccountLanguageSerializer(
+        many=True, required=False, help_text="The whole list of languages the user speaks, replacing the stored one.",
+    )
+    social_links = AccountSocialLinkSerializer(
+        many=True,
+        required=False,
+        help_text=(
+            "Links to add or replace, merged into the stored list by platform. "
+            "Send an empty address to drop a platform."
+        ),
+    )
+    extended_profile = AccountExtendedFieldSerializer(
+        many=True, required=False, help_text="Values for the extra profile fields this site collects.",
+    )
+    account_privacy = _TextField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="How much of the account other learners may see: `all_users`, `private` or `custom`.",
+    )
+
+
+class _TextListField(serializers.ListField):
+    """
+    A list of text whose refusal is one message naming the entries at fault.
+
+    The base field reports an entry it will not take under the position that
+    entry holds, which reaches a caller as a mapping of positions nested
+    inside the member naming the list, where nothing can display it. The
+    refusal here names those positions in a sentence instead.
+    """
+
+    def to_internal_value(self, data):
+        """Return the entries sent, refusing the whole list when one of them is not text."""
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as refusal:
+            if not isinstance(refusal.detail, dict):
+                raise
+            positions = ", ".join(str(position) for position in sorted(refusal.detail))
+            raise serializers.ValidationError(
+                f"Every entry must be text, and the entries at these positions are not: {positions}.",
+            ) from refusal
+
+
+#: Most addresses one search may name. A search answers with at most one
+#: account per address, so holding the request to the largest page a caller
+#: may ask for keeps the answer within a page a caller may read.
+EMAIL_SEARCH_MAX_ADDRESSES = UserApiPagination.max_page_size
+
+
+class EmailSearchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The addresses an account search is asked to resolve."""
+
+    emails = _TextListField(
+        child=serializers.CharField(allow_blank=True, trim_whitespace=False),
+        allow_empty=True,
+        max_length=EMAIL_SEARCH_MAX_ADDRESSES,
+        help_text=(
+            f"Email addresses to look up, at most {EMAIL_SEARCH_MAX_ADDRESSES} of them. An "
+            "address no account holds is left out of the results."
+        ),
+    )
+
+
+class EmailSearchResultSerializer(serializers.ModelSerializer):
+    """The account that holds one of the addresses searched for."""
+
+    email = serializers.EmailField(read_only=True, help_text="Registered email address of the user.")
+    id = serializers.IntegerField(read_only=True, help_text="Numeric identifier of the user.")
+    username = serializers.CharField(read_only=True, help_text="Unique name the user is addressed by.")
+
+    class Meta:
+        model = User
+        fields = ("email", "id", "username")
+        read_only_fields = fields
+
+
+#: Longest name the column holding a pending change can store.
+NAME_MAX_LENGTH = 255
+
+
+class NameChangeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A request to put a different full name on a user's profile, stored as it is sent."""
+
+    name = serializers.CharField(
+        max_length=NAME_MAX_LENGTH,
+        trim_whitespace=False,
+        help_text="Full name to put on the profile once the request is confirmed.",
+    )
+
+    def validate_name(self, name):
+        """Refuse a name of spaces alone, or one carrying markup or a web address."""
+        if not name.strip():
+            self.fields["name"].fail("blank")
+        if contains_html(name):
+            raise serializers.ValidationError("Name cannot contain the following characters: < >")
+        if contains_url(name):
+            raise serializers.ValidationError("Name cannot contain a URL")
+        return name
+
+
+#: Property the verification list is sorted by, and the order it uses when
+#: asked for none: the most recently changed attempt first.
+VERIFICATION_SORT_FIELD = "updated_at"
+VERIFICATION_DEFAULT_SORT = f"-{VERIFICATION_SORT_FIELD}"
+
+#: Shape of the day a summary reports an accepted proof as running out on:
+#: ``MM/DD/YYYY``, or empty while the day is not reported at all.
+EXPIRATION_DAY_PATTERN = r"^(\d{2}/\d{2}/\d{4})?$"
+
+
+class VerificationStatusSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Where a user stands on having proved their identity."""
+
+    is_verified = serializers.BooleanField(
+        help_text="Whether an accepted proof of identity is on record and has not expired.",
+    )
+    status = serializers.CharField(
+        help_text=(
+            "`none` until a proof has been sent in, `approved` once one has been accepted, "
+            "`pending` while one is being looked at, `must_reverify` once one has been turned "
+            "down, and `expired` once an accepted proof has run out."
+        ),
+    )
+    expiration_datetime = serializers.RegexField(
+        EXPIRATION_DAY_PATTERN,
+        help_text=(
+            "Calendar day the accepted proof runs out, written as `MM/DD/YYYY`: the day alone, "
+            "where the attempt that carries the proof records the moment. It is empty until that "
+            "day is near enough for the user to be asked to prove their identity again."
+        ),
+    )
+
+
+class VerificationSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    One attempt a user has made at proving their identity.
+
+    An attempt is stored by the service that carried out the check, in a table
+    of its own per kind of check, so the kind, what was said about the attempt
+    and the identifier it was filed under are read from the record rather than
+    held on it.
+    """
+
+    type = serializers.SerializerMethodField(
+        help_text=(
+            "How the identity was checked: `Software Secure` for a photo check, `Manual` for one "
+            "recorded by hand, and `SSO` for one recorded when the user signed in elsewhere, "
+            "which is also what a check carried out by an installed verification service is "
+            "reported as."
+        ),
+    )
+    status = serializers.CharField(
+        help_text=(
+            "Where this attempt stands: `created` before it has been started, `ready` and "
+            "`submitted` while a photo check is on its way, `must_retry` once sending one on has "
+            "failed, `pending` while a check carried out elsewhere is being looked at, `approved` "
+            "once the attempt has been accepted and `denied` once it has been turned down."
+        ),
+    )
+    expiration_datetime = serializers.DateTimeField(
+        allow_null=True,
+        help_text=(
+            "Moment this attempt stops counting as proof, to the second. It is null for an "
+            "attempt that never expires."
+        ),
+    )
+    message = serializers.SerializerMethodField(
+        help_text="Why the attempt was turned down, or the reason it was accepted by hand. Empty otherwise.",
+    )
+    updated_at = serializers.DateTimeField(help_text="When this attempt last changed.")
+    receipt_id = serializers.SerializerMethodField(
+        help_text="Identifier the photo verification service filed this attempt under, null for other kinds.",
+    )
+
+    def get_type(self, obj) -> str:
+        """Return how the identity was checked."""
+        if isinstance(obj, SoftwareSecurePhotoVerification):
+            return "Software Secure"
+        if isinstance(obj, ManualVerification):
+            return "Manual"
+        return "SSO"
+
+    def get_message(self, obj) -> str:
+        """Return what was said about this attempt: why it was turned down, or why it was accepted by hand."""
+        if isinstance(obj, SoftwareSecurePhotoVerification):
+            return obj.error_msg
+        if isinstance(obj, ManualVerification):
+            return obj.reason
+        return ""
+
+    def get_receipt_id(self, obj) -> str | None:
+        """Return the identifier the photo verification service filed this attempt under."""
+        if isinstance(obj, SoftwareSecurePhotoVerification):
+            return obj.receipt_id
+        return None
+
+
+class VerificationQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """Query parameters accepted by the verification list."""
+
+    ordering = serializers.ChoiceField(
+        choices=[
+            (VERIFICATION_SORT_FIELD, "Least recently changed attempt first"),
+            (VERIFICATION_DEFAULT_SORT, "Most recently changed attempt first"),
+        ],
+        required=False,
+        allow_blank=True,
+        default=VERIFICATION_DEFAULT_SORT,
+        error_messages={
+            "invalid_choice": (
+                f"Sort by any of: {VERIFICATION_SORT_FIELD}, each optionally prefixed with '-'."
+            ),
+        },
+        help_text=(
+            "Property to sort the page by, prefixed with `-` to sort descending. Omit it, or send "
+            f"it empty, to sort by `{VERIFICATION_DEFAULT_SORT}`. Attempts changed at the same "
+            "moment are ordered by the receipt identifier, so a page is always in the same order."
+        ),
+    )
+
+
+#: Longest name a preference can be stored under, taken from the column that
+#: stores it.
+PREFERENCE_NAME_MAX_LENGTH = UserPreference._meta.get_field("key").max_length
+
+#: Refusal of a name longer than a preference can be stored under.
+PREFERENCE_NAME_TOO_LONG = (
+    f"A preference name is at most {PREFERENCE_NAME_MAX_LENGTH} characters long."
+)
+
+#: What a name must carry to be stored under, taken from the column that stores
+#: it. The column looks for this anywhere in the name rather than over the
+#: whole of it, so the same search is made here and the names refused are the
+#: names the store refuses.
+PREFERENCE_NAME_PATTERN = UserPreference.KEY_REGEX
+
+#: Refusal of a name nothing can be stored under at all.
+PREFERENCE_NAME_UNUSABLE = (
+    "A preference name carries at least one letter, digit, hyphen or underscore."
+)
+
+
+def why_a_name_cannot_be_stored(name):
+    """Return why nothing can be stored under this name, or nothing if something can."""
+    if len(name) > PREFERENCE_NAME_MAX_LENGTH:
+        return [PREFERENCE_NAME_TOO_LONG]
+    if not re.search(PREFERENCE_NAME_PATTERN, name):
+        return [PREFERENCE_NAME_UNUSABLE]
+    return []
+
+#: Refuses text that has no encoding of its own, which is text that can neither
+#: be stored nor be carried back in an answer.
+_REFUSE_UNENCODABLE_TEXT = ProhibitSurrogateCharactersValidator()
+
+
+def _members_at_fault(refusal):
+    """Return a refusal keyed by the body member it is about, or against the body itself."""
+    if isinstance(refusal, dict):
+        return refusal
+    return {api_settings.NON_FIELD_ERRORS_KEY: refusal}
+
+
+def _why_text_cannot_be_carried(text):
+    """Return why this text can be neither stored nor answered with, or nothing if it can."""
+    try:
+        _REFUSE_UNENCODABLE_TEXT(text)
+    except serializers.ValidationError as refused:
+        return list(refused.detail)
+    return []
+
+
+#: What the preference document of one account looks like: an object whose
+#: every member is a preference name and the text stored under it. The
+#: document has no fixed set of members -- any name an account's own features
+#: store a value under is one of them -- so the shape of its members is named
+#: here rather than declared as properties, and the fields below carry it:
+#: a body named by a field alone is published as an object of no stated shape.
+ACCOUNT_PREFERENCES_SCHEMA = {
+    "type": "object",
+    "additionalProperties": {"type": "string"},
+    "description": (
+        "Preferences of one account, as an object of preference name to stored value. Every "
+        "value is text. Which names an account carries depends on the features it uses."
+    ),
+}
+
+
+#: What a merge patch of the preference document carries: the same object as
+#: the document, except that a member may also be null, and that it has to
+#: name something -- a body naming nothing to change is refused as it is read,
+#: so the document says so too.
+ACCOUNT_PREFERENCE_CHANGES_SCHEMA = {
+    "type": "object",
+    "minProperties": 1,
+    "additionalProperties": {"type": "string", "nullable": True},
+    "description": (
+        "Preferences to change, as an object of preference name to the value to store under it. "
+        "Every value is text, and a null removes the preference. Names the body leaves out are "
+        "left as they are. At least one name must be given."
+    ),
+}
+
+
+@extend_schema_field(ACCOUNT_PREFERENCES_SCHEMA)
+class AccountPreferenceDocumentField(serializers.DictField):
+    """
+    The preferences of one account, as the body they are answered in.
+
+    Every stored value is text and the names are answered sorted by name,
+    character by character and by the code of each character, rather than in
+    the order they were stored. Both are settled here so that the body cannot
+    say something the shape above does not.
+    """
+
+    child = serializers.CharField(
+        help_text="Value stored under the preference name this member is, which is always text.",
+    )
+
+    def to_representation(self, value):
+        """Return the stored preferences as the document, by name."""
+        return super().to_representation(dict(sorted(value.items())))
+
+
+class _PreferenceChangeField(_TextField):
+    """The value to store under one preference name, which a null removes instead."""
+
+    default_error_messages = {"invalid": "Send a value as text, or null to remove the preference."}
+
+
+@extend_schema_field(ACCOUNT_PREFERENCE_CHANGES_SCHEMA)
+class AccountPreferenceChangesField(serializers.DictField):
+    """
+    The members a merge patch of a preference document carries.
+
+    Each value is read as the text to store under the name carrying it, and a
+    null is read as a removal. An empty value is read rather than refused,
+    because what a preference does with one is the preference service's to
+    decide and it answers for every address storing a value.
+
+    A body that is not an object, and one that names nothing to change, are
+    refused by the field as part of reading it: only the wording of those two
+    refusals is settled here, and it is the wording this version answers with
+    for the other body read as a merge patch.
+    """
+
+    default_error_messages = {
+        "not_a_dict": "Send the preferences to change as an object.",
+        "empty": "Name at least one preference to change.",
+    }
+
+    # The value reaches the preference service as it was sent: the service
+    # checks some values, a time zone among them, before it trims what it
+    # stores, so trimming here would store a value that check refuses.
+    child = _PreferenceChangeField(
+        allow_null=True,
+        allow_blank=True,
+        trim_whitespace=False,
+        help_text="Value to store under the preference name this member is, or null to remove it.",
+    )
+
+
+#: Formats the preference document of one account into the body it is answered in.
+ACCOUNT_PREFERENCE_DOCUMENT = AccountPreferenceDocumentField()
+
+#: Reads the members a merge patch of a preference document carries. A body
+#: naming nothing is refused rather than read as a change that does nothing,
+#: since a caller who sent one has asked for something that did not arrive.
+ACCOUNT_PREFERENCE_CHANGES = AccountPreferenceChangesField(allow_empty=False)
+
+
+class AccountPreferencesUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The changes a merge patch of an account's preference document carries.
+
+    The document has no fixed set of members, so the body is read member by
+    member against the field describing one change instead of against
+    declared fields. Refusals are reported under the preference name that
+    carried the value at fault, which is the member of the body a caller
+    would correct; a name that could not itself be carried back is reported
+    against the body, since the answer could not name it.
+    """
+
+    def to_internal_value(self, data):
+        """Return the changes sent, refusing a body, a name or a value that cannot be stored."""
+        names = data.keys() if isinstance(data, dict) else ()
+        unnameable = sorted({
+            message for name in names for message in _why_text_cannot_be_carried(name)
+        })
+        if unnameable:
+            raise serializers.ValidationError({api_settings.NON_FIELD_ERRORS_KEY: unnameable})
+        # A name longer than one can be stored under is reported under itself,
+        # ahead of whatever the value carried by it is refused for: the name is
+        # the part of that member a caller has to change either way.
+        too_long = {
+            name: [PREFERENCE_NAME_TOO_LONG]
+            for name in names
+            if len(name) > PREFERENCE_NAME_MAX_LENGTH
+        }
+        try:
+            changes = ACCOUNT_PREFERENCE_CHANGES.run_validation(data)
+        except serializers.ValidationError as refused:
+            raise serializers.ValidationError({
+                **_members_at_fault(refused.detail), **too_long,
+            }) from refused
+        if too_long:
+            raise serializers.ValidationError(too_long)
+        return changes
+
+
+class AccountPreferenceSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """One preference of one account."""
+
+    key = serializers.CharField(help_text="Name the preference is stored under.")
+    value = serializers.CharField(help_text="Value stored under that name, which is always text.")
+
+
+class AccountPreferenceValueSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The value to store under one preference of one account."""
+
+    # Read as sent, for the reason the document's values are.
+    value = _TextField(
+        trim_whitespace=False,
+        help_text=(
+            "Value to store, as text. A preference cannot hold an empty value; remove the "
+            "preference instead."
+        ),
+    )
+
+
+@extend_schema_field(serializers.CharField)
+class _CourseKeyField(CourseKeyField):
+    """
+    A course, read from and published as the text that writes its key.
+
+    The platform's field turns that text into the key object the services
+    behind these endpoints take, and describes itself to no document, so the
+    text form is named here. It reads a value of any other type by splitting
+    it, which no value but text can be, so one is refused instead.
+    """
+
+    default_error_messages = {"invalid": "Send the course key as the text that writes it."}
+
+    def to_internal_value(self, data):
+        """Return the course the text names, refusing a value that is not text."""
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+#: Longest organization name a choice can be recorded against, taken from the
+#: column the choice is recorded in.
+ORGANIZATION_MAX_LENGTH = UserOrgTag._meta.get_field("org").max_length
+
+#: Refusal of a key that names something other than a course. Some keys of
+#: other kinds are read by the platform's course key reader for historical
+#: reasons and say themselves that they name no course.
+NOT_A_COURSE = (
+    "This key names something other than a course, and the organization a choice is recorded "
+    "against is the one running a course."
+)
+
+#: Refusal of a course whose organization no choice can be recorded against.
+ORGANIZATION_TOO_LONG = (
+    f"The organization running this course is named by more than {ORGANIZATION_MAX_LENGTH} "
+    "characters, which is more than a choice can be recorded against."
+)
+
+#: What the choice itself is published and read as.
+EMAIL_OPT_IN_HELP = (
+    "Whether this user wants messages from that organization, sent as true or false. A value "
+    "that says neither is refused rather than read as one of them."
+)
+
+
+class _EmailOptInChoiceField(serializers.BooleanField):
+    """
+    A yes or no about messages, read from a boolean or from the word for one.
+
+    The value records consent, so it is read strictly: a boolean, or the text
+    ``true`` or ``false`` in any case. The further spellings a boolean field
+    admits (``1``, ``on``, ``yes``) are refused rather than read, because a
+    caller who sends one of them has not said which choice they mean and a
+    choice recorded the wrong way round is not something they can see. For the
+    same reason a body that leaves the choice out is refused instead of being
+    read as an unticked checkbox, which is what an absent form member would
+    otherwise mean.
+    """
+
+    default_empty_html = empty
+    default_error_messages = {"invalid": "Send the choice as true or false."}
+
+    def to_internal_value(self, data):
+        """Return the choice sent, refusing a value that does not say which choice it is."""
+        if isinstance(data, bool):
+            return data
+        if isinstance(data, str) and data.lower() in ("true", "false"):
+            return data.lower() == "true"
+        self.fail("invalid")
+
+
+class EmailOptInSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """A user's choice about messages from the organization running a course."""
+
+    course_key = _CourseKeyField(
+        help_text=(
+            "Course the organization runs, which is how the organization the choice applies to "
+            "is identified."
+        ),
+    )
+    email_opt_in = _EmailOptInChoiceField(help_text=EMAIL_OPT_IN_HELP)
+
+    def validate_course_key(self, value):
+        """Return the course, refusing a key that names none and one whose organization is too long."""
+        if not value.is_course:
+            raise serializers.ValidationError(NOT_A_COURSE)
+        if len(value.org) > ORGANIZATION_MAX_LENGTH:
+            raise serializers.ValidationError(ORGANIZATION_TOO_LONG)
+        return value
+
+
+#: Properties the ``minimal`` preset keeps of a retirement; none is personal data.
+RETIREMENT_MINIMAL_FIELDS = ("id", "original_username", "current_state")
+
+#: The personal data each erasure scope clears: core for the platform, misc for features on top.
+ERASURE_CORE_SCOPE = "lms_core"
+ERASURE_MISC_SCOPE = "lms_misc"
+ERASURE_SCOPES = (ERASURE_CORE_SCOPE, ERASURE_MISC_SCOPE)
+
+#: Each erasure scope with what it clears. Declared here so ENUM_NAME_OVERRIDES
+#: can name the set from the same values (it matches values and labels together).
+ERASURE_SCOPE_CHOICES = (
+    (ERASURE_CORE_SCOPE, "Profile, images, certificates, entitlements and the account itself."),
+    (ERASURE_MISC_SCOPE, "Wiki revisions, enrollment audits, credit and API access records."),
+)
+
+#: What a batch operation reports about each name it was given.
+OUTCOME_DELETED = "deleted"
+OUTCOME_ALREADY_ABSENT = "already_absent"
+BATCH_OUTCOMES = (OUTCOME_DELETED, OUTCOME_ALREADY_ABSENT)
+
+#: Each outcome with what it means, offered and named as the erasure scopes are.
+BATCH_OUTCOME_CHOICES = (
+    (OUTCOME_DELETED, "The record was deleted by this request."),
+    (OUTCOME_ALREADY_ABSENT, "There was no such record, so this request left nothing to do."),
+)
+
+
+def why_a_state_is_not_configured(name):
+    """Return why this deployment has no such pipeline step, or ``None`` when it has one."""
+    if RetirementState.objects.filter(state_name=name).exists():
+        return None
+    configured = ", ".join(sorted(RetirementState.get_state_names_list()))
+    return f"No such pipeline step. This deployment runs: {configured}."
+
+
+class RetirementAccountProfileSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The part of a retiring user's profile a retirement record carries."""
+
+    id = serializers.IntegerField(read_only=True, help_text="Database identifier of the profile.")
+    name = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Full name recorded on the profile at the time it is read.",
+    )
+
+
+class RetirementAccountSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The part of a retiring user's account a retirement record carries."""
+
+    id = serializers.IntegerField(read_only=True, help_text="Database identifier of the user.")
+    username = serializers.CharField(
+        read_only=True,
+        help_text=(
+            "Name the account is stored under now, which is the hashed replacement once the "
+            "erasure of core data has run."
+        ),
+    )
+    email = serializers.EmailField(
+        read_only=True,
+        help_text=(
+            "Address the account is stored under now, which is the hashed replacement once the "
+            "account has been locked."
+        ),
+    )
+    profile = RetirementAccountProfileSerializer(
+        read_only=True,
+        # An account may have no profile; answer null rather than drop the property.
+        allow_null=True,
+        help_text="The profile of the account, or null for an account that has none.",
+    )
+
+
+class RetirementSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    One account's progress through the retirement pipeline, addressed by the name it held.
+
+    ``current_state`` and ``last_state`` are the names of the steps rather
+    than objects: a step's execution order and identifier are configured by
+    the operator and say nothing a caller of this API can act on. The log of
+    the transitions a retirement has been through grows without bound and is
+    left out for that reason.
+    """
+
+    id = serializers.IntegerField(
+        read_only=True,
+        help_text="Database identifier of the retirement. Addresses in this API use the username instead.",
+    )
+    user = RetirementAccountSerializer(read_only=True, help_text="The account being retired, as it stands now.")
+    original_username = serializers.CharField(
+        read_only=True,
+        help_text="Name the account was stored under when retirement was requested.",
+    )
+    original_email = serializers.EmailField(
+        read_only=True,
+        help_text="Address the account was stored under when retirement was requested.",
+    )
+    original_name = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Full name on the profile when retirement was requested.",
+    )
+    retired_username = serializers.CharField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Hashed name the account is moved to once its core data is erased.",
+    )
+    retired_email = serializers.EmailField(
+        read_only=True,
+        allow_blank=True,
+        help_text="Hashed address the account is moved to once it is locked.",
+    )
+    current_state = serializers.CharField(
+        source="current_state.state_name",
+        read_only=True,
+        help_text="Name of the pipeline step this retirement stands at.",
+    )
+    last_state = serializers.CharField(
+        source="last_state.state_name",
+        read_only=True,
+        help_text="Name of the pipeline step this retirement stood at before the one it is at now.",
+    )
+    created = serializers.DateTimeField(read_only=True, help_text="When retirement was requested.")
+    modified = serializers.DateTimeField(read_only=True, help_text="When this retirement last moved.")
+
+
+class RetirementMinimalSerializer(_KeptFieldsMixin, RetirementSerializer):
+    """A retirement reduced to which account it is for and where it stands."""
+
+    kept_fields = RETIREMENT_MINIMAL_FIELDS
+
+
+class RetirementProjectionSerializer(_OptionalFieldsMixin, RetirementSerializer):
+    """A retirement reduced to the properties the caller selected."""
+
+
+class RetirementRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What the owner of an account confirms a request to close it with.
+
+    The account is identified by the request itself rather than by anything in
+    the body, so the password is all that is read: whoever is making the
+    request is who the account is closed for.
+
+    The value is read exactly as it was sent, spaces at either end included,
+    because that is how a password was stored, and it is never sent back or
+    written down anywhere. An empty one is read as a password the account does
+    not hold, and counted as an attempt like any other, as the address this
+    one replaces counts it: refused as a malformed value instead, blank
+    attempts would add nothing towards closing the account to further ones.
+    """
+
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        allow_blank=True,
+        help_text=(
+            "Current password of the account making the request, which confirms that whoever is "
+            "making it is the account's owner."
+        ),
+    )
+
+
+class RetirementUpdateSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    A move of one retirement to another step of the pipeline.
+
+    Which steps exist and in what order is configured by the operator, so
+    ``new_state`` is checked against the configured steps rather than against
+    a fixed list.
+
+    The body is an instruction rather than a set of changes to the record it
+    addresses: the step to move to and what happened at the step being left
+    are both needed to carry the move out and to keep the retirement's log
+    whole, so it is read whole and a body missing either is refused.
+    """
+
+    @property
+    def partial(self):
+        """
+        Always false: this body is read whole, whichever method carries it.
+
+        DRF makes the serializer of a ``PATCH`` partial, which would let either
+        required field be left out, and a schema generated from a partial
+        serializer publishes it as a set of changes with nothing required.
+        Neither is true of this body.
+        """
+        return False
+
+    @partial.setter
+    def partial(self, _value):
+        """Leave this body read whole when it is asked to be read partially."""
+
+    new_state = serializers.CharField(help_text="Name of the pipeline step to move this retirement to.")
+    response = serializers.CharField(
+        allow_blank=True,
+        help_text="What happened at the step being left, appended to the retirement's log.",
+    )
+    force = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text=(
+            "Move the retirement even where the step asked for is not a later one. Operators use "
+            "this to send a retirement back through a step that has to be repeated."
+        ),
+    )
+
+    def validate_new_state(self, value):
+        """Return the step named, refusing a name no configured step holds."""
+        reason = why_a_state_is_not_configured(value)
+        if reason is not None:
+            raise serializers.ValidationError(reason)
+        return value
+
+
+class RetirementErasureSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Which set of a retiring user's personal data to erase.
+
+    The erasure cannot be undone, and each scope clears a different set, so
+    the scope is named in the body rather than defaulted.
+    """
+
+    scope = serializers.ChoiceField(
+        choices=ERASURE_SCOPE_CHOICES,
+        help_text=(
+            f"`{ERASURE_CORE_SCOPE}` erases the account's own data: its profile, its images, the "
+            "name on its certificates and entitlement notes, and the username and address on the "
+            f"account. `{ERASURE_MISC_SCOPE}` erases what the features around it hold: wiki "
+            "revisions, pending name changes, enrollment audits, credit records and API access "
+            "requests."
+        ),
+    )
+
+
+class RetirementBatchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The accounts a batch operation acts on, named as they were before retirement.
+
+    A name repeated in the list names one account, so it is acted on and
+    reported once.
+    """
+
+    # As many names as the caller sends: the pipeline disposes of everything it
+    # has finished with, a whole queue at a time, in one request.
+    usernames = serializers.ListField(
+        child=serializers.CharField(trim_whitespace=False),
+        allow_empty=False,
+        help_text=(
+            "Names the accounts were stored under before retirement was requested, compared "
+            "exactly as spelled. There is no limit on how many one request names."
+        ),
+    )
+
+    def validate_usernames(self, value):
+        """Return the names given, each once, in the order they were first given."""
+        return list(dict.fromkeys(value))
+
+
+class RetirementBatchResultSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """What a batch operation did about one of the names it was given."""
+
+    username = serializers.CharField(help_text="The name this result is about, as it was given.")
+    outcome = serializers.ChoiceField(
+        choices=BATCH_OUTCOME_CHOICES,
+        help_text=(
+            f"`{OUTCOME_DELETED}` where this request deleted the record, and "
+            f"`{OUTCOME_ALREADY_ABSENT}` where there was none to delete, which is what a repeat "
+            "of a request that has already been carried out reports for every name."
+        ),
+    )
+
+
+class RetirementBatchOutcomeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a batch operation did, reported for each name it was given.
+
+    Every name is reported, so a caller repeating a request that has already
+    been carried out can tell that from a request that did the work.
+    """
+
+    results = RetirementBatchResultSerializer(
+        many=True,
+        help_text="One result per name given, in the order the names were given.",
+    )
+
+
+#: What a replacement reports about each mapping it was given.
+REPLACEMENT_REPLACED = "replaced"
+REPLACEMENT_NO_SUCH_ACCOUNT = "no_such_account"
+REPLACEMENT_FAILED = "failed"
+REPLACEMENT_OUTCOMES = (REPLACEMENT_REPLACED, REPLACEMENT_NO_SUCH_ACCOUNT, REPLACEMENT_FAILED)
+
+#: Each outcome with what it means, offered and named as the erasure scopes
+#: are: the pair is declared here so that the name the published set of
+#: choices is kept under can be configured from the same values.
+REPLACEMENT_OUTCOME_CHOICES = (
+    (
+        REPLACEMENT_REPLACED,
+        "The account stored under that name is now stored under the name answered with.",
+    ),
+    (
+        REPLACEMENT_NO_SUCH_ACCOUNT,
+        "No account is stored under that name, so no name was handed out and the other services "
+        "have nothing to be told about it.",
+    ),
+    (
+        REPLACEMENT_FAILED,
+        "The database would not store the name asked for, so nothing was changed for that mapping "
+        "and the other services have nothing to be told about it. The other mappings were carried "
+        "out all the same.",
+    ),
+)
+
+#: One mapping, as the body carries it: an object whose single member is the
+#: name an account is stored under, carrying the name asked for it. The shape
+#: is written out because a field alone publishes an object of no stated
+#: shape, and because the form is a wire format the services this one is
+#: called beside read the same way.
+USERNAME_MAPPING_SCHEMA = {
+    "type": "object",
+    "minProperties": 1,
+    "maxProperties": 1,
+    "additionalProperties": {"type": "string", "nullable": True},
+    "description": (
+        "One account, as the name it is stored under carrying the name asked for it. Exactly one "
+        "name per object. A name the database will not store, such as null, is reported as failed."
+    ),
+}
+
+
+@extend_schema_field(USERNAME_MAPPING_SCHEMA)
+class UsernameMappingField(serializers.DictField):
+    """
+    One account whose name is to be replaced, with the name asked for it.
+
+    The member's name is the name the account is stored under and its value is
+    the name asked for; an object carrying more than one member names more
+    than one account and is refused, because nothing would say which of them
+    the result it is answered with is about.
+    """
+
+    default_error_messages = {
+        "not_a_dict": "Send each mapping as an object naming one account.",
+        "empty": "Each mapping names the account it is about.",
+        "several": "Each mapping names one account, and this one names several.",
+    }
+
+    # A name of any shape is written as it is asked for, and one the database
+    # will not store is reported for its own mapping, so that the replacing
+    # job, which sends a whole list in one request, gets every other mapping
+    # carried out as it did at the address this one replaces.
+    child = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        help_text="Name asked for the account stored under the name this member carries.",
+    )
+
+    def to_internal_value(self, data):
+        """Return the one mapping this object carries, refusing an object carrying several."""
+        mapping = super().to_internal_value(data)
+        if len(mapping) > 1:
+            self.fail("several")
+        return mapping
+
+
+class UsernameReplacementRequestSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    The accounts whose names are to be replaced, each with the name asked for it.
+
+    A name no account is stored under is reported as such rather than
+    refusing the request, so a repeat of a request already carried out is
+    answered. A name the database will not store is reported as failed for its
+    own mapping rather than refusing the others. A name given twice is acted
+    on in the order the mappings are given, which leaves the second of them
+    nothing to replace.
+    """
+
+    # The replacing job sends every mapping it was given in one request, and
+    # sends an empty list when it was given none, so the list is bounded
+    # neither way.
+    username_mappings = serializers.ListField(
+        child=UsernameMappingField(allow_empty=False),
+        help_text=(
+            "Accounts whose names are to be replaced, each as an object naming one of them. There "
+            "is no limit on how many one request names, and a request naming none is answered "
+            "with no results."
+        ),
+    )
+
+
+class UsernameReplacementResultSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """What a replacement did about one of the mappings it was given."""
+
+    current_username = serializers.CharField(
+        help_text="The name this result is about, as the request gave it.",
+    )
+    new_username = serializers.CharField(
+        allow_null=True,
+        help_text=(
+            "Name the account is stored under now, which is the name asked for, or that name with "
+            "a suffix added where another account already held it. Null where no name was handed "
+            "to an account: none is stored under the name given, or the database would not store "
+            "the name asked for."
+        ),
+    )
+    outcome = serializers.ChoiceField(
+        choices=REPLACEMENT_OUTCOME_CHOICES,
+        help_text=(
+            f"`{REPLACEMENT_REPLACED}` where an account is stored under the name answered "
+            f"with, `{REPLACEMENT_NO_SUCH_ACCOUNT}` where no account is stored under the "
+            f"name given, and `{REPLACEMENT_FAILED}` where the database would not store the name "
+            "asked for."
+        ),
+    )
+
+
+class UsernameReplacementOutcomeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a replacement did, reported for each mapping it was given.
+
+    Every mapping is reported, so a caller can tell a name that was replaced
+    from a name that reached no account, and forward only the replacements.
+    """
+
+    results = UsernameReplacementResultSerializer(
+        many=True,
+        help_text="One result per mapping given, in the order the mappings were given.",
+    )
+
+
+class RetirementPartnerReportRecordSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    What a partner needs in order to forget one retired user.
+
+    Every property is answered for every entry: the record is built from the
+    queue entry and from the enrolments of the account it names, so there is
+    nothing in it that a deployment may or may not supply.
+    """
+
+    user_id = serializers.IntegerField(help_text="Database identifier of the retired user.")
+    original_username = serializers.CharField(help_text="Name the account was stored under before retirement.")
+    original_email = serializers.EmailField(help_text="Address the account was stored under before retirement.")
+    original_name = serializers.CharField(
+        allow_blank=True,
+        help_text="Full name on the profile before retirement.",
+    )
+    orgs = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Short names of the organizations running the courses this user was enrolled in.",
+    )
+    created = serializers.DateTimeField(help_text="When this user was added to the partner reporting queue.")
+
+
+#: The most entries one claim can be held to (a page); no limit takes every entry.
+PARTNER_REPORT_CLAIM_MAX = UserApiPagination.max_page_size
+
+
+class RetirementPartnerReportQuerySerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """The query string of a request that takes partner reports for processing."""
+
+    limit = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=PARTNER_REPORT_CLAIM_MAX,
+        help_text=(
+            f"Take at most this many entries, from 1 to {PARTNER_REPORT_CLAIM_MAX}. Omit it to take "
+            "every entry waiting, which is what the pipeline does: nothing releases an entry once "
+            "it is taken, so a caller that takes fewer than it processes cannot hand the rest back."
+        ),
+    )
