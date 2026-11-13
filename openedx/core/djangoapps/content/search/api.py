@@ -75,7 +75,11 @@ MEILISEARCH_HTTP_TIMEOUT = 30
 # How long a request may block waiting for Meilisearch to finish applying an index update before
 # giving up and returning. Giving up does not lose the update: Meilisearch has already accepted the
 # documents and will apply them regardless, so this only bounds how long the user waits for the
-# index to become consistent.
+# index to become consistent. The search signal handlers pass it for every write they make inline
+# (with .apply() or a direct call); the tasks they dispatch with .delay() leave the wait unbounded, so
+# a write that fails there is still raised and retried. The limit is per write, and Meilisearch
+# applies tasks one at a time across all indexes, so a write can wait behind a reindex of an
+# unrelated course.
 SYNC_INDEX_WAIT_TIMEOUT = 3.0
 
 User = get_user_model()
@@ -908,7 +912,7 @@ def upsert_xblock_index_doc(usage_key: UsageKey, recursive: bool = True) -> None
     _update_index_docs(STUDIO_COURSE_INDEX_NAME, docs)
 
 
-def delete_index_doc(key: OpaqueKey, *, delete_children: bool = False) -> None:
+def delete_index_doc(key: OpaqueKey, *, delete_children: bool = False, wait_timeout: float | None = None) -> None:
     """
     Deletes the document for the given XBlock from the search index
 
@@ -917,9 +921,11 @@ def delete_index_doc(key: OpaqueKey, *, delete_children: bool = False) -> None:
     """
     index_name = _index_name_for_key(key)
     doc = searchable_doc_for_key(key)
-    _delete_index_doc(index_name, doc[Fields.id])
+    _delete_index_doc(index_name, doc[Fields.id], wait_timeout=wait_timeout)
     if delete_children:
-        _delete_documents(index_name, f'{Fields.breadcrumbs}.{Fields.usage_key} = "{key}"')
+        _delete_documents(
+            index_name, f'{Fields.breadcrumbs}.{Fields.usage_key} = "{key}"', wait_timeout=wait_timeout
+        )
 
 
 def delete_docs_with_context_key(key: OpaqueKey) -> None:
@@ -949,7 +955,7 @@ def delete_library_docs_from_course_index(status_cb: Callable[[str], None] | Non
     )
 
 
-def _delete_documents(index_name: str, filter_query: str) -> None:
+def _delete_documents(index_name: str, filter_query: str, wait_timeout: float | None = None) -> None:
     """
     Deletes all documents from the given search index that match the given filter
 
@@ -966,10 +972,10 @@ def _delete_documents(index_name: str, filter_query: str) -> None:
     if current_rebuild_index_name:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_documents(filter=filter_query)
-    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query))
+    _wait_for_meili_task(client.index(index_name).delete_documents(filter=filter_query), timeout=wait_timeout)
 
 
-def _delete_index_doc(index_name: str, doc_id) -> None:
+def _delete_index_doc(index_name: str, doc_id, wait_timeout: float | None = None) -> None:
     """
     Helper function that deletes the document with the given ID from the given search index
 
@@ -985,7 +991,7 @@ def _delete_index_doc(index_name: str, doc_id) -> None:
         # If there is a rebuild in progress, the document will also be removed from the new index.
         client.index(current_rebuild_index_name).delete_document(doc_id)
 
-    _wait_for_meili_task(client.index(index_name).delete_document(doc_id))
+    _wait_for_meili_task(client.index(index_name).delete_document(doc_id), timeout=wait_timeout)
 
 
 def upsert_library_block_index_doc(usage_key: UsageKey, wait_timeout: float | None = None) -> None:
@@ -1022,7 +1028,9 @@ def _get_document_from_index(index_name: str, document_id: str) -> dict:
     return document
 
 
-def upsert_library_collection_index_doc(collection_key: LibraryCollectionLocator) -> None:
+def upsert_library_collection_index_doc(
+    collection_key: LibraryCollectionLocator, wait_timeout: float | None = None
+) -> None:
     """
     Creates, updates, or deletes the document for the given Library Collection in the search index.
 
@@ -1033,11 +1041,11 @@ def upsert_library_collection_index_doc(collection_key: LibraryCollectionLocator
     # (If the collection is soft-deleted, searchable_doc_for_collection() sets `_disabled: True`)
     # (If the collection is hard-deleted, searchable_doc_for_collection() leaves all fields other than ID empty)
     if doc.get("_disabled") or not doc.get(Fields.type):
-        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id])
+        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id], wait_timeout=wait_timeout)
         return
 
     # Normal case - update the collection doc.
-    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, [doc])
+    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, [doc], wait_timeout=wait_timeout)
 
     # We do NOT update the individual entities (components/containers) in the collection here.
     # This event can be called if a single entity is added or removed from the collection (to update the "# of items in
@@ -1126,7 +1134,9 @@ def update_library_containers_collections(
         _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, docs)
 
 
-def upsert_library_container_index_doc(container_key: LibraryContainerLocator) -> None:
+def upsert_library_container_index_doc(
+    container_key: LibraryContainerLocator, wait_timeout: float | None = None
+) -> None:
     """
     Creates, updates, or deletes the document for the given Library Container in the search index.
 
@@ -1137,18 +1147,20 @@ def upsert_library_container_index_doc(container_key: LibraryContainerLocator) -
     # Soft-deleted/disabled containers are removed from the index
     # and their components updated.
     if doc.get("_disabled"):
-        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id])
+        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id], wait_timeout=wait_timeout)
 
     # Hard-deleted containers are also deleted from the index
     elif not doc.get(Fields.type):
-        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id])
+        _delete_index_doc(STUDIO_LIBRARY_INDEX_NAME, doc[Fields.id], wait_timeout=wait_timeout)
 
     # Otherwise, upsert the container.
     else:
-        _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, [doc])
+        _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, [doc], wait_timeout=wait_timeout)
 
 
-def upsert_content_library_index_docs(library_key: LibraryLocatorV2, full_index: bool = False) -> None:
+def upsert_content_library_index_docs(
+    library_key: LibraryLocatorV2, full_index: bool = False, wait_timeout: float | None = None
+) -> None:
     """
     Creates or updates the documents for the given Content Library in the search index
     """
@@ -1173,34 +1185,36 @@ def upsert_content_library_index_docs(library_key: LibraryLocatorV2, full_index:
             doc = searchable_doc_for_collection(collection_key, collection=collection)
             docs.append(doc)
 
-    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, docs)
+    _update_index_docs(STUDIO_LIBRARY_INDEX_NAME, docs, wait_timeout=wait_timeout)
 
 
-def upsert_content_object_tags_index_doc(key: OpaqueKey):
+def upsert_content_object_tags_index_doc(key: OpaqueKey, wait_timeout: float | None = None):
     """
     Updates the tags data in document for the given Course/Library item
     """
     doc = {Fields.id: meili_id_from_opaque_key(key)}
     doc.update(searchable_doc_tags(key))
-    _update_index_docs(_index_name_for_key(key), [doc])
+    _update_index_docs(_index_name_for_key(key), [doc], wait_timeout=wait_timeout)
 
 
-def upsert_item_collections_index_docs(opaque_key: OpaqueKey):
+def upsert_item_collections_index_docs(opaque_key: OpaqueKey, wait_timeout: float | None = None):
     """
     Updates the collections data in documents for the given Course/Library block, or Container
     """
     doc = {Fields.id: meili_id_from_opaque_key(opaque_key)}
     doc.update(searchable_doc_collections(opaque_key))
-    _update_index_docs(_index_name_for_key(opaque_key), [doc])
+    _update_index_docs(_index_name_for_key(opaque_key), [doc], wait_timeout=wait_timeout)
 
 
-def upsert_item_containers_index_docs(opaque_key: OpaqueKey, container_type: str):
+def upsert_item_containers_index_docs(
+    opaque_key: OpaqueKey, container_type: str, wait_timeout: float | None = None
+):
     """
     Updates the containers (units/subsections/sections) data in documents for the given Course/Library block
     """
     doc = {Fields.id: meili_id_from_opaque_key(opaque_key)}
     doc.update(searchable_doc_containers(opaque_key, container_type))
-    _update_index_docs(_index_name_for_key(opaque_key), [doc])
+    _update_index_docs(_index_name_for_key(opaque_key), [doc], wait_timeout=wait_timeout)
 
 
 def _get_user_orgs(request: Request) -> list[str]:

@@ -227,9 +227,12 @@ def library_block_deleted(**kwargs) -> None:
         log.error("Received null or incorrect data for event")
         return
 
-    # Update content library index synchronously to make sure that search index is updated before
-    # the frontend invalidates/refetches results. This is only a single document update so is very fast.
-    delete_library_block_index_doc.apply(args=[str(library_block_data.usage_key)])
+    # Update content library index synchronously so that the search index is usually fresh before
+    # the frontend invalidates/refetches results, with the same bounded wait as the upserts above.
+    delete_library_block_index_doc.apply(
+        args=[str(library_block_data.usage_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(CONTENT_LIBRARY_CREATED)
@@ -248,7 +251,10 @@ def content_library_created_handler(**kwargs) -> None:
     # right after creation. Without this, the JWT token won't include the new library's
     # access_id until it's added by the document indexing process or the page is refreshed.
     SearchAccess.objects.get_or_create(context_key=library_key)
-    update_content_library_index_docs.apply(args=[str(library_key), True])
+    update_content_library_index_docs.apply(
+        args=[str(library_key), True],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(CONTENT_LIBRARY_UPDATED)
@@ -268,7 +274,10 @@ def content_library_updated_handler(**kwargs) -> None:
     # Update ALL items in the library, because their breadcrumbs will be outdated.
     # TODO: just patch the "breadcrumbs" field? It's the same on every one.
     # TODO: check if the library display_name has actually changed before updating all items?
-    update_content_library_index_docs.apply(args=[str(library_key)])
+    update_content_library_index_docs.apply(
+        args=[str(library_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(LIBRARY_COLLECTION_CREATED)
@@ -292,9 +301,10 @@ def library_collection_updated_handler(**kwargs) -> None:
         # Update collection index synchronously to make sure that search index is updated before
         # the frontend invalidates/refetches index.
         # See content_library_updated_handler for more details.
-        update_library_collection_index_doc.apply(args=[
-            str(library_collection.collection_key),
-        ])
+        update_library_collection_index_doc.apply(
+            args=[str(library_collection.collection_key)],
+            kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+        )
 
 
 @receiver(CONTENT_OBJECT_ASSOCIATIONS_CHANGED)
@@ -327,15 +337,15 @@ def content_object_associations_changed_handler(**kwargs) -> None:
     # This event's changes may contain both "tags" and "collections", but this will happen rarely, if ever.
     # So we allow a potential double "upsert" here.
     if not content_object.changes or "tags" in content_object.changes:
-        upsert_content_object_tags_index_doc(opaque_key)
+        upsert_content_object_tags_index_doc(opaque_key, wait_timeout=SYNC_INDEX_WAIT_TIMEOUT)
     if not content_object.changes or "collections" in content_object.changes:
-        upsert_item_collections_index_docs(opaque_key)
+        upsert_item_collections_index_docs(opaque_key, wait_timeout=SYNC_INDEX_WAIT_TIMEOUT)
     if not content_object.changes or "units" in content_object.changes:
-        upsert_item_containers_index_docs(opaque_key, "units")
+        upsert_item_containers_index_docs(opaque_key, "units", wait_timeout=SYNC_INDEX_WAIT_TIMEOUT)
     if not content_object.changes or "sections" in content_object.changes:
-        upsert_item_containers_index_docs(opaque_key, "sections")
+        upsert_item_containers_index_docs(opaque_key, "sections", wait_timeout=SYNC_INDEX_WAIT_TIMEOUT)
     if not content_object.changes or "subsections" in content_object.changes:
-        upsert_item_containers_index_docs(opaque_key, "subsections")
+        upsert_item_containers_index_docs(opaque_key, "subsections", wait_timeout=SYNC_INDEX_WAIT_TIMEOUT)
 
 
 @receiver(LIBRARY_CONTAINER_CREATED)
@@ -350,9 +360,10 @@ def library_container_updated_handler(**kwargs) -> None:
         log.error("Received null or incorrect data for event")
         return
 
-    update_library_container_index_doc.apply(args=[
-        str(library_container.container_key),
-    ])
+    update_library_container_index_doc.apply(
+        args=[str(library_container.container_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(LIBRARY_CONTAINER_PUBLISHED)
@@ -375,9 +386,10 @@ def library_container_published_handler(**kwargs) -> None:
         # via the DELETED handler, so there's nothing to do now.
         return
 
-    update_library_container_index_doc.apply(args=[
-        str(library_container.container_key),
-    ])
+    update_library_container_index_doc.apply(
+        args=[str(library_container.container_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
 
 
 @receiver(LIBRARY_CONTAINER_DELETED)
@@ -391,9 +403,12 @@ def library_container_deleted(**kwargs) -> None:
         log.error("Received null or incorrect data for event")
         return
 
-    # Update content library index synchronously to make sure that search index is updated before
-    # the frontend invalidates/refetches results. This is only a single document update so is very fast.
-    delete_library_container_index_doc.apply(args=[str(library_container.container_key)])
+    # Update content library index synchronously so that the search index is usually fresh before
+    # the frontend invalidates/refetches results, with the same bounded wait as the upserts.
+    delete_library_container_index_doc.apply(
+        args=[str(library_container.container_key)],
+        kwargs={"wait_timeout": SYNC_INDEX_WAIT_TIMEOUT},
+    )
     # TODO: post-Teak, move all the celery tasks directly inline into this handlers? Because now the
     # events are emitted in an [async] worker, so it doesn't matter if the handlers are synchronous.
     # See https://github.com/openedx/edx-platform/pull/36640 discussion.

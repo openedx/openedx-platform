@@ -4,8 +4,21 @@ Tests for the search index update handlers
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-from django.test import LiveServerTestCase, override_settings
+from django.test import LiveServerTestCase, TestCase, override_settings
 from freezegun import freeze_time
+from opaque_keys.edx.locator import (
+    LibraryCollectionLocator,
+    LibraryContainerLocator,
+    LibraryLocatorV2,
+    LibraryUsageLocatorV2,
+)
+from openedx_events.content_authoring.data import (
+    ContentLibraryData,
+    ContentObjectChangedData,
+    LibraryBlockData,
+    LibraryCollectionData,
+    LibraryContainerData,
+)
 from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -18,7 +31,7 @@ from xmodule.modulestore.tests.django_utils import (
 
 try:
     # This import errors in the lms because content.search is not an installed app there.
-    from .. import api
+    from .. import api, handlers
     from ..models import SearchAccess
 except RuntimeError:
     SearchAccess = {}
@@ -232,3 +245,85 @@ class TestUpdateIndexHandlers(ModuleStoreTestCase, LiveServerTestCase):
         assert {c.args[0] for c in meilisearch_client.return_value.index.call_args_list} == {
             api.STUDIO_LIBRARY_INDEX_NAME
         }
+
+
+@override_settings(MEILISEARCH_ENABLED=True)
+@skip_unless_cms
+class TestInlineWritesBoundTheWait(TestCase):
+    """
+    The handlers that index library changes inline pass SYNC_INDEX_WAIT_TIMEOUT, so a backed-up Meilisearch
+    task queue cannot hold the Studio request open.
+    """
+
+    library_key = LibraryLocatorV2.from_string("lib:orgA:lib1")
+    usage_key = LibraryUsageLocatorV2.from_string("lb:orgA:lib1:problem:p1")
+    collection_key = LibraryCollectionLocator.from_string("lib-collection:orgA:lib1:c1")
+    container_key = LibraryContainerLocator.from_string("lct:orgA:lib1:unit:u1")
+
+    def assert_bounded(self, task):
+        task.apply.assert_called_once()
+        assert task.apply.call_args.kwargs["kwargs"] == {"wait_timeout": api.SYNC_INDEX_WAIT_TIMEOUT}
+
+    @patch("openedx.core.djangoapps.content.search.handlers.delete_library_block_index_doc")
+    def test_library_block_deleted(self, task):
+        handlers.library_block_deleted(
+            library_block=LibraryBlockData(library_key=self.library_key, usage_key=self.usage_key)
+        )
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.update_content_library_index_docs")
+    def test_content_library_created(self, task):
+        handlers.content_library_created_handler(content_library=ContentLibraryData(library_key=self.library_key))
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.update_content_library_index_docs")
+    def test_content_library_updated(self, task):
+        handlers.content_library_updated_handler(content_library=ContentLibraryData(library_key=self.library_key))
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.update_library_collection_index_doc")
+    def test_library_collection_updated(self, task):
+        handlers.library_collection_updated_handler(
+            library_collection=LibraryCollectionData(collection_key=self.collection_key)
+        )
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.update_library_collection_index_doc")
+    def test_background_collection_update_is_not_bounded(self, task):
+        handlers.library_collection_updated_handler(
+            library_collection=LibraryCollectionData(collection_key=self.collection_key, background=True)
+        )
+        task.delay.assert_called_once_with(str(self.collection_key))
+        task.apply.assert_not_called()
+
+    @patch("openedx.core.djangoapps.content.search.handlers.update_library_container_index_doc")
+    def test_library_container_updated(self, task):
+        handlers.library_container_updated_handler(
+            library_container=LibraryContainerData(container_key=self.container_key)
+        )
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.lib_api.get_container", new=MagicMock())
+    @patch("openedx.core.djangoapps.content.search.handlers.update_library_container_index_doc")
+    def test_library_container_published(self, task):
+        handlers.library_container_published_handler(
+            library_container=LibraryContainerData(container_key=self.container_key)
+        )
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.delete_library_container_index_doc")
+    def test_library_container_deleted(self, task):
+        handlers.library_container_deleted(library_container=LibraryContainerData(container_key=self.container_key))
+        self.assert_bounded(task)
+
+    @patch("openedx.core.djangoapps.content.search.handlers.upsert_item_containers_index_docs")
+    @patch("openedx.core.djangoapps.content.search.handlers.upsert_item_collections_index_docs")
+    @patch("openedx.core.djangoapps.content.search.handlers.upsert_content_object_tags_index_doc")
+    def test_content_object_associations_changed(self, tags, collections, containers):
+        handlers.content_object_associations_changed_handler(
+            content_object=ContentObjectChangedData(object_id=str(self.usage_key))
+        )
+        for upsert in (tags, collections, containers):
+            for upsert_call in upsert.call_args_list:
+                assert upsert_call.kwargs == {"wait_timeout": api.SYNC_INDEX_WAIT_TIMEOUT}
+        assert containers.call_count == 3
