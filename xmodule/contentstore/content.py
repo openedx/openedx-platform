@@ -5,8 +5,9 @@ import os
 import re
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from io import BytesIO
-from typing import Any, Literal, overload
+from typing import Any, Literal, NotRequired, TypedDict, overload
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlparse, urlunparse
 
 from opaque_keys import InvalidKeyError
@@ -350,6 +351,38 @@ class StaticContentStream(StaticContent):  # pylint: disable=missing-class-docst
         return content
 
 
+class ContentstoreAsset(TypedDict):
+    """
+    Information about an asset, as returned by ``ContentStore.get_all_content_for_course()``.
+
+    Backends may include additional keys (``MongoContentStore`` returns the raw GridFS document, with keys like
+    ``_id``, ``filename`` and ``custom_md5``), but callers should only rely on the keys defined here.
+
+    Note: there is deliberately no ``md5`` key. GridFS only stored ``md5`` for files uploaded before PyMongo 4, so it
+    was never reliably present. Use ``ContentStore.find(...).content_digest`` to get an asset's MD5 hash.
+    """
+
+    asset_key: AssetKey
+    """The key of the asset"""
+    displayname: str
+    """The human-readable name of the asset"""
+    contentType: str | None
+    """The MIME type of the asset, if known"""
+    uploadDate: datetime
+    """When the asset was last uploaded/saved"""
+    length: int
+    """The size of the asset, in bytes"""
+    locked: NotRequired[bool]
+    """Whether the asset is restricted to enrolled users (default False)"""
+    thumbnail_location: NotRequired[list[str | None] | None]
+    """
+    The location of the asset's thumbnail, if any, in the deprecated "c4x" list format:
+    ``['c4x', org, course, 'thumbnail', name, None]``
+    """
+    import_path: NotRequired[str | None]
+    """The path that the asset was imported from (e.g. ``images/foo.png``), if any"""
+
+
 class ContentStore:
     """
     Abstraction for all ContentStore providers.
@@ -452,25 +485,16 @@ class ContentStore:
         maxresults: int = -1,
         sort: Sequence[tuple[str, int]] | None = None,
         filter_params: dict[str, Any] | None = None,
-    ) -> tuple[list[dict[str, Any]], int]:
+    ) -> tuple[list[ContentstoreAsset], int]:
         """
         Returns a list of static assets for a course, followed by the total number of assets.
         By default all assets are returned, but start and maxresults can be provided to limit the query.
 
-        The return format is a list of asset data dictionaries.
-        The asset data dictionaries have the following keys:
-            asset_key (:class:`opaque_keys.edx.AssetKey`): The key of the asset
-            displayname: The human-readable name of the asset
-            uploadDate (datetime.datetime): The date and time that the file was uploadDate
-            contentType: The mimetype string of the asset
-            length: The size of the asset, in bytes
-            locked: Whether the asset is restricted to enrolled users
-            thumbnail_location: The location of the asset's thumbnail, if any
-            import_path: The path that the asset was imported from, if any
+        See :class:`ContentstoreAsset` for the format of each asset in the list.
         """
         raise NotImplementedError
 
-    def get_all_content_thumbnails_for_course(self, course_key: CourseKey) -> list[dict[str, Any]]:
+    def get_all_content_thumbnails_for_course(self, course_key: CourseKey) -> list[ContentstoreAsset]:
         """
         Returns a list of all the thumbnails for a course, in the same format as ``get_all_content_for_course()``.
         """

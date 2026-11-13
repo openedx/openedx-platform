@@ -18,7 +18,7 @@ from typing import Any, Literal, overload
 
 from opaque_keys.edx.keys import AssetKey, CourseKey
 
-from .content import ContentStore, StaticContent, StaticContentStream
+from .content import ContentStore, ContentstoreAsset, StaticContent, StaticContentStream
 
 
 class RoutingContentStore(ContentStore):
@@ -125,12 +125,12 @@ class RoutingContentStore(ContentStore):
         maxresults: int = -1,
         sort: Sequence[tuple[str, int]] | None = None,
         filter_params: dict[str, Any] | None = None,
-    ) -> tuple[list[dict[str, Any]], int]:
+    ) -> tuple[list[ContentstoreAsset], int]:
         return self._store_for_course(course_key).get_all_content_for_course(
             course_key, start=start, maxresults=maxresults, sort=sort, filter_params=filter_params
         )
 
-    def get_all_content_thumbnails_for_course(self, course_key: CourseKey) -> list[dict[str, Any]]:
+    def get_all_content_thumbnails_for_course(self, course_key: CourseKey) -> list[ContentstoreAsset]:
         return self._store_for_course(course_key).get_all_content_thumbnails_for_course(course_key)
 
     def export_all_for_course(self, course_key: CourseKey, output_directory: str, assets_policy_file: str) -> None:
