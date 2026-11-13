@@ -235,18 +235,14 @@ development = [
     "vulture", # Detects possible dead/unused code, used in scripts/find-dead-code.sh
     "watchdog", # Used by `npm run watch` to auto-recompile when assets are changed
 ]
-# Alternate-Django-version test matrix groups. Each is a real, independently-resolved
-# environment (not a runtime `uv pip install` patch on top of `testing`) — see
-# [tool.uv].conflicts below, which is required for these to coexist in one uv.lock at
-# all. Currently unexercised: the CI matrices that would select one of these
-# (migrations-check.yml, unit-tests.yml) only ever run with django-version: "pinned",
-# which resolves independently via `testing`'s own (unconstrained-except-<6.0) Django
-# requirement. If re-enabling that matrix dimension, add the matching fork to
-# [tool.uv].conflicts for whichever combination gets exercised together.
-django42 = [
-    {include-group = "testing"},
-    "django>=4.2,<4.3",
-]
+# Explicit-Django-version test matrix group. A real, independently-resolved
+# environment (not a runtime `uv pip install` patch on top of `testing`). Currently
+# unexercised: the CI matrices that would select it (migrations-check.yml,
+# unit-tests.yml) only ever run with django-version: "pinned", which resolves
+# independently via `testing`'s own (unconstrained-except-<6.0) Django requirement.
+# Django 4.2 is no longer tested; the `django42` group and the [tool.uv].conflicts
+# entry that let the two groups share one uv.lock were removed with it. If a second
+# Django version is ever added back, both groups need a [tool.uv].conflicts set again.
 django52 = [
     {include-group = "testing"},
     "django>=5.2,<5.3",
@@ -258,12 +254,6 @@ ci = [
 
 [tool.uv]
 default-groups = [] # explicit, not omitted -- uv's own default-groups fallback is ["dev"]
-conflicts = [
-    [
-        { group = "django42" },
-        { group = "django52" },
-    ],
-]
 
 #  DO NOT EDIT constraint-dependencies DIRECTLY.
 #  This list is managed by `edx_lint write_uv_constraints` and will be
