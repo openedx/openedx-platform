@@ -1,0 +1,1815 @@
+"""Views for version 2 of the User API."""
+
+import logging
+
+from django.conf import settings
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.db import transaction
+from django.db.models import F, Prefetch
+from django.http import Http404
+from django_filters.rest_framework import DjangoFilterBackend
+from django_ratelimit.core import is_ratelimited
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, extend_schema_view
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
+from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
+from edx_rest_framework_extensions.paginators import IterablePaginationMixin
+from edx_rest_framework_extensions.permissions import IsStaff
+from edx_rest_framework_extensions.scoping import FullScopePolicy, ScopedQuerysetMixin
+from edx_rest_framework_extensions.shaping import MinimalViewMixin, project
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import APIException, NotFound, PermissionDenied, Throttled, ValidationError
+from rest_framework.metadata import SimpleMetadata
+from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.settings import api_settings
+from rest_framework.views import APIView
+
+from common.djangoapps.student.models import UserProfile, is_email_retired
+from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_pending_name_change
+from common.djangoapps.track import segment
+from lms.djangoapps.verify_student.services import IDVerificationService
+from openedx.core.djangoapps.user_api import accounts
+from openedx.core.djangoapps.user_api.accounts.api import get_account_settings, update_account_settings
+from openedx.core.djangoapps.user_api.accounts.permissions import CanDeactivateUser, CanGetAccountInfo
+from openedx.core.djangoapps.user_api.errors import (
+    AccountUpdateError,
+    AccountValidationError,
+    UserNotAuthorized,
+    UserNotFound,
+)
+from openedx.core.djangoapps.user_api.models import UserPreference
+from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zones
+from openedx.core.lib.api.parsers import MergePatchParser
+from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
+
+from .errors import AmbiguousAccountName, ErrorExtensionsMixin, ReadableErrorDetailMixin, RetiredAccount
+from .filters import StrictOrderingFilter, UserFilterSet, UserPreferenceFilterSet
+from .paginators import UserApiPagination
+from .permissions import (
+    CanSelectAccountsByContact,
+    IsActiveUser,
+    IsAddressedUser,
+    IsStaffOrAbsent,
+    RestrictedApplicationGuardMixin,
+)
+from .schema import ResponseShapes
+from .selectors import (
+    accounts_holding_emails,
+    accounts_named,
+    cancellable_retirement_for_email,
+    username_holding_id,
+    usernames_among,
+    usernames_holding_email,
+)
+from .serializers import (
+    ACCOUNT_DEFAULT_SORT,
+    ACCOUNT_MINIMAL_FIELDS,
+    EMAIL_SEARCH_MAX_ADDRESSES,
+    EMBEDDABLE_OWNER_IDS,
+    FULL_VIEW,
+    MINIMAL_VIEW,
+    PREFERENCE_MINIMAL_FIELDS,
+    SHARED_VIEW,
+    USER_MINIMAL_FIELDS,
+    VERIFICATION_DEFAULT_SORT,
+    AccountMinimalSerializer,
+    AccountProjectionSerializer,
+    AccountQuerySerializer,
+    AccountSerializer,
+    AccountUpdateSerializer,
+    EmailSearchResultSerializer,
+    EmailSearchSerializer,
+    ErrorResponse,
+    NameChangeSerializer,
+    RetiredAccountErrorResponse,
+    TimeZoneQuerySerializer,
+    TimeZoneSerializer,
+    UserDirectoryMinimalSerializer,
+    UserDirectoryProjectionSerializer,
+    UserDirectorySerializer,
+    UserPreferenceRecordMinimalSerializer,
+    UserPreferenceRecordProjectionSerializer,
+    UserPreferenceRecordSerializer,
+    VerificationQuerySerializer,
+    VerificationSerializer,
+    VerificationStatusSerializer,
+    full_view_requested,
+)
+from .view_utils import (
+    RESP_UNAUTHENTICATED,
+    RESP_UNREADABLE_BODY,
+    SDK_TAG,
+    USER_TAG,
+    USERNAME_PATTERN,
+    StrictQueryParametersMixin,
+    names_in,
+    path_param,
+    query_param,
+)
+
+log = logging.getLogger(__name__)
+
+#: Fields the user directory sorts on, and the order it uses when asked for none.
+USER_SORT_FIELDS = ("username", "date_joined")
+USER_DEFAULT_SORT = ("username",)
+
+#: Fields the stored-preference list sorts on, and the order it uses when asked for none.
+PREFERENCE_SORT_FIELDS = ("key", "username")
+PREFERENCE_DEFAULT_SORT = ("username", "key")
+
+#: The part of a preference's address that carries its key. The key is
+#: free-form text that may itself contain a comma, so it takes the rest of the
+#: segment; the route and the published address are built from this one pattern.
+PREFERENCE_KEY_PATTERN_PARTIAL = "[^/]+"
+
+#: What the identity verification service reports for a user whose proof of
+#: identity has been accepted.
+APPROVED_STATUS = "approved"
+
+_USER_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose directory entry is returned.",
+    USERNAME_PATTERN,
+)
+_PREFERENCE_USERNAME_PATH_PARAM = path_param(
+    "username",
+    "Username of the user the preference belongs to: the part of the address before the comma.",
+    USERNAME_PATTERN,
+)
+_PREFERENCE_KEY_PATH_PARAM = path_param(
+    "key",
+    "Name the preference is stored under: the part of the address after the comma.",
+    rf"^{PREFERENCE_KEY_PATTERN_PARTIAL}$",
+)
+
+#: The presets an account response answers to.
+ACCOUNT_PRESETS = (MINIMAL_VIEW, SHARED_VIEW)
+
+#: The account-collection member naming the caller's own account. Addresses
+#: beneath an account do not translate it: there it is a stored username.
+OWN_ACCOUNT_IDENTIFIER = "me"
+
+#: What a caller is told about a member address that more than one account
+#: answers to. One account is addressed there, so an address several of them
+#: answer to names none of them in particular.
+AMBIGUOUS_ACCOUNT_ADDRESS = "More than one account answers to this address. Name one of them as it is stored."
+
+#: The account actions that answer with an account, and so read the parameters
+#: that shape one.
+SHAPED_ACCOUNT_ACTIONS = ("list", "retrieve", "partial_update")
+
+#: The properties whose change is limited to a rate, and the setting carrying
+#: the limit of each. Both settings are empty until a deployment gives one of
+#: them a value, and an empty limit limits nothing, so a site that has
+#: configured neither takes every change to either property.
+RATE_LIMITED_ACCOUNT_FIELDS = (
+    ("email", "EMAIL_CHANGE_RATE_LIMIT"),
+    ("secondary_email", "SECONDARY_EMAIL_RATE_LIMIT"),
+)
+
+#: Parameters that shape a response rather than select the rows in it.
+VIEW_PARAM = "view"
+FIELDS_PARAM = "fields"
+RESPONSE_SHAPING_PARAMS = (VIEW_PARAM, FIELDS_PARAM)
+
+_FIELDS_PARAM = query_param(
+    FIELDS_PARAM,
+    "Comma-separated list of top-level field names to keep in each returned object. "
+    "A name the response cannot carry is refused.",
+)
+#: The presets each list answers to, published as the parameter's enum and
+#: accepted by the view from the same declaration.
+USER_PRESETS = (MINIMAL_VIEW,)
+PREFERENCE_PRESETS = (FULL_VIEW, MINIMAL_VIEW)
+
+_MINIMAL_VIEW_PARAM = query_param(
+    VIEW_PARAM,
+    "Response preset. `minimal` reduces each user to its identifying fields "
+    "(`id`, `username`, `email`). Omit it to receive the full entry.",
+    enum=list(USER_PRESETS),
+)
+_PREFERENCE_VIEW_PARAM = query_param(
+    VIEW_PARAM,
+    "Response preset. `full` embeds the owning user's whole directory entry in each "
+    "preference; `minimal` returns only `username`, `key` and `value`. Omit it to "
+    "receive the owner's username alongside the preference.",
+    enum=list(PREFERENCE_PRESETS),
+)
+
+
+class AddressMetadata(SimpleMetadata):
+    """
+    Describes an address by what it reads, rather than by what its view declares.
+
+    The standard description is built from the parsers and the serializer
+    declared on the view, which belong to the view as a whole rather than to
+    the address being asked about: an address that reads one media type is
+    otherwise described as reading every media type the platform reads
+    anywhere, a method whose handler reads no body is described as taking the
+    one the view's serializer carries, and a method whose body differs from
+    what the view answers with is described as taking the answer. A caller
+    that negotiates from this description sends what it was told to send, so
+    each part of it is answered from the address and the method being
+    described.
+    """
+
+    def determine_metadata(self, request, view):
+        """Describe the address, naming the media types the bodies it takes are read in."""
+        description = super().determine_metadata(request, view)
+        description["parses"] = [parser.media_type for parser in view.get_parsers()]
+        return description
+
+    def determine_actions(self, request, view):
+        """Describe the body of each method that takes one, and leave out the methods that take none."""
+        described = super().determine_actions(request, view)
+        served = getattr(view, "action_map", None) or {}
+        bodiless = set(getattr(view, "bodiless_actions", ()))
+        taken = getattr(view, "request_serializer_class", None)
+        if taken is not None:
+            described = {method: self.get_serializer_info(taken()) for method in described}
+        return {
+            method: fields for method, fields in described.items()
+            if served.get(method.lower()) not in bodiless
+        }
+
+
+def _ordering_param(sort_fields, default):
+    """Build the sort parameter of a list, naming the fields it accepts."""
+    return query_param(
+        "ordering",
+        "Fields to sort by, in order of precedence, each optionally prefixed with `-` to sort "
+        "descending. A field that is not listed here is refused.",
+        many=True,
+        enum=[*sort_fields, *(f"-{field}" for field in sort_fields)],
+        default=list(default),
+        style="form",
+        explode=False,
+    )
+
+
+_USER_ORDERING_PARAM = _ordering_param(USER_SORT_FIELDS, USER_DEFAULT_SORT)
+_PREFERENCE_ORDERING_PARAM = _ordering_param(PREFERENCE_SORT_FIELDS, PREFERENCE_DEFAULT_SORT)
+
+_RESP_FORBIDDEN = OpenApiResponse(ErrorResponse, description="The requester may not use this endpoint.")
+
+#: How a caller is admitted to the user directory and to the stored preferences.
+_API_KEY_ADMISSION = "Answered only to a request carrying the site's API key in the `X-Edx-Api-Key` header."
+#: Published by every operation of this version. Which representations an
+#: answer can be given in is settled as the request enters, before the address
+#: it names is read or written, so an ``Accept`` header naming none of them is
+#: refused at every address whether or not that address answers with a body.
+_RESP_SESSION_WITHOUT_ITS_TOKEN = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request was made with a session cookie and carried none of the request token the "
+        "site hands out with it, so the site cannot tell that the request came from a page it "
+        "served. Sending that token with the session, or a signed token in place of the "
+        "session, is answered."
+    ),
+)
+RESP_NOT_ACCEPTABLE = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The `Accept` header of the request names no representation this endpoint can answer in."
+    ),
+)
+_RESP_NOT_FOUND = OpenApiResponse(ErrorResponse, description="No such resource.")
+_RESP_NO_SUCH_PAGE = OpenApiResponse(ErrorResponse, description="There is no such page of results.")
+_RESP_BAD_REQUEST = OpenApiResponse(
+    ErrorResponse, description="A query parameter is missing, invalid, or not one this endpoint reads.",
+)
+_RESP_UNUSABLE_BODY = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The request body is not well formed in the media type it was sent in, or carries a "
+        "value this endpoint will not take. A query parameter this endpoint does not read is "
+        "refused here too."
+    ),
+)
+_RESP_RATE_LIMITED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The caller has changed this property too often lately and has to wait. Only a site that "
+        "has given a limit for the property answers this; a site that has given none, which is "
+        "how the platform ships, takes every change."
+    ),
+)
+_RESP_CHANGE_FAILED = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The change was asked for correctly and could not be carried out. Sending it again "
+        "with something else in it does not help; sending the same request later may."
+    ),
+)
+_RESP_NO_SUCH_ACCOUNT = OpenApiResponse(
+    ErrorResponse, description="No account is held at the address given.",
+)
+_RESP_CHANGED_ACCOUNT_GONE = OpenApiResponse(
+    ErrorResponse,
+    description=(
+        "The account that was addressed is no longer there. Only the caller's own account is "
+        "changed here, so a name nobody holds is refused as somebody else's account instead of "
+        "being reported as missing."
+    ),
+)
+_RESP_NO_SUCH_PAGE_OR_RETIRED = OpenApiResponse(
+    RetiredAccountErrorResponse,
+    description=(
+        "There is no such page of results, or the `email` address given is one an account held "
+        "before it was retired. In that second case the body also carries `can_cancel_retirement` "
+        "and `retirement_id`, which name what is left of that account to a caller able to reverse "
+        "the retirement."
+    ),
+)
+
+#: A directory entry comes back whole, as the identifying fields the ``minimal``
+#: preset keeps, or as the properties ``fields`` selected.
+_USER_SHAPES = ResponseShapes(
+    component_name="UserDirectoryResponse",
+    serializers=[
+        UserDirectorySerializer,
+        UserDirectoryMinimalSerializer,
+        UserDirectoryProjectionSerializer,
+    ],
+)
+
+_ACCOUNT_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose account is addressed. "
+    f"`{OWN_ACCOUNT_IDENTIFIER}` names the account of the caller, so an account holding that "
+    "name is read through the collection, with `username=` naming it.",
+    USERNAME_PATTERN,
+)
+_DEACTIVATION_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose account is deactivated. The name is read as it is stored, "
+    f"`{OWN_ACCOUNT_IDENTIFIER}` included: this action disables the account the address names, "
+    "never the account of the caller making the request.",
+    USERNAME_PATTERN,
+)
+_ACCOUNT_VIEW_PARAM = query_param(
+    VIEW_PARAM,
+    "Response preset. `minimal` reduces the account to the properties that identify its owner; "
+    "`shared` returns only the properties the owner shares with everybody, even to a caller who "
+    "may see more. Omit it, or send it empty, to receive everything the caller may see.",
+    enum=[*ACCOUNT_PRESETS, ""],
+)
+
+#: An account comes back with every property the caller may see, as the
+#: identifying properties the ``minimal`` preset keeps, or as the properties
+#: ``fields`` selected.
+_ACCOUNT_SHAPES = ResponseShapes(
+    component_name="AccountResponse",
+    serializers=[
+        AccountSerializer,
+        AccountMinimalSerializer,
+        AccountProjectionSerializer,
+    ],
+)
+
+_ACCOUNT_IMAGE_EXAMPLE = {
+    "has_image": True,
+    "image_url_full": "https://example.com/media/profile_images/jane_doe_500.jpg",
+    "image_url_large": "https://example.com/media/profile_images/jane_doe_120.jpg",
+    "image_url_medium": "https://example.com/media/profile_images/jane_doe_50.jpg",
+    "image_url_small": "https://example.com/media/profile_images/jane_doe_30.jpg",
+}
+
+_ACCOUNT_EXAMPLES = [
+    OpenApiExample(
+        "Your own account",
+        description=(
+            "Everything an account carries, which is what its owner and a staff caller receive."
+        ),
+        value={
+            "username": "jane_doe",
+            "profile_image": _ACCOUNT_IMAGE_EXAMPLE,
+            "account_privacy": "custom",
+            "email": "jane.doe@example.com",
+            "id": 42,
+            "name": "Jane Doe",
+            "bio": "Teaches mathematics.",
+            "country": "US",
+            "state": "MA",
+            "date_joined": "2024-03-01T09:30:00Z",
+            "last_login": "2026-02-11T18:02:41Z",
+            "is_active": True,
+            "gender": "f",
+            "year_of_birth": 1985,
+            "level_of_education": "m",
+            "goals": "Finish the course.",
+            "mailing_address": "12 Park Avenue",
+            "phone_number": "+18005555555",
+            "language_proficiencies": [{"code": "fr"}],
+            "social_links": [
+                {"platform": "twitter", "social_link": "https://www.twitter.com/example"},
+            ],
+            "extended_profile": [{"field_name": "occupation", "field_value": "Teacher"}],
+            "requires_parental_consent": False,
+            "pending_name_change": None,
+            "verified_name": "Jane Doe",
+            "secondary_email": None,
+            "secondary_email_enabled": None,
+            "course_certificates": None,
+            "time_zone": None,
+        },
+        response_only=True,
+        status_codes=["200"],
+    ),
+    OpenApiExample(
+        "An account somebody else owns",
+        description=(
+            "The properties this owner shares with every learner. An owner who shares field by "
+            "field shares fewer, and one who shares nothing leaves only the three properties "
+            "every account carries."
+        ),
+        value={
+            "username": "jane_doe",
+            "profile_image": _ACCOUNT_IMAGE_EXAMPLE,
+            "account_privacy": "all_users",
+            "bio": "Teaches mathematics.",
+            "country": "US",
+            "course_certificates": None,
+            "date_joined": "2024-03-01T09:30:00Z",
+            "language_proficiencies": [{"code": "fr"}],
+            "level_of_education": "m",
+            "social_links": [
+                {"platform": "twitter", "social_link": "https://www.twitter.com/example"},
+            ],
+            "time_zone": None,
+        },
+        response_only=True,
+        status_codes=["200"],
+    ),
+    OpenApiExample(
+        "An account reduced to what identifies its owner",
+        description="What `view=minimal` answers with; `fields` selects any other set.",
+        value={
+            "username": "jane_doe",
+            "email": "jane.doe@example.com",
+            "name": "Jane Doe",
+            "profile_image": _ACCOUNT_IMAGE_EXAMPLE,
+        },
+        response_only=True,
+        status_codes=["200"],
+    ),
+]
+
+#: A stored preference comes back whole, as the three fields the ``minimal``
+#: preset keeps, or as the properties ``fields`` selected.
+_PREFERENCE_SHAPES = ResponseShapes(
+    component_name="UserPreferenceRecordResponse",
+    serializers=[
+        UserPreferenceRecordSerializer,
+        UserPreferenceRecordMinimalSerializer,
+        UserPreferenceRecordProjectionSerializer,
+    ],
+)
+
+
+def _the_one_addressed(username, records, name_of):
+    """
+    Return the one of these records the address names, or refuse the address.
+
+    A name can be answered with more than one record, in which case the record
+    stored under exactly the name given is the one addressed. Where none of
+    them is stored under it the address names no one of them, so it is refused
+    rather than worked on: which record came back first is no basis for
+    reading or changing an account. The refusal is reported under the path
+    parameter that carried the name.
+    """
+    stored_under_it = [record for record in records if name_of(record) == username]
+    if stored_under_it:
+        return stored_under_it[0]
+    if len(records) > 1:
+        raise AmbiguousAccountName({"username": [AMBIGUOUS_ACCOUNT_ADDRESS]})
+    if not records:
+        raise NotFound
+    return records[0]
+
+
+def _user_named(username):
+    """Return the user an address names, or refuse the address."""
+    return _the_one_addressed(username, accounts_named(username), lambda user: user.username)
+
+
+class _MemberLookupMixin:
+    """Report a missing member through the standard error envelope."""
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404 as exc:
+            raise NotFound from exc
+
+
+class _ActionAddressMixin:
+    """
+    Builds the address of an action from the snake_case names these routes carry.
+
+    A router names an action ``<basename>-<action>`` by default, and that name
+    belongs to an earlier mount of the same resource, so the default lookup
+    would hand out the older address instead of this one.
+    """
+
+    #: The namespace these routes are mounted under, read when an address is
+    #: asked for outside a request and there is no resolver match to take it from.
+    url_namespace = "user_v2"
+
+    def reverse_action(self, url_name, *args, **kwargs):
+        """Return the address of one of this viewset's actions."""
+        request = getattr(self, "request", None)
+        namespace = self.url_namespace
+        if request is not None and request.resolver_match is not None:
+            namespace = request.resolver_match.namespace or namespace
+        kwargs.setdefault("request", request)
+        return reverse(f"{namespace}:{self.basename}_{url_name}", *args, **kwargs)
+
+
+def _requested_field_names(raw):
+    """
+    Return the property names a ``fields`` value asks for, each as it was written.
+
+    A name is held against the properties the answer carries whole, so a name
+    written with a dot in it names no such property and is refused. Reading
+    only the part before the dot would hand back the whole of a property the
+    caller asked one piece of, and would take a part after it that names
+    nothing at all without saying so.
+    """
+    if not raw:
+        return []
+    return [name.strip() for name in raw.split(",") if name.strip()]
+
+
+class _ResponsePresetMixin(MinimalViewMixin):
+    """
+    Applies the ``view`` and ``fields`` presets to an already serialized payload.
+
+    A view lists the presets it answers to, and a ``view`` value outside that
+    list is refused: a caller that mistypes a preset asked for a smaller
+    payload and would otherwise be handed the full one without being told.
+    The same holds for a field name the response cannot carry, which would
+    otherwise select nothing and leave the caller with empty objects.
+
+    Both are settled as the request enters, before the address it names is
+    read or written. Which properties an answer can carry depends on the
+    caller and on the address, so the refusal comes back the same at a name
+    nobody holds as at one somebody does, and nothing is read or changed on
+    the way to it.
+    """
+
+    #: Presets this view answers to. An empty ``view`` narrows nothing, the way
+    #: an empty value of any other parameter does.
+    response_presets = ()
+
+    def initial(self, request, *args, **kwargs):
+        """Check the requested preset and fields once the caller has been admitted, before anything else."""
+        super().initial(request, *args, **kwargs)
+        preset = request.query_params.get(VIEW_PARAM)
+        if preset and preset not in self.response_presets:
+            raise ValidationError({
+                VIEW_PARAM: [
+                    f"Ask for any of: {', '.join(self.response_presets)}, "
+                    "or omit this parameter for the default response.",
+                ],
+            })
+        self.check_requested_fields(request)
+
+    def shapeable_fields(self):
+        """Return the names of the properties a response of this view can carry."""
+        if self.is_minimal_view_requested():
+            return set(self.minimal_fields)
+        return set(self.get_serializer_class()().fields)
+
+    #: What a caller is told in place of the names, at a view that may withhold
+    #: them. A view that narrows what a response carries by who is asking says
+    #: here what it tells a caller it has narrowed the answer for.
+    withheld_fields_message = ""
+
+    def shapeable_fields_may_be_named(self):
+        """Whether a refusal may list the properties a response of this view can carry."""
+        return True
+
+    def check_requested_fields(self, request):
+        """Refuse a selected field the response cannot carry, naming the ones it can."""
+        available = self.shapeable_fields()
+        unknown = sorted(set(_requested_field_names(request.query_params.get(FIELDS_PARAM))) - available)
+        if unknown:
+            if self.shapeable_fields_may_be_named():
+                rest = f"Select any of: {', '.join(sorted(available))}."
+            else:
+                rest = self.withheld_fields_message
+            raise ValidationError({
+                FIELDS_PARAM: [f"No such field: {', '.join(unknown)}. {rest}"],
+            })
+
+    def shape(self, data, request):
+        """Return ``data`` reduced to the preset and the fields the caller asked for."""
+        data = self.shape_minimal(data, request)
+        requested_fields = _requested_field_names(request.query_params.get(FIELDS_PARAM))
+        if not requested_fields:
+            return data
+        if isinstance(data, list):
+            return [project(item, requested_fields) for item in data]
+        return project(data, requested_fields)
+
+    def shape_page(self, response, request):
+        """Shape the items of a paginated response in place."""
+        response.data["results"] = self.shape(response.data["results"], request)
+        return response
+
+
+@extend_schema(tags=[USER_TAG])
+@extend_schema_view(
+    list=extend_schema(
+        summary="List users",
+        description=(
+            "Returns a page of the user directory. Supply `preference_key` to keep only the "
+            "users who have stored a preference under that key, or `forum_role` together with "
+            "`course_key` to keep only the holders of a course forum role. "
+            f"{_API_KEY_ADMISSION}"
+        ),
+        parameters=[_MINIMAL_VIEW_PARAM, _FIELDS_PARAM, _USER_ORDERING_PARAM],
+        responses={
+            200: _USER_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+    retrieve=extend_schema(
+        summary="Get one user",
+        description=f"Returns the directory entry of the user with this username. {_API_KEY_ADMISSION}",
+        parameters=[_USER_PATH_PARAM, _MINIMAL_VIEW_PARAM, _FIELDS_PARAM],
+        responses={
+            200: _USER_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+)
+class UserViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    _ActionAddressMixin,
+    _MemberLookupMixin,
+    _ResponsePresetMixin,
+    StrictQueryParametersMixin,
+    ScopedQuerysetMixin,
+    viewsets.ReadOnlyModelViewSet,
+):
+    """
+    Directory entries of the platform's users, each addressed by username.
+
+    An entry carries the identifying properties of one account together with
+    the preferences stored against it. It is read by server integrations,
+    which send the site's API key in the X-Edx-Api-Key header, and is
+    refused to every request that does not carry that key.
+    """
+
+    # Who may read the directory is settled in three layers, each of which can
+    # be replaced on its own: the permission classes below settle who may call
+    # the collection at all, the record-visibility policy settles which rows
+    # such a caller may see, and the filter set narrows those rows by the
+    # parameters the request carries.
+
+    permission_classes = (ApiKeyHeaderPermission,)
+    serializer_class = UserDirectorySerializer
+    pagination_class = UserApiPagination
+    queryset = User.objects.all().select_related("profile")
+    # A caller holding the API key may read every entry, so the policy keeps
+    # the queryset whole; a narrower policy can replace it without touching the
+    # filtering below.
+    scoping_policy = FullScopePolicy()
+    #: The preferences carried inside an entry are rows of the stored
+    #: preference collection, so which of them a caller may see is that
+    #: collection's to decide and not this one's. It is declared separately for
+    #: that reason, and applied where the page is fetched rather than once per
+    #: entry, which would cost a query per row.
+    embedded_preference_policy = FullScopePolicy()
+    lookup_field = "username"
+    # The router's default lookup pattern excludes dots, which usernames allow.
+    lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
+    filter_backends = (DjangoFilterBackend, StrictOrderingFilter)
+    filterset_class = UserFilterSet
+    ordering_fields = USER_SORT_FIELDS
+    ordering = USER_DEFAULT_SORT
+    # A sort the caller asks for is completed with these so that it is total:
+    # rows that compare equal would otherwise be ordered differently from one
+    # page to the next, and a client reading the pages in turn would see some
+    # of them twice and miss others.
+    ordering_tiebreak = ("username",)
+    minimal_fields = USER_MINIMAL_FIELDS
+    response_presets = USER_PRESETS
+    extra_query_params = RESPONSE_SHAPING_PARAMS
+
+    def get_queryset(self):
+        """Fetch the preferences carried inside each entry through the policy that governs them."""
+        return super().get_queryset().prefetch_related(
+            Prefetch(
+                "preferences",
+                queryset=self.embedded_preference_policy.scope(
+                    UserPreference.objects.all(), self.request.user,
+                ),
+            ),
+        )
+
+    def list(self, request, *args, **kwargs):
+        """Return a page of directory entries, shaped as the caller asked."""
+        return self.shape_page(super().list(request, *args, **kwargs), request)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Return one directory entry, shaped as the caller asked."""
+        response = super().retrieve(request, *args, **kwargs)
+        response.data = self.shape(response.data, request)
+        return response
+
+
+@extend_schema(tags=[USER_TAG])
+@extend_schema_view(
+    list=extend_schema(
+        summary="List stored preferences",
+        description=(
+            "Returns a page of stored user preferences. Supply `key` to keep only the "
+            "preferences stored under that name, or `username` to keep only one user's. "
+            f"{_API_KEY_ADMISSION}"
+        ),
+        parameters=[_PREFERENCE_VIEW_PARAM, _FIELDS_PARAM, _PREFERENCE_ORDERING_PARAM],
+        responses={
+            200: _PREFERENCE_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+    retrieve=extend_schema(
+        summary="Get one stored preference",
+        description=(
+            "Returns the preference stored under this key for this user. A preference is "
+            "identified by the pair, which the address carries as the username, a comma and "
+            "the key, for example `alice,time_zone`. "
+            f"{_API_KEY_ADMISSION}"
+        ),
+        parameters=[
+            _PREFERENCE_USERNAME_PATH_PARAM,
+            _PREFERENCE_KEY_PATH_PARAM,
+            _PREFERENCE_VIEW_PARAM,
+            _FIELDS_PARAM,
+        ],
+        responses={
+            200: _PREFERENCE_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+)
+class UserPreferenceViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    _ActionAddressMixin,
+    _ResponsePresetMixin,
+    StrictQueryParametersMixin,
+    ScopedQuerysetMixin,
+    viewsets.ReadOnlyModelViewSet,
+):
+    """
+    Preferences stored for the platform's users, each addressed by its owner and its name.
+
+    A preference is identified by the two together, so a member address
+    carries the owner's username, a comma and the name the preference is
+    stored under, as in alice,time_zone. Like the user directory, these are
+    read only by a request carrying the site's API key.
+    """
+
+    # The pair identifies a row, so the member address is built from it rather
+    # than from a database id, and the route that serves it is declared with
+    # the collection rather than generated. Who may read these rows is settled
+    # in the same three layers as the user directory.
+
+    permission_classes = (ApiKeyHeaderPermission,)
+    serializer_class = UserPreferenceRecordSerializer
+    pagination_class = UserApiPagination
+    queryset = (
+        UserPreference.objects.all()
+        .select_related("user", "user__profile")
+        .annotate(username=F("user__username"))
+    )
+    scoping_policy = FullScopePolicy()
+    #: The entry of a preference's owner carries that owner's own preferences,
+    #: which are rows of this same collection but are reached through the
+    #: entry rather than as rows of the page, so the policy that governs them
+    #: is applied where they are fetched.
+    embedded_preference_policy = FullScopePolicy()
+    #: Which owners' user entries a row may embed, settled once per page; a row
+    #: whose owner is left out keeps only the owner's name.
+    embedded_user_policy = FullScopePolicy()
+    filter_backends = (DjangoFilterBackend, StrictOrderingFilter)
+    filterset_class = UserPreferenceFilterSet
+    ordering_fields = PREFERENCE_SORT_FIELDS
+    ordering = PREFERENCE_DEFAULT_SORT
+    # The owner and the key identify a row, so they complete any sort the
+    # caller asks for and keep the order of a page stable.
+    ordering_tiebreak = ("username", "key")
+    minimal_fields = PREFERENCE_MINIMAL_FIELDS
+    response_presets = PREFERENCE_PRESETS
+    extra_query_params = RESPONSE_SHAPING_PARAMS
+
+    def get_queryset(self):
+        """Fetch each owner's own preferences through the policy that governs them, when embedding."""
+        queryset = super().get_queryset()
+        if full_view_requested(getattr(self, "request", None)):
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "user__preferences",
+                    queryset=self.embedded_preference_policy.scope(
+                        UserPreference.objects.all(), self.request.user,
+                    ),
+                ),
+            )
+        return queryset
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer, having settled which owners the rows it is given may carry."""
+        serializer = super().get_serializer(*args, **kwargs)
+        if args and full_view_requested(getattr(self, "request", None)):
+            serializer.context[EMBEDDABLE_OWNER_IDS] = self._embeddable_owner_ids(args[0])
+        return serializer
+
+    def _embeddable_owner_ids(self, rows):
+        """Return the ids of the owners of ``rows`` whose entry the caller may be given, in one query."""
+        if isinstance(rows, UserPreference):
+            rows = [rows]
+        owner_ids = {row.user_id for row in rows}
+        if not owner_ids:
+            return frozenset()
+        # The owners of the page are taken out of the policy's answer rather
+        # than handed to it: a policy free to answer with a collection of its
+        # own is then still narrowed to this page, and what comes back is the
+        # size of the page rather than the size of the collection.
+        owners = self.embedded_user_policy.scope(User.objects.all(), self.request.user)
+        return frozenset(owners.filter(pk__in=owner_ids).values_list("pk", flat=True))
+
+    def get_object(self):
+        """Look the preference up by the username and key that identify it."""
+        try:
+            preference = self.get_queryset().get(
+                user__username=self.kwargs["username"], key=self.kwargs["key"],
+            )
+        except UserPreference.DoesNotExist as exc:
+            raise NotFound from exc
+        self.check_object_permissions(self.request, preference)
+        return preference
+
+    def list(self, request, *args, **kwargs):
+        """Return a page of stored preferences, shaped as the caller asked."""
+        return self.shape_page(super().list(request, *args, **kwargs), request)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Return one stored preference, shaped as the caller asked."""
+        response = super().retrieve(request, *args, **kwargs)
+        response.data = self.shape(response.data, request)
+        return response
+
+
+@extend_schema(tags=[USER_TAG])
+class CountryTimeZoneViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    _ActionAddressMixin,
+    StrictQueryParametersMixin,
+    IterablePaginationMixin,
+    viewsets.ViewSet,
+):
+    """
+    Time zones commonly used in a country, or every time zone when no country is named.
+
+    The list is the same for every caller and is open to anyone.
+    """
+
+    # The rows come from the time-zone database rather than from a table of
+    # this app's, so there is no queryset to narrow and the one parameter the
+    # view reads is validated by a serializer instead of a filter set. The
+    # data is reference data, which is why no caller is turned away.
+
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = TimeZoneSerializer
+    #: Validates the query string, and names the parameters this view reads.
+    query_serializer_class = TimeZoneQuerySerializer
+    pagination_class = UserApiPagination
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    @extend_schema(
+        summary="List time zones",
+        description=(
+            "Returns a page of time zones, ordered by their display form. Supply "
+            "`country_code` to receive the time zones commonly used in one country."
+        ),
+        # The parameters are published from the serializer that validates them,
+        # so the constraint a caller is held to is the one it reads.
+        parameters=[TimeZoneQuerySerializer],
+        responses={
+            200: TimeZoneSerializer,
+            400: _RESP_BAD_REQUEST,
+            404: _RESP_NO_SUCH_PAGE,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    )
+    def list(self, request):
+        """Return a page of time zones, for one country or for the world."""
+        query = self.query_serializer_class(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        time_zones = get_country_time_zones(query.validated_data.get("country_code"))
+        return self.paginate_iterable(request, time_zones)
+
+
+def _shareable_account_fields():
+    """Return every property an account's owner is able to share with another user."""
+    return set(settings.ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"])
+
+
+#: Admission classes for every operation on an account, wherever it is served.
+#: Read from here, not from a view attribute that middleware may extend in place.
+ACCOUNT_RESOURCE_PERMISSIONS = (
+    permissions.IsAuthenticated,
+    CanGetAccountInfo,
+    CanSelectAccountsByContact,
+)
+
+
+class AccountResourceMixin:
+    """
+    Carries the rules of the account resource into the operations on one account.
+
+    An address beneath an account works on a row of the collection the account
+    resource answers from, so a caller that resource refuses is a caller the
+    operation refuses too: the classes the resource declares are applied first
+    and the ones this address declares after, which keeps an address reached
+    this way from standing open to a caller the resource is closed to. The
+    account the address names is resolved here as well, so the record a
+    permission settled the request on is the record the work lands on.
+    """
+
+    def account_resource_permissions(self):
+        """Return the classes the account resource admits a caller by."""
+        return ACCOUNT_RESOURCE_PERMISSIONS
+
+    def declared_permissions(self):
+        """Return the classes the address being served declares of its own."""
+        return super().get_permissions()
+
+    def get_permissions(self):
+        """Return the collection's classes, then the ones this address declares."""
+        declared = self.declared_permissions()
+        already_carried = {type(permission) for permission in declared}
+        carried = [
+            permission() for permission in self.account_resource_permissions()
+            if permission not in already_carried
+        ]
+        return carried + declared
+
+    def addressed_account(self):
+        """Return the account this address names, refusing an address that names no one account."""
+        return _user_named(self.kwargs["username"])
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    list=extend_schema(
+        summary="List accounts",
+        description=(
+            "Returns a page of accounts. Name them with `username`, or select the accounts "
+            "holding an `email` address or the one holding an `lms_user_id`; omit all three to "
+            "receive your own account. A name, an address or an identifier no account holds is "
+            "left out of the page, which is empty when nothing given is held. An address held by "
+            "more than one account brings back each of them. "
+            "Each account carries the properties the caller may "
+            "see: everything for your own account and for a staff caller, and otherwise the "
+            "properties its owner shares. "
+            "A property named in `fields` that an owner does not share is left out of their "
+            "account rather than refused, so a row of the page can come back empty."
+        ),
+        parameters=[AccountQuerySerializer, _FIELDS_PARAM],
+        responses={
+            200: _ACCOUNT_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_PAGE_OR_RETIRED,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+    retrieve=extend_schema(
+        summary="Get one account",
+        description=(
+            "Returns the account of this user, carrying the properties the caller may see. "
+            "Address `me` for the account of the caller. A property named in `fields` that "
+            "this owner does not share is left out rather than refused, so the answer can be "
+            "an empty object."
+        ),
+        parameters=[_ACCOUNT_PATH_PARAM, _ACCOUNT_VIEW_PARAM, _FIELDS_PARAM],
+        responses={
+            200: _ACCOUNT_SHAPES,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NO_SUCH_ACCOUNT,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+        examples=_ACCOUNT_EXAMPLES,
+    ),
+    partial_update=extend_schema(
+        summary="Change one account",
+        description=(
+            "Changes the properties named in the body and returns the account as it now stands. "
+            "A user may change only their own account, which `me` also addresses. The body is a "
+            "merge patch: only the properties it carries are changed, and `social_links` are "
+            "merged into the stored list by platform. A new email address takes effect only once "
+            "the user confirms it from the message sent there."
+        ),
+        parameters=[_ACCOUNT_PATH_PARAM, _ACCOUNT_VIEW_PARAM, _FIELDS_PARAM],
+        request=AccountUpdateSerializer,
+        responses={
+            200: _ACCOUNT_SHAPES,
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_CHANGED_ACCOUNT_GONE,
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+            429: _RESP_RATE_LIMITED,
+            500: _RESP_CHANGE_FAILED,
+        },
+    ),
+)
+class AccountViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    ErrorExtensionsMixin,
+    AccountResourceMixin,
+    _ActionAddressMixin,
+    _ResponsePresetMixin,
+    StrictQueryParametersMixin,
+    IterablePaginationMixin,
+    viewsets.ViewSet,
+):
+    """
+    Accounts of the platform's users. Address one by username, or me for your own.
+
+    An account carries the properties the caller may see: all of them for your
+    own account and for a staff caller, and otherwise the ones its owner
+    shares. A property an owner does not share is left out of their account
+    rather than refused, so an account can come back as an empty object.
+
+    Selecting accounts that nothing holds gives an empty page rather than a
+    refusal. An address an account held before it was retired is refused
+    instead, and that refusal says whether the retirement can still be
+    cancelled.
+
+    A property no account of this kind could show this caller is refused
+    rather than answered as an empty object.
+    """
+
+    # Accounts come from the account service, not a queryset, and a filter set
+    # cannot report a retired address, so the selection is applied in the handler.
+
+    # Admits the session of an account whose email is not yet confirmed, which
+    # the platform default refuses; tokens are read as the platform reads them.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    permission_classes = ACCOUNT_RESOURCE_PERMISSIONS
+    #: A change is a merge patch: a body in any other media type is refused.
+    parser_classes = (MergePatchParser,)
+    serializer_class = AccountSerializer
+    #: Validates the query string of the list, and names the parameters it reads.
+    query_serializer_class = AccountQuerySerializer
+    pagination_class = UserApiPagination
+    lookup_field = "username"
+    # The router's default lookup pattern excludes dots, which usernames allow.
+    lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
+    minimal_fields = ACCOUNT_MINIMAL_FIELDS
+    response_presets = ACCOUNT_PRESETS
+    extra_query_params = RESPONSE_SHAPING_PARAMS
+    withheld_fields_message = "An account another user holds carries only the properties its owner shares."
+    #: The validated query string of the request being served, read once.
+    _validated_selection = None
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def known_query_params(self):
+        """Return the query parameters the action being served reads."""
+        names = super().known_query_params()
+        if self.action != "list":
+            # One account is answered whole, so neither the selectors that
+            # choose which accounts a page carries nor the parameters that cut
+            # it into pages are read at a member address.
+            names -= set(self.query_serializer_class().fields) - {VIEW_PARAM}
+            names -= {
+                self.pagination_class.page_query_param,
+                self.pagination_class.page_size_query_param,
+            }
+        if self.action not in SHAPED_ACCOUNT_ACTIONS:
+            names -= set(RESPONSE_SHAPING_PARAMS)
+        return names
+
+    def shapeable_fields(self):
+        """Return the properties an account response can carry for the caller making it."""
+        describable = set(AccountSerializer().fields)
+        if self.is_minimal_view_requested():
+            describable &= set(self.minimal_fields)
+        if self._whole_accounts_are_readable(self.request):
+            return describable
+        return describable & _shareable_account_fields()
+
+    def shapeable_fields_may_be_named(self):
+        """
+        Whether a refusal may list the properties an answer of this kind can carry.
+
+        Which properties an owner shares is that owner's to decide, and the
+        set the site offers them to choose from is the site's own
+        configuration. A caller addressing an account it does not hold is
+        therefore told that it may not select what it selected, and not what
+        the site holds for other people: the list would otherwise name every
+        property the site is configured to let an owner share, including ones
+        nobody on the site shares. A caller that narrowed the answer itself,
+        by asking for a preset, is still told what that preset carries.
+        """
+        return not self._only_shared_properties_are_readable(self.request)
+
+    def _whole_accounts_are_readable(self, request):
+        """Whether every account this request addresses comes back whole to this caller."""
+        if request.query_params.get(VIEW_PARAM) == SHARED_VIEW:
+            return False
+        return not self._only_shared_properties_are_readable(request)
+
+    def _only_shared_properties_are_readable(self, request):
+        """Whether who the caller is keeps them from every property of the accounts addressed."""
+        if request.user.is_staff:
+            return False
+        return self._addressed_names(request) != [request.user.username]
+
+    def _selection(self, request):
+        """
+        Return the query string as the serializer that validates it reads it.
+
+        Which accounts a request addresses is read both before the handler
+        runs, to settle what the answer can carry, and inside it, to cut the
+        page. Both read the values the serializer validated, so the two cannot
+        disagree about which accounts are meant; and the serializer runs once,
+        because it is what refuses a selector the list does not take.
+        """
+        if self._validated_selection is None:
+            query = self.query_serializer_class(data=request.query_params)
+            query.is_valid(raise_exception=True)
+            self._validated_selection = query.validated_data
+        return self._validated_selection
+
+    def _addressed_names(self, request):
+        """Return the usernames this request addresses, as the address and the query string give them."""
+        if self.action != "list":
+            return [self._addressed_username(request, self.kwargs.get("username"))]
+        selection = self._selection(request)
+        named = selection.get("username")
+        if named:
+            return [name for name in named.strip(",").split(",") if name]
+        if {"email", "lms_user_id"} & set(selection):
+            return []
+        return [request.user.username]
+
+    def list(self, request):
+        """Return a page of accounts, shaped as the caller asked."""
+        selection = self._selection(request)
+        preset = selection.get(VIEW_PARAM)
+        page = self.paginate_iterable(
+            request,
+            self._selected_usernames(request, selection),
+            serialize=lambda usernames: self._accounts_named(request, usernames, preset),
+        )
+        return self.shape_page(page, request)
+
+    def retrieve(self, request, username):
+        """Return one account, shaped as the caller asked."""
+        account = self._account_addressed(
+            request,
+            self._addressed_username(request, username),
+            request.query_params.get(VIEW_PARAM),
+        )
+        return Response(self.shape(account, request))
+
+    def partial_update(self, request, username):
+        """Change the properties the body carries and return the account as it now stands."""
+        username = self._addressed_username(request, username)
+        changes = request.data
+        if not isinstance(changes, dict):
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: ["Send the properties to change as an object."],
+            })
+        # Validated against the published shape, then passed on as sent so the
+        # account service still refuses properties that cannot be changed.
+        AccountUpdateSerializer(data=changes).is_valid(raise_exception=True)
+        if "email" in changes and not settings.ALLOW_EMAIL_ADDRESS_CHANGE:
+            raise ValidationError({"email": ["This site does not let an email address be changed here."]})
+        self._check_change_rate(request, changes)
+        try:
+            with transaction.atomic():
+                update_account_settings(request.user, changes, username=username)
+                account = self._account_addressed(
+                    request, username, request.query_params.get(VIEW_PARAM),
+                )
+        except UserNotAuthorized as exc:
+            raise PermissionDenied from exc
+        # The caller's own row is read again here and can be gone by now.
+        except UserNotFound as exc:
+            raise NotFound from exc
+        except AccountValidationError as exc:
+            raise self._refused_changes(username, exc) from exc
+        except AccountUpdateError as exc:
+            raise self._failed_change(username, exc) from exc
+        return Response(self.shape(account, request))
+
+    def _addressed_username(self, request, username):
+        """Return the username an address names, reading ``me`` as the caller's own."""
+        if username == OWN_ACCOUNT_IDENTIFIER:
+            return request.user.username
+        return username
+
+    def _accounts_named(self, request, usernames, preset=None):
+        """Return each named account, in the order asked for, as this caller may see it."""
+        names = list(usernames)
+        if not names:
+            return []
+        found = self._accounts_found(request, names, preset)
+        # Restore the page's order; an account stored under none of the selected
+        # spellings is kept, at the end.
+        by_name = {account["username"]: account for account in found}
+        claimed = {name for name in names if name in by_name}
+        ordered = [by_name[name] for name in names if name in by_name]
+        ordered.extend(account for account in found if account["username"] not in claimed)
+        return ordered
+
+    def _account_addressed(self, request, username, preset=None):
+        """
+        Return the one account a member address names, as this caller may see it.
+
+        The lookup settles which stored account an address names, so the
+        account it comes back with is the answer here whatever name that
+        account is stored under. An address the lookup comes back from with
+        several accounts and none of them stored under exactly the name given
+        names no one of them, so it is refused rather than answered with
+        whichever of them came back first.
+        """
+        found = self._accounts_found(request, [username], preset)
+        return _the_one_addressed(username, found, lambda account: account["username"])
+
+    def _accounts_found(self, request, names, preset):
+        """Return the accounts the lookup comes back with for these names."""
+        try:
+            return get_account_settings(request, names, view=preset if preset == SHARED_VIEW else None)
+        except UserNotFound as exc:
+            raise NotFound from exc
+
+    def _selected_usernames(self, request, selection):
+        """Return the usernames the selectors name, in the order the page carries them."""
+        return usernames_among(
+            self._selected_names(request, selection),
+            selection.get("ordering") or ACCOUNT_DEFAULT_SORT,
+        )
+
+    def _selected_names(self, request, selection):
+        """
+        Return the usernames named by whichever selector the caller used.
+
+        Every selector narrows the same collection, so each one that finds
+        nothing narrows it to nothing and leaves the page empty, whether it
+        was given a name, an address or an identifier. An address an account
+        held before it was retired is the exception: the account was there and
+        is not a row this page can carry, which is reported rather than left
+        out in silence.
+        """
+        usernames = selection.get("username")
+        if usernames:
+            return names_in(usernames)
+        email = selection.get("email")
+        if email:
+            return self._usernames_holding_email(email)
+        identifier = selection.get("lms_user_id")
+        if identifier is not None:
+            return self._usernames_holding_identifier(identifier)
+        return [request.user.username]
+
+    def _usernames_holding_email(self, email):
+        """Return the accounts holding this address, by name, and nothing when none does."""
+        if is_email_retired(email):
+            raise self._retired_account(email)
+        return usernames_holding_email(email)
+
+    def _usernames_holding_identifier(self, identifier):
+        """Return the account holding this numeric identifier, and nothing when none does."""
+        username = username_holding_id(identifier)
+        return [username] if username is not None else []
+
+    def _retired_account(self, email):
+        """Build the refusal for an address an account held before it was retired."""
+        retirement = cancellable_retirement_for_email(email)
+        return RetiredAccount(
+            accounts.RETIRED_EMAIL_MSG,
+            can_cancel_retirement=retirement is not None,
+            retirement_id=retirement.id if retirement is not None else None,
+        )
+
+    def _check_change_rate(self, request, changes):
+        """Refuse a property the caller has changed too often lately."""
+        for field, limit_setting in RATE_LIMITED_ACCOUNT_FIELDS:
+            limit = getattr(settings, limit_setting, None)
+            if not (changes.get(field) and limit):
+                continue
+            if is_ratelimited(
+                request=request,
+                group=f"{field}_change_rate_limit",
+                key="user",
+                rate=limit,
+                increment=True,
+            ):
+                log.info("Change of %r refused for %r: over the rate limit", field, request.user.username)
+                raise Throttled(detail=f"Wait before changing {field} again.")
+
+    def _refused_changes(self, username, error):
+        """Return the refusal naming the property that each failed validation."""
+        log.info("Account %r not changed: %r", username, error.field_errors)
+        refusals = {}
+        for field, reported in error.field_errors.items():
+            message = reported.get("user_message") if isinstance(reported, dict) else None
+            refusals[field] = [message or "This value cannot be used here."]
+        return ValidationError(refusals)
+
+    def _failed_change(self, username, error):
+        """
+        Return the failure for a change that was asked for correctly and could not be carried out.
+
+        The body has already been measured against what this endpoint takes,
+        and a value the account refuses is reported property by property, so
+        what is left here is the work itself failing: a row that would not
+        save, a message that would not send. Neither is answered by sending
+        the request again with something else in it, so neither is the
+        caller's fault.
+        """
+        log.error("Account %r not changed: %s", username, error.developer_message)
+        return APIException("The change could not be carried out.")
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    post=extend_schema(
+        summary="Deactivate an account",
+        description=(
+            "Makes the account's password unusable, so its owner can no longer sign in with it. "
+            "The account and the data belonging to it are kept, and none of it is removed. Asking "
+            "for a password reset does not undo this: the reset flow refuses an account whose "
+            "password is unusable, so signing in again takes a new password set on the account by "
+            "other means."
+        ),
+        parameters=[_DEACTIVATION_PATH_PARAM],
+        request=None,
+        responses={
+            204: OpenApiResponse(description="The account was deactivated."),
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+)
+class AccountDeactivationView(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    AccountResourceMixin,
+    StrictQueryParametersMixin,
+    APIView,
+):
+    """
+    Disables the account the address names, so its owner can no longer sign in with it.
+
+    The account and everything belonging to it are kept, and none of it is
+    removed. Asking for a password reset does not undo this.
+    """
+
+    # A view of its own: its callers and body differ from the account collection's.
+
+    permission_classes = (permissions.IsAuthenticated, IsActiveUser, CanDeactivateUser)
+
+    def post(self, request, username):
+        """Make the password of the named account unusable and record it as disabled."""
+        user = self.addressed_account()
+        segment.identify(user.id, {"is_disabled": "true"})
+        user.set_unusable_password()
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class _SearchedAccountsMixin:
+    """
+    The accounts a search names, before it is narrowed to the ones a caller may see.
+
+    A view's scoping policy is applied on top of the selection the classes
+    resolved after it answer with, so the unnarrowed selection is declared
+    here rather than on the view, where it would stand in front of the layer
+    that narrows it and leave the policy with nothing to do.
+    """
+
+    #: The addresses asked about, held for as long as one request is served.
+    searched_emails = ()
+
+    def get_queryset(self):
+        """Return the accounts holding the addresses this request asked about."""
+        return accounts_holding_emails(self.searched_emails)
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    create=extend_schema(
+        summary="Search accounts by email address",
+        description=(
+            "Returns a page of the accounts holding the email addresses in the body. An address "
+            "no account holds is left out of the answer, and a search names at most "
+            f"{EMAIL_SEARCH_MAX_ADDRESSES} addresses. The addresses travel in the body so that "
+            "they are not written to a server log or a browser history, which is why this reads "
+            "with a POST. For the same reason the `next` and `previous` links of the page are "
+            "reached by sending the same body to them, the way this request was sent, rather "
+            "than by fetching them."
+        ),
+        request=EmailSearchSerializer,
+        responses={
+            200: EmailSearchResultSerializer(many=True),
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: _RESP_NOT_FOUND,
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+        },
+    ),
+)
+class EmailSearchViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    StrictQueryParametersMixin,
+    IterablePaginationMixin,
+    ScopedQuerysetMixin,
+    _SearchedAccountsMixin,
+    viewsets.ViewSet,
+):
+    """
+    The accounts holding a given set of email addresses.
+
+    The addresses to look for are sent in the request body, so a search is
+    made with POST, and the links on a page of results are followed by sending
+    the body to them again rather than by fetching them. Only a platform
+    administrator may search here; every other caller is told there is nothing
+    at this address, whatever state their own account is in. An administrator
+    whose account is not active is refused.
+    """
+
+    # A POST so the addresses stay out of server logs and browser histories.
+
+    # The session of an account that has not confirmed its email address is
+    # read rather than dropped, so it gets the answer a token of that account
+    # gets instead of the request being treated as anonymous. A token is read
+    # by the library class the platform's own pair is built on, named because
+    # a view declaring its own classes is not one that pair serves.
+    authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
+    # A caller who is not an administrator is told there is nothing here
+    # before the state of their own account is read, so an inactive account
+    # is not refused in a way that confirms the search exists.
+    permission_classes = (
+        permissions.IsAuthenticated,
+        CanGetAccountInfo,
+        IsStaffOrAbsent,
+        IsActiveUser,
+    )
+    # A platform administrator may read every account the addresses match, so
+    # the policy keeps the selection whole; a narrower policy can replace it
+    # without touching the search below, and the accounts come from the same
+    # table the other collections of this version narrow.
+    scoping_policy = FullScopePolicy()
+    parser_classes = (JSONParser,)
+    metadata_class = AddressMetadata
+    serializer_class = EmailSearchResultSerializer
+    #: A search is asked for by sending the addresses to look for and is
+    #: answered with an account per address found, so the body it takes is not
+    #: the shape it answers with.
+    request_serializer_class = EmailSearchSerializer
+    pagination_class = UserApiPagination
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the output serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def create(self, request):
+        """Return a page of the accounts holding the addresses the body carries."""
+        search = EmailSearchSerializer(data=request.data)
+        search.is_valid(raise_exception=True)
+        self.searched_emails = search.validated_data["emails"]
+        return self.paginate_iterable(request, self.get_queryset())
+
+
+_NAME_CHANGE_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose requested change is confirmed. The name is read as it is "
+    f"stored, so `{OWN_ACCOUNT_IDENTIFIER}` here names an account holding that name rather than "
+    "the account of the caller making the request.",
+    USERNAME_PATTERN,
+)
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    create=extend_schema(
+        summary="Request a profile name change",
+        description=(
+            "Records the full name the caller wants on their profile. The profile keeps its "
+            "current name until the request is confirmed, and a caller who already has a request "
+            "outstanding replaces it with this one."
+        ),
+        request=NameChangeSerializer,
+        responses={
+            201: NameChangeSerializer,
+            400: _RESP_UNUSABLE_BODY,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_SESSION_WITHOUT_ITS_TOKEN,
+            404: OpenApiResponse(
+                ErrorResponse,
+                description="The account of the caller carries no profile to put a name on.",
+            ),
+            406: RESP_NOT_ACCEPTABLE,
+            415: RESP_UNREADABLE_BODY,
+        },
+    ),
+)
+class NameChangeViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    _ActionAddressMixin,
+    StrictQueryParametersMixin,
+    viewsets.ViewSet,
+):
+    """
+    Requests to put a different full name on a user's profile.
+
+    A user asks for the name they want; the profile keeps the name it has
+    until a member of staff confirms the request, which is the point at which
+    the old name is recorded in the profile's history.
+    """
+
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = NameChangeSerializer
+    #: Describes each address by the body and the media types it reads.
+    metadata_class = AddressMetadata
+    #: The actions whose handler reads no body, which their address describes
+    #: none for. Confirming a change carries out the one already asked for, so
+    #: there is nothing for a caller to send.
+    bodiless_actions = ("confirmations",)
+    lookup_field = "username"
+    # The router's default lookup pattern excludes dots, which usernames allow.
+    lookup_value_regex = settings.USERNAME_REGEX_PARTIAL
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def create(self, request):
+        """Record the name the caller wants on their profile."""
+        requested = self.get_serializer(data=request.data)
+        requested.is_valid(raise_exception=True)
+        name = requested.validated_data["name"]
+        rationale = f"Name change requested through account API by {request.user.username}"
+        pending = self._requested_change(request.user, name, rationale)
+        if pending is None:
+            raise ValidationError({"name": ["The profile already carries this name."]})
+        return Response(
+            self.get_serializer({"name": pending.new_name}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        summary="Confirm a requested profile name change",
+        description=(
+            "Puts the name the user asked for on their profile and keeps the name it carried "
+            "until now in the profile's history. Only a member of staff may confirm a request."
+        ),
+        parameters=[_NAME_CHANGE_PATH_PARAM],
+        request=None,
+        responses={
+            204: OpenApiResponse(description="The profile now carries the name that was asked for."),
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: OpenApiResponse(
+                ErrorResponse,
+                description="No such user, or the user has asked for no name change.",
+            ),
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="confirmations",
+        url_name="confirmation",
+        # Confirming somebody else's requested name is a privilege, so this
+        # action also refuses a caller whose own account is no longer active.
+        permission_classes=[permissions.IsAuthenticated, IsActiveUser, IsStaff],
+    )
+    def confirmations(self, request, username):
+        """Put the name the named user asked for on their profile."""
+        user = _user_named(username)
+        pending = get_pending_name_change(user)
+        if pending is None:
+            raise NotFound
+        self._confirm_change(user, pending)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _requested_change(self, user, name, rationale):
+        """Store the name this user asks for, or return nothing when it is the name they have."""
+        try:
+            return do_name_change_request(user, name, rationale)[0]
+        except UserProfile.DoesNotExist as exc:
+            log.warning("Name change refused for %r: the account carries no profile", user.username)
+            raise NotFound from exc
+
+    def _confirm_change(self, user, pending):
+        """Put the requested name on the profile."""
+        try:
+            confirm_name_change(user, pending)
+        except UserProfile.DoesNotExist as exc:
+            log.warning("Name change refused for %r: the account carries no profile", user.username)
+            raise NotFound from exc
+
+
+_VERIFICATION_PATH_PARAM = path_param(
+    "username",
+    "Unique name of the user whose identity verification is addressed. The name is read as it is "
+    f"stored, so `{OWN_ACCOUNT_IDENTIFIER}` here names an account holding that name rather than "
+    "the account of the caller making the request.",
+    USERNAME_PATTERN,
+)
+
+
+def _verification_sort_key(attempt):
+    """Return what an attempt is ordered by, with a tie-break that is always comparable."""
+    return (attempt.updated_at, str(getattr(attempt, "receipt_id", "") or ""))
+
+
+@extend_schema(tags=[SDK_TAG])
+class IDVerificationStatusView(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    AccountResourceMixin,
+    StrictQueryParametersMixin,
+    APIView,
+):
+    """
+    Whether a user has proved their identity, as one summary.
+
+    Every account has a summary, and one belonging to a user who has been
+    through no check says so; the address is absent only when the user it
+    names is. A user may read their own summary, and a staff caller whose own
+    account is still active may read anyone's.
+    """
+
+    # Computed by the identity verification service, one per account; a view of
+    # its own because it admits different callers from the account collection.
+
+    permission_classes = (
+        permissions.IsAuthenticated,
+        # Reading somebody else's summary is a privilege, so the staff half
+        # also refuses a caller whose own account is no longer active.
+        (IsStaff & IsActiveUser) | IsAddressedUser,
+    )
+    serializer_class = VerificationStatusSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer; a plain APIView has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    @extend_schema(
+        summary="Get the identity verification status",
+        description=(
+            "Returns where this user stands on having proved their identity. A user may read "
+            "their own status, and a staff caller may read anyone's. A user who has been through "
+            "no check stands at `none`."
+        ),
+        parameters=[_VERIFICATION_PATH_PARAM],
+        responses={
+            200: VerificationStatusSerializer,
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: OpenApiResponse(ErrorResponse, description="No such user."),
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    )
+    def get(self, request, username):
+        """Return where this user stands on having proved their identity."""
+        standing = IDVerificationService.user_status(_user_named(username))
+        return Response(self.get_serializer({
+            "is_verified": standing.get("status") == APPROVED_STATUS,
+            "status": standing.get("status"),
+            "expiration_datetime": standing.get("verification_expiry", ""),
+        }).data)
+
+
+@extend_schema(tags=[SDK_TAG])
+@extend_schema_view(
+    list=extend_schema(
+        summary="List identity verification attempts",
+        description=(
+            "Returns a page of the attempts this user has made at proving their identity, the "
+            "most recently changed one first. A user who has been through no checks has an "
+            "empty page. A user may read their own attempts, and a staff caller may read "
+            "anyone's."
+        ),
+        # The sort is published from the serializer that validates it, so the
+        # values a caller is held to are the values it reads.
+        parameters=[_VERIFICATION_PATH_PARAM, VerificationQuerySerializer],
+        responses={
+            200: VerificationSerializer(many=True),
+            400: _RESP_BAD_REQUEST,
+            401: RESP_UNAUTHENTICATED,
+            403: _RESP_FORBIDDEN,
+            404: OpenApiResponse(
+                ErrorResponse, description="No such user, or no such page of attempts.",
+            ),
+            406: RESP_NOT_ACCEPTABLE,
+        },
+    ),
+)
+class IDVerificationViewSet(
+    StandardizedErrorMixin,
+    RestrictedApplicationGuardMixin,
+    ReadableErrorDetailMixin,
+    AccountResourceMixin,
+    StrictQueryParametersMixin,
+    IterablePaginationMixin,
+    viewsets.ViewSet,
+):
+    """
+    The attempts one user has made at proving their identity.
+
+    A user may read their own attempts, and a staff caller may read anyone's.
+    A user who has been through no checks has an empty page; the address is
+    absent only when the user it names is.
+    """
+
+    # Collected from the identity verification service's tables and sorted
+    # here, since there is no queryset of this app's to narrow.
+
+    permission_classes = (
+        permissions.IsAuthenticated,
+        # Reading somebody else's attempts is a privilege, so the staff half
+        # also refuses a caller whose own account is no longer active.
+        (IsStaff & IsActiveUser) | IsAddressedUser,
+    )
+    serializer_class = VerificationSerializer
+    pagination_class = UserApiPagination
+    #: Validates the query string, and names the parameters this view reads.
+    query_serializer_class = VerificationQuerySerializer
+
+    def get_serializer(self, *args, **kwargs):
+        """Build the serializer; a plain ViewSet has no generic machinery to do it."""
+        return self.serializer_class(*args, **kwargs)
+
+    def list(self, request, username):
+        """Return a page of this user's attempts, in the order the caller asked for."""
+        query = self.query_serializer_class(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        attempts = IDVerificationService.verifications_for_user(_user_named(username))
+        ordering = query.validated_data.get("ordering") or VERIFICATION_DEFAULT_SORT
+        return self.paginate_iterable(
+            request,
+            sorted(attempts, key=_verification_sort_key, reverse=ordering.startswith("-")),
+        )
