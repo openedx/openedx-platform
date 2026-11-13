@@ -9,11 +9,11 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.43.123
+boto3==1.44.2
     # via
     #   edx-platform-user-retirement-scripts
     #   moto
-botocore==1.43.123
+botocore==1.44.2
     # via
     #   boto3
     #   moto
@@ -26,7 +26,7 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     #   pynacl
 charset-normalizer==3.5.2
     # via requests
-click==8.5.0
+click==8.5.1
     # via
     #   edx-django-utils
     #   edx-platform-user-retirement-scripts
@@ -47,15 +47,15 @@ django-crum==0.7.9
     # via edx-django-utils
 django-waffle==5.0.0
     # via edx-django-utils
-edx-django-utils==8.1.0
+edx-django-utils==8.2.0
     # via edx-rest-api-client
-edx-rest-api-client==7.1.0
+edx-rest-api-client==7.1.2
     # via edx-platform-user-retirement-scripts
-google-api-core==2.43.2
+google-api-core==2.44.0
     # via google-api-python-client
-google-api-python-client==2.201.0
+google-api-python-client==2.202.0
     # via edx-platform-user-retirement-scripts
-google-auth==2.62.0
+google-auth==2.62.2
     # via
     #   google-api-core
     #   google-api-python-client
@@ -92,7 +92,7 @@ opentelemetry-api==1.45.2
     # via google-api-core
 packaging==26.3
     # via pytest
-platformdirs==4.14.3
+platformdirs==4.14.5
     # via zeep
 pluggy==1.7.0
     # via pytest
@@ -154,13 +154,13 @@ s3transfer==0.19.3
     # via boto3
 simple-salesforce==1.12.10
     # via edx-platform-user-retirement-scripts
-simplejson==4.2.0
+simplejson==4.3.0
     # via edx-platform-user-retirement-scripts
 six==1.17.0
     # via python-dateutil
 sqlparse==0.6.1
     # via django
-stevedore==5.9.1
+stevedore==5.10.0
     # via edx-django-utils
 typing-extensions==4.16.0
     # via

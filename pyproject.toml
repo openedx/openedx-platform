@@ -275,7 +275,7 @@ constraint-dependencies = [
     "elasticsearch==7.9.1",
     "social-auth-app-django<=5.4.1",
     "social-auth-core<5.0.0",
-    "pip<26.2.1",
+    "pip<=26.2.2",
     "celery>=5.2.2,!=5.6.1,<6.0.0",
     "django-oauth-toolkit==1.7.1",
     "django-stubs<6",
