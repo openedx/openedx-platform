@@ -240,9 +240,8 @@ development = [
 # unexercised: the CI matrices that would select it (migrations-check.yml,
 # unit-tests.yml) only ever run with django-version: "pinned", which resolves
 # independently via `testing`'s own (unconstrained-except-<6.0) Django requirement.
-# Django 4.2 is no longer tested; the `django42` group and the [tool.uv].conflicts
-# entry that let the two groups share one uv.lock were removed with it. If a second
-# Django version is ever added back, both groups need a [tool.uv].conflicts set again.
+# Django 4.2 is no longer tested; its `django42` group was removed. See
+# [tool.uv].conflicts below before adding a second version.
 django52 = [
     {include-group = "testing"},
     "django>=5.2,<5.3",
@@ -254,6 +253,11 @@ ci = [
 
 [tool.uv]
 default-groups = [] # explicit, not omitted -- uv's own default-groups fallback is ["dev"]
+# Groups that cannot be installed together. Empty while only one explicit Django
+# version group exists; if a second `djangoNN` group is added so two versions can be
+# tested at once, list them here as one set, e.g. [[{ group = "django52" }, { group = "django60" }]],
+# otherwise uv refuses to resolve both into one lock.
+conflicts = []
 
 #  DO NOT EDIT constraint-dependencies DIRECTLY.
 #  This list is managed by `edx_lint write_uv_constraints` and will be
