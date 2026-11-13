@@ -553,7 +553,7 @@ class ContentStore:
                 if tempfile_path is None:
                     thumbnail_file = BytesIO(content.data)
                 else:
-                    with open(tempfile_path) as f:
+                    with open(tempfile_path, "rb") as f:
                         thumbnail_file = BytesIO(f.read())
                 thumbnail_content = StaticContent(thumbnail_file_location, thumbnail_name,
                                                   'image/svg+xml', thumbnail_file)
