@@ -18,6 +18,7 @@ SUPERSEDED_PATHS = (
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
 # their deprecation window.
 LEGACY_MIGRATED_PATH_PREFIXES = (
+    "/api/contentstore/v0/videos/uploads/",     # → /api/authoring/v1/courses/{course_key}/videos/
     "/api/contentstore/v1/xblock/",             # → /api/authoring/v1/xblocks/
     "/api/contentstore/v3/home/",               # → /api/authoring/v3/home/
     "/api/contentstore/v3/course_details/",     # → /api/authoring/v3/courses/{course_key}/details/
