@@ -34,7 +34,7 @@ from openedx_events.testing import OpenEdxEventsTestMixin
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
-from xblock.core import XBlockAside
+from xblock.core import XBlock, XBlockAside
 from xblock.exceptions import NoSuchHandlerError
 from xblock.fields import Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
@@ -3220,6 +3220,92 @@ class TestComponentHandler(TestCase):
             assert mocked_webob_to_django_response.called is True
 
         assert mocked_get_aside_from_xblock.called is is_get_aside_called
+
+
+class HandlerTestBlock(XBlock):
+    """
+    XBlock with one studio handler that changes a field and one that only reads it.
+    """
+
+    text = String(default="", scope=Scope.content)
+
+    @XBlock.json_handler
+    def write_text(self, data, _suffix=""):
+        self.text = data["text"]
+        return {}
+
+    @XBlock.json_handler
+    def read_text(self, _data, _suffix=""):
+        return {"text": self.text}
+
+
+@ddt.ddt
+class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Tests that component_handler only persists handler changes for users with
+    ``courses.edit_course_content``, and rejects them with a 403 for everyone else
+    instead of reporting a success that was never saved.
+    """
+
+    def _call_handler(self, user, handler, data):
+        """
+        Create a HandlerTestBlock in the course, call ``handler`` on it as ``user`` and
+        return the response along with the block as stored afterwards.
+        """
+        block = BlockFactory.create(parent=self.course, category="handlertestblock", user_id=self.user.id)
+        url = reverse(
+            "component_handler",
+            kwargs={"usage_key_string": str(block.location), "handler": handler},
+        )
+        self.client.login(username=user.username, password=self.password)
+        response = self.client.post(url, json.dumps(data), content_type="application/json")
+        return response, self.store.get_item(block.location)
+
+    @XBlock.register_temp_plugin(HandlerTestBlock)
+    @ddt.data(COURSE_EDITOR.external_key, COURSE_STAFF.external_key, COURSE_ADMIN.external_key)
+    def test_user_with_edit_permission_persists_changes(self, role_key):
+        self.add_user_to_role_in_course(self.authorized_user, role_key, self.course.id)
+
+        response, block = self._call_handler(self.authorized_user, "write_text", {"text": "saved"})
+
+        assert response.status_code == 200
+        assert block.text == "saved"
+
+    @XBlock.register_temp_plugin(HandlerTestBlock)
+    def test_user_without_edit_permission_gets_403_on_changes(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+
+        response, block = self._call_handler(self.authorized_user, "write_text", {"text": "saved"})
+
+        assert response.status_code == 403
+        assert block.text == ""
+
+    @XBlock.register_temp_plugin(HandlerTestBlock)
+    def test_user_without_edit_permission_can_call_read_only_handler(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+
+        response, _block = self._call_handler(self.authorized_user, "read_text", {})
+
+        assert response.status_code == 200
+        assert json.loads(response.content) == {"text": ""}
+
+    @XBlock.register_temp_plugin(HandlerTestBlock)
+    def test_legacy_staff_persists_changes_when_authz_disabled(self):
+        self.set_authz_enabled(False)
+
+        response, block = self._call_handler(self.staff_user, "write_text", {"text": "saved"})
+
+        assert response.status_code == 200
+        assert block.text == "saved"
+
+    @XBlock.register_temp_plugin(HandlerTestBlock)
+    def test_legacy_user_without_write_access_gets_403_when_authz_disabled(self):
+        self.set_authz_enabled(False)
+
+        response, block = self._call_handler(self.unauthorized_user, "write_text", {"text": "saved"})
+
+        assert response.status_code == 403
+        assert block.text == ""
 
 
 class TestComponentTemplates(CourseTestCase):
