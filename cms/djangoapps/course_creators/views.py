@@ -3,22 +3,11 @@ Methods for interacting programmatically with the user creator table.
 """
 
 
+from django.conf import settings
+
 from cms.djangoapps.course_creators.models import CourseCreator
 from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseCreatorRole, OrgContentCreatorRole
-
-
-def add_user_with_status_unrequested(user):
-    """
-    Adds a user to the course creator table with status 'unrequested'.
-
-    If the user is already in the table, this method is a no-op
-    (state will not be changed).
-
-    If the user is marked as is_staff, this method is a no-op (user
-    will not be added to table).
-    """
-    _add_user(user, CourseCreator.UNREQUESTED)
 
 
 def add_user_with_status_granted(caller, user):
@@ -85,8 +74,19 @@ def user_requested_access(user):
 
     This changes the user state to CourseCreator.PENDING, unless the user
     state is already CourseCreator.GRANTED, in which case this method is a no-op.
+    A user not yet in the table is added first. Nothing is recorded where the
+    table is not consulted: for staff, and on sites where course creation is
+    disabled or not restricted to the creator group.
     """
-    user = CourseCreator.objects.get(user=user)
+    if (
+        user.is_staff
+        or getattr(settings, 'DISABLE_COURSE_CREATION', False)
+        or not getattr(settings, 'ENABLE_CREATOR_GROUP', False)
+    ):
+        return
+    # Created as 'unrequested' and then saved as 'pending', so that the change
+    # of state notifies the admins.
+    user, _ = CourseCreator.objects.get_or_create(user=user)
     if user.state != CourseCreator.GRANTED:
         user.state = CourseCreator.PENDING
         user.save()
