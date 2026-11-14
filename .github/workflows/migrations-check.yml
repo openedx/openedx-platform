@@ -20,7 +20,7 @@ jobs:
         # 'pinned' installs whatever Django version `testing` resolves to under the
         # global `Django<6.0` constraint (currently 5.2.x). To test another supported
         # version instead, use a value matching a real `djangoNN` dependency-group in
-        # pyproject.toml (e.g. "42" for the `django42` group), synced below.
+        # pyproject.toml (e.g. "52" for the `django52` group), synced below.
         django-version: ["pinned"]
         mongo-version:
           - "7"
