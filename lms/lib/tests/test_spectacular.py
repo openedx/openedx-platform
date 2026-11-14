@@ -22,17 +22,32 @@ def _schema(*routes):
 
 
 class LmsApiFilterTest(SimpleTestCase):
-    """The pre-processing hook keeps only enrollment endpoints."""
+    """The pre-processing hook keeps enrollment, cohorts v2 and the superseded cohorts v1 routes."""
 
-    def test_keeps_enrollment_drops_the_rest(self):
+    def test_keeps_enrollment_and_the_cohort_routes_only(self):
+        """Cohorts v2, and cohorts v1 routes with a successor, are published; nothing else under /api/cohorts/ is."""
         kept = lms_api_filter([
-            _endpoint("/api/enrollment/v2/enrollments/"),
             _endpoint("/api/enrollment/v1/enrollment"),
+            _endpoint("/api/enrollment/v2/enrollments/"),
+            _endpoint("/api/cohorts/v2/courses/{course_key}/cohorts/"),
+            _endpoint("/api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/{username}/"),
+            _endpoint("/api/cohorts/v2/courses/{course_key}/cohort_settings/"),
+            _endpoint("/api/cohorts/v2/courses/{course_id}/group_configurations"),
+            _endpoint("/api/cohorts/v1/settings/{course_key_string}"),
+            _endpoint("/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}"),
+            _endpoint("/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}/users/{username}"),
+            _endpoint("/api/cohorts/v1/courses/{course_key_string}/users"),
             _endpoint("/api/user/v1/accounts/"),
         ])
         assert [path for path, *_ in kept] == [
-            "/api/enrollment/v2/enrollments/",
             "/api/enrollment/v1/enrollment",
+            "/api/enrollment/v2/enrollments/",
+            "/api/cohorts/v2/courses/{course_key}/cohorts/",
+            "/api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/{username}/",
+            "/api/cohorts/v2/courses/{course_key}/cohort_settings/",
+            "/api/cohorts/v1/settings/{course_key_string}",
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}",
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}/users/{username}",
         ]
 
 
@@ -53,6 +68,26 @@ class LmsMarkLegacyPathsDeprecatedTest(SimpleTestCase):
         assert "deprecated" not in paths["/api/enrollment/v2/enrollments/"]["get"]
         assert "deprecated" not in paths["/api/enrollment/v2/courses/{course_key}/"]["get"]
         assert "deprecated" not in paths["/api/enrollment/v1/enrollment"]["get"]
+
+    def test_superseded_cohorts_v1_routes_are_deprecated(self):
+        """Every published cohorts v1 operation is deprecated; its v2 successors are not."""
+        result = lms_mark_legacy_paths_deprecated(_schema(
+            "/api/cohorts/v1/settings/{course_key_string}",
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}",
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}/users/{username}",
+            "/api/cohorts/v1/courses/{course_key_string}/users",
+            "/api/cohorts/v2/courses/{course_key}/cohorts/",
+            "/api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/",
+            "/api/cohorts/v2/courses/{course_key}/cohort_settings/",
+        ), None, None, False)
+        deprecated = sorted(
+            path for path, item in result["paths"].items() if item["get"].get("deprecated") is True
+        )
+        assert deprecated == [
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}",
+            "/api/cohorts/v1/courses/{course_key_string}/cohorts/{cohort_id}/users/{username}",
+            "/api/cohorts/v1/settings/{course_key_string}",
+        ]
 
     def test_paths_are_left_as_full_urls(self):
         """Paths are not trimmed, so every key resolves against LMS_ROOT_URL."""
