@@ -122,13 +122,27 @@ class CourseLiveConfigurationView(APIView):
         Handle HTTP/POST requests
         """
         pii_sharing_allowed = get_lti_pii_sharing_state_for_course(course_id)
-        provider = ProviderManager().get_enabled_providers().get(request.data.get('provider_type', ''), None)
+        provider_type = request.data.get('provider_type', '')
+        provider = ProviderManager().get_enabled_providers().get(provider_type, None)
+        if provider is None:
+            # `provider_type` is missing, blank, or names a provider that is not enabled.
+            # Reject it here rather than passing None down: the serializers dereference
+            # `provider` in `validate_free_tier` and `LtiSerializer.validate_lti_config`,
+            # both of which run before `_update_course_live_instance` reports the unknown
+            # provider, so an unresolved provider surfaced as an AttributeError (HTTP 500)
+            # instead of the documented 400.
+            if provider_type:
+                raise ValidationError(f'Provider type {provider_type} does not exist')
+            # Mirror the field errors the serializer raises for `provider_type`, which is a
+            # required, non-blank model field.
+            message = 'This field may not be blank.' if 'provider_type' in request.data else 'This field is required.'
+            raise ValidationError({'provider_type': [message]})
         if not pii_sharing_allowed and provider.requires_pii_sharing():
             return Response({
                 "pii_sharing_allowed": pii_sharing_allowed,
                 "message": "PII sharing is not allowed on this course"
             })
-        if provider and not provider.additional_parameters and request.data.get('lti_configuration', False):
+        if not provider.additional_parameters and request.data.get('lti_configuration', False):
             # Add empty lti config if none is provided in case additional params are not required
             request.data['lti_configuration']['lti_config'] = {'additional_parameters': {}}
         configuration = CourseLiveConfiguration.get(course_id)
