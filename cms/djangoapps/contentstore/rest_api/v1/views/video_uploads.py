@@ -45,49 +45,6 @@ from cms.djangoapps.contentstore.rest_api.v1.views.permissions import HasCourseA
 log = logging.getLogger(__name__)
 
 
-class CourseVideoPagination(DefaultPagination):
-    """
-    The platform's page envelope, described in full to schema consumers.
-
-    ``DefaultPagination`` answers with seven members, but the response schema it
-    inherits names only four of them, so a generated client would not know that
-    ``num_pages``, ``current_page`` and ``start`` are there.
-
-    Delete this subclass and use ``DefaultPagination`` directly once
-    edx-drf-extensions documents all seven keys in
-    ``DefaultPagination.get_paginated_response_schema``.
-    """
-
-    def get_paginated_response_schema(self, schema):
-        """Describe every member of the page envelope this paginator returns."""
-        inherited = super().get_paginated_response_schema(schema)["properties"]
-        return {
-            "type": "object",
-            "required": ["count", "num_pages", "current_page", "start", "next", "previous", "results"],
-            "properties": {
-                "count": inherited["count"],
-                "num_pages": {
-                    "type": "integer",
-                    "description": "Number of pages the results are divided into.",
-                    "example": 13,
-                },
-                "current_page": {
-                    "type": "integer",
-                    "description": "Number of the page returned.",
-                    "example": 4,
-                },
-                "start": {
-                    "type": "integer",
-                    "description": "Position of this page's first result within the whole list.",
-                    "example": 30,
-                },
-                "next": inherited["next"],
-                "previous": inherited["previous"],
-                "results": inherited["results"],
-            },
-        }
-
-
 _COURSE_KEY_PARAMETER = OpenApiParameter(
     name="course_key",
     description="Key of the course the videos belong to, for example course-v1:edX+DemoX+Demo_Course.",
@@ -140,8 +97,8 @@ _PAGE_PARAMETER = OpenApiParameter(
 _PAGE_SIZE_PARAMETER = OpenApiParameter(
     name="page_size",
     description=(
-        f"Number of videos per page. Defaults to {CourseVideoPagination.page_size}; a larger "
-        f"value is reduced to the maximum of {CourseVideoPagination.max_page_size}."
+        f"Number of videos per page. Defaults to {DefaultPagination.page_size}; a larger "
+        f"value is reduced to the maximum of {DefaultPagination.max_page_size}."
     ),
     required=False,
     type=int,
@@ -290,7 +247,7 @@ class CourseVideoUploadsViewSet(
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, HasCourseAuthorAccess)
     serializer_class = CourseVideoSerializer
-    pagination_class = CourseVideoPagination
+    pagination_class = DefaultPagination
     minimal_fields = MINIMAL_VIDEO_FIELDS
 
     def __init__(self, **kwargs):
