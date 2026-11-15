@@ -5,7 +5,7 @@ API Serializers for content tagging org
 from __future__ import annotations
 
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
+from openedx_authz.authz import COURSES_MANAGE_TAGS
 from openedx_learning.api import is_competency_taxonomy
 from openedx_tagging.api import TaxonomyType
 from openedx_tagging.rest_api.v1.serializers import (

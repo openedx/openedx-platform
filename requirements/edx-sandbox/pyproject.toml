@@ -32,7 +32,7 @@ constraint-dependencies = [
     "elasticsearch<7.14.0",
     "social-auth-app-django<6.0.0",
     "social-auth-core<5.0.0",
-    "pip<26.2.1",
+    "pip<=26.2.2",
     "numpy<2.0.0",
     "lxml==5.3.2",
     "setuptools<82",

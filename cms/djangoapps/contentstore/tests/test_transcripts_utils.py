@@ -15,7 +15,7 @@ import pytest
 from django.conf import settings
 from django.test.utils import override_settings
 from django.utils import translation
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
+from xblock_video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.tests.utils import setup_caption_responses
 from common.djangoapps.student.tests.factories import UserFactory

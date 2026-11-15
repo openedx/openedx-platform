@@ -12,7 +12,7 @@ from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.urls import resolve, reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.test import APIClient
 

@@ -5,7 +5,7 @@ from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_PAGES_AND_RESOURCES, COURSES_VIEW_PAGES_AND_RESOURCES
+from openedx_authz.authz import COURSES_MANAGE_PAGES_AND_RESOURCES, COURSES_VIEW_PAGES_AND_RESOURCES
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.request import Request

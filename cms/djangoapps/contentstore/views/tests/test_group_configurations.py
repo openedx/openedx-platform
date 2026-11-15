@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import ddt
 from django.test import Client
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest

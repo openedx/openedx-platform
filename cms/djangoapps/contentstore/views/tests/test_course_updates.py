@@ -6,7 +6,7 @@ unit tests for course_info views and models.
 import json
 
 from opaque_keys.edx.keys import UsageKey
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.test_course_settings import CourseTestCase
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient

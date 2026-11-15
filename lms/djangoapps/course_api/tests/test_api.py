@@ -11,7 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
 from django.test import TestCase, override_settings
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.roles import COURSE_EDITOR
+from openedx_authz.authz import COURSE_EDITOR
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory

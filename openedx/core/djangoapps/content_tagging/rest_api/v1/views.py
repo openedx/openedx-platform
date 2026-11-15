@@ -10,7 +10,7 @@ from django.core import exceptions
 from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from openedx_learning.api import create_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist, TaxonomyType
