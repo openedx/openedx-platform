@@ -145,11 +145,13 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
         Serialize the object tags grouped by taxonomy, adding ``taxonomy_type`` to each taxonomy entry.
 
         ``taxonomy_type`` is "competency" when ``is_competency_taxonomy`` (the CBE public API) says the
-        taxonomy is competency-backed, and "tags" otherwise. All the taxonomies are checked with one query,
-        through ``select_competency_taxonomies``, however many there are; no query runs for an untagged object.
+        taxonomy is competency-backed, and "tags" otherwise.
+
+        ``is_competency_taxonomy`` costs one query per taxonomy unless the taxonomies are loaded through
+        ``select_competency_taxonomies``, so the check is batched this way to keep the query count flat.
         """
         data = super().to_representation(instance)
-        taxonomy_ids = {obj_tag.taxonomy_id for obj_tag in instance if obj_tag.taxonomy_id is not None}
+        taxonomy_ids = {obj_tag.taxonomy_id for obj_tag in instance}
         competency_taxonomy_ids = {
             taxonomy.pk
             for taxonomy in select_competency_taxonomies(Taxonomy.objects.filter(pk__in=taxonomy_ids))

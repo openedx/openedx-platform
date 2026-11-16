@@ -2135,11 +2135,11 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         TaxonomyOrg.objects.create(taxonomy=taxonomy, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
         return taxonomy
 
-    def _get_taxonomy_entries(self, object_id, user=None) -> list[dict]:
+    def _get_taxonomy_entries(self, object_id) -> list[dict]:
         """
-        GET the object's tags (as staffA unless another user is given) and return the taxonomy entries.
+        GET the object's tags as staffA and return the taxonomy entries.
         """
-        self.client.force_authenticate(user=user or self.staffA)
+        self.client.force_authenticate(user=self.staffA)
         response = self.client.get(OBJECT_TAGS_URL.format(object_id=object_id))
         assert response.status_code == 200
         return response.data[str(object_id)]["taxonomies"]
@@ -2193,24 +2193,26 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         All taxonomies here are all-org on purpose. For org-owned taxonomies, ``can_tag_object`` makes its own
         organization lookups, a separate cost that this test leaves out so it isolates the cost of ``taxonomy_type``.
         """
+        object_id = str(self.courseA)
+        url = OBJECT_TAGS_URL.format(object_id=object_id)
+        self.client.force_authenticate(user=self.staff)
+        tagging_api.tag_object(object_id=object_id, taxonomy=self.t1, tags=["android"])
+        self.client.get(url)  # Warm up the site and waffle flag caches, as test_object_tags_query_count does.
+        with CaptureQueriesContext(connection) as queries_with_one_taxonomy:
+            self.client.get(url)
+
         competency = self._create_competency_taxonomy()
         extra = tagging_api.create_taxonomy(name="Extra all-org taxonomy", enabled=True)
         Tag.objects.create(taxonomy=extra, value="Extra")
         TaxonomyOrg.objects.create(taxonomy=extra, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
-        tagging_api.tag_object(object_id=str(self.courseB), taxonomy=self.t1, tags=["android"])
-        for taxonomy, tag in ((self.t1, "android"), (competency, "Triage"), (extra, "Extra")):
-            tagging_api.tag_object(object_id=str(self.courseA), taxonomy=taxonomy, tags=[tag])
+        tagging_api.tag_object(object_id=object_id, taxonomy=competency, tags=["Triage"])
+        tagging_api.tag_object(object_id=object_id, taxonomy=extra, tags=["Extra"])
 
-        query_counts = []
-        for course, expected_taxonomies in ((self.courseB, 1), (self.courseA, 3)):
-            # Warm up the site and waffle flag caches, as test_object_tags_query_count does.
-            self._get_taxonomy_entries(course, self.staff)
-            with CaptureQueriesContext(connection) as queries:
-                entries = self._get_taxonomy_entries(course, self.staff)
-            assert len(entries) == expected_taxonomies
-            query_counts.append(len(queries))
+        with CaptureQueriesContext(connection) as queries_with_three_taxonomies:
+            response = self.client.get(url)
 
-        assert query_counts[0] == query_counts[1]
+        assert len(response.data[object_id]["taxonomies"]) == 3
+        assert len(queries_with_three_taxonomies) == len(queries_with_one_taxonomy)
 
 
 @skip_unless_cms
