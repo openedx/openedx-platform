@@ -517,10 +517,11 @@ What the new API already gives you
 * Storage backend is configured by ``settings.OPENEDX_LEARNING['MEDIA']``.
 
 The design is laid out in `openedx-core ADR 0005, "Serving Course Team Authored Static Assets"
-<https://github.com/openedx/openedx-core/blob/main/docs/openedx_content/decisions/0005-serving-static-assets.rst>`__,
-which explicitly anticipates courses migrating onto it: "we'll want to allow courses
-to port their existing files and uploads into this system … probably by creating a non-XBlock,
-filesystem Component type that can treat the entire course's uploads as a Component."
+<https://github.com/openedx/openedx-core/blob/main/docs/openedx_content/decisions/0005-serving-static-assets.rst>`__.
+Courses migrating onto it is proposed in `openedx-core ADR 0013, "Shared Static Assets"
+<https://github.com/openedx/openedx-core/blob/main/docs/openedx_content/decisions/0013-shared-static-assets.rst>`__,
+which adds a shared "Asset": a publishable entity that holds exactly one file
+and is keyed by filename.
 
 edx-platform already has a working, if unoptimised, precedent in
 ``get_component_version_asset`` in
@@ -564,13 +565,13 @@ Model mismatches to resolve
      - ``Media.MAX_FILE_SIZE`` = 50 MB
    * - Serving
      - Django streams from GridFS, memcached in front
-     - ``X-Accel-Redirect`` to a reverse proxy, separate domain
+     - ``X-Accel-Redirect`` to a reverse proxy
 
 The scope mismatch is the big one. Course "Files & Uploads" is deliberately *not* attached to
 any block — it is a course-wide bucket that any block may reference by ``/static/`` path, and
-Studio's UI lists and manages it as such. Mapping it onto ``ComponentVersionMedia`` requires
-inventing a course-level pseudo-component (as ADR 0005 suggests), or adding a course-level
-media association to ``openedx_content`` alongside the component-level one.
+Studio's UI lists and manages it as such. ``ComponentVersionMedia`` cannot represent that, so
+ADR 0013 proposes a course-level "Asset" entity in ``openedx_content`` alongside the
+component-level media.
 
 Specific considerations
 =======================
@@ -581,9 +582,7 @@ learners' browser caches and bookmarks, into CDN caches, into third-party course
 into every OLX tarball ever produced. Any replacement needs
 ``/asset-v1:...+type@asset+block@foo.png`` (and maybe ``/c4x/...``?) to keep resolving — most likely by
 retaining the contentserver URL patterns and having the view resolve an ``AssetKey`` to a new
-backend record. Note that ADR 0005 also mandates serving assets from a *different domain*,
-which is incompatible with the current same-origin URLs; both need to be served during any
-transition.
+backend record. Note that ADR 0005 mandates serving assets under new URLs; both need to be served during any transition.
 
 **2. Read paths are hot and latency-sensitive.**
 ``StaticContent.get_canonicalized_asset_path()`` performs a ``find()`` per ``/static/`` URL
