@@ -6,7 +6,7 @@ import logging
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_EXPORT_TAGS
+from openedx_authz.authz import COURSES_EXPORT_TAGS
 from openedx_tagging import rules as oel_tagging_rules
 
 from common.djangoapps.student.roles import enable_authz_course_authoring

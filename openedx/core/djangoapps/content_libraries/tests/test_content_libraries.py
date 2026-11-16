@@ -21,8 +21,7 @@ from django.test.client import Client
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants import roles
-from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz.authz import LIBRARY_ADMIN, LIBRARY_AUTHOR, LIBRARY_CONTRIBUTOR, LIBRARY_USER, VIEW_LIBRARY
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_content.models_api import LearningPackage
 from organizations.models import Organization
@@ -31,6 +30,7 @@ from rest_framework.test import APITestCase
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.fixtures import seed_policies
 from openedx.core.djangoapps.content_libraries.constants import CC_4_BY
 from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
 from openedx.core.djangoapps.content_libraries.tests.base import (
@@ -2432,7 +2432,8 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
 
     def setUp(self):
         super().setUp()
-        self._seed_database_with_policies()
+        seed_policies()
+        AuthzEnforcer.get_enforcer().clear_policy()  # Clear to simulate fresh start for each test
 
         self.library_admin = UserFactory.create(
             username="library_admin",
@@ -2474,44 +2475,22 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
 
         authz_api.assign_role_to_user_in_scope(
             self.library_admin.username,
-            roles.LIBRARY_ADMIN.external_key, self.lib_id)
+            LIBRARY_ADMIN.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_author.username,
-            roles.LIBRARY_AUTHOR.external_key, self.lib_id)
+            LIBRARY_AUTHOR.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_contributor.username,
-            roles.LIBRARY_CONTRIBUTOR.external_key, self.lib_id)
+            LIBRARY_CONTRIBUTOR.external_key, self.lib_id)
         authz_api.assign_role_to_user_in_scope(
             self.library_user.username,
-            roles.LIBRARY_USER.external_key, self.lib_id)
+            LIBRARY_USER.external_key, self.lib_id)
         AuthzEnforcer.get_enforcer().load_policy()  # Load policies to simulate fresh start
 
     def tearDown(self):
         """Clean up after each test to ensure isolation."""
         super().tearDown()
         AuthzEnforcer.get_enforcer().clear_policy()  # Clear policies after each test to ensure isolation
-
-    @classmethod
-    def _seed_database_with_policies(cls):
-        """Seed the database with policies from the policy file.
-
-        This simulates the one-time database seeding that would happen
-        during application deployment, separate from the runtime policy loading.
-        """
-        import casbin
-        import pkg_resources
-        from openedx_authz.engine.utils import migrate_policy_between_enforcers
-
-        global_enforcer = AuthzEnforcer.get_enforcer()
-        global_enforcer.load_policy()
-        model_path = pkg_resources.resource_filename("openedx_authz.engine", "config/model.conf")
-        policy_path = pkg_resources.resource_filename("openedx_authz.engine", "config/authz.policy")
-
-        migrate_policy_between_enforcers(
-            source_enforcer=casbin.Enforcer(model_path, policy_path),
-            target_enforcer=global_enforcer,
-        )
-        global_enforcer.clear_policy()  # Clear to simulate fresh start for each test
 
     def _all_users_excluding(self, excluded_users):
         return set(self.list_of_all_users) - set(excluded_users)

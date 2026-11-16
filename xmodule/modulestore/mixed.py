@@ -23,8 +23,9 @@ from openedx_events.content_authoring.signals import (
 )
 
 from xmodule.assetstore import AssetMetadata
+from xmodule.util.deprecation import deprecated
 
-from . import XMODULE_FIELDS_WITH_USAGE_KEYS, ModuleStoreWriteBase
+from . import ASSET_METADATA_DEPRECATION_MESSAGE, XMODULE_FIELDS_WITH_USAGE_KEYS, ModuleStoreWriteBase
 from .draft_and_published import ModuleStoreDraftAndPublished
 from .exceptions import DuplicateCourseError, ItemNotFoundError
 
@@ -455,6 +456,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(course_key)
         return store.delete_course(course_key, user_id)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def save_asset_metadata(self, asset_metadata, user_id, import_only=False):
         """
         Saves the asset metadata for a particular course's asset.
@@ -470,6 +472,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(asset_metadata.asset_id.course_key)
         return store.save_asset_metadata(asset_metadata, user_id, import_only)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def save_asset_metadata_list(self, asset_metadata_list, user_id, import_only=False):
         """
         Saves the asset metadata for each asset in a list of asset metadata.
@@ -488,6 +491,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(asset_metadata_list[0].asset_id.course_key)
         return store.save_asset_metadata_list(asset_metadata_list, user_id, import_only)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     @strip_key
     def find_asset_metadata(self, asset_key, **kwargs):
         """
@@ -502,6 +506,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(asset_key.course_key)
         return store.find_asset_metadata(asset_key, **kwargs)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     @strip_key
     def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):
         """
@@ -524,6 +529,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(course_key)
         return store.get_all_asset_metadata(course_key, asset_type, start, maxresults, sort, **kwargs)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def delete_asset_metadata(self, asset_key, user_id):
         """
         Deletes a single asset's metadata.
@@ -538,6 +544,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(asset_key.course_key)
         return store.delete_asset_metadata(asset_key, user_id)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def copy_all_asset_metadata(self, source_course_key, dest_course_key, user_id):
         """
         Copy all the course assets from source_course_key to dest_course_key.
@@ -563,6 +570,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
             # Courses in the same modulestore can be handled by the modulestore itself.
             source_store.copy_all_asset_metadata(source_course_key, dest_course_key, user_id)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def set_asset_metadata_attr(self, asset_key, attr, value, user_id):
         """
         Add/set the given attr on the asset at the given location. Value can be any type which pymongo accepts.
@@ -580,6 +588,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         store = self._get_modulestore_for_courselike(asset_key.course_key)
         return store.set_asset_metadata_attrs(asset_key, {attr: value}, user_id)
 
+    @deprecated(ASSET_METADATA_DEPRECATION_MESSAGE)
     def set_asset_metadata_attrs(self, asset_key, attr_dict, user_id):  # pylint: disable=arguments-differ
         """
         Add/set the given dict of attrs on the asset at the given location. Value can be any type which pymongo accepts.

@@ -28,7 +28,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.locator import LibraryLocator
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx_authz.authz import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from path import Path as path
 from rest_framework import status
 from rest_framework.test import APIClient

@@ -11,7 +11,7 @@ import ddt
 import pytz
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
-from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_authz.authz import COURSE_STAFF
 from search.api import perform_search
 
 from cms.djangoapps.contentstore.courseware_index import CoursewareSearchIndexer, SearchIndexingError

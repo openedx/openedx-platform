@@ -188,14 +188,6 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
             asset_son = asset.get('content_son', asset['_id'])
             self.assertAssetsEqual(asset_son, course1_id, course2_id)
 
-    def check_verticals(self, items):
-        """ Test getting the editing HTML for each vertical. """
-        # assert is here to make sure that the course being tested actually has verticals (units) to check.
-        self.assertGreater(len(items), 0, "Course has no verticals (units) to check")  # noqa: PT009
-        for block in items:
-            resp = self.client.get_html(get_url('container_handler', block.location))
-            self.assertEqual(resp.status_code, 200)  # noqa: PT009
-
     def assertAssetsEqual(self, asset_son, course1_id, course2_id):
         """Verifies the asset of the given key has the same attributes in both given courses."""
         content_store = contentstore()

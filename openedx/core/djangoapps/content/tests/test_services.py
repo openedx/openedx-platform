@@ -10,7 +10,8 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.api import assign_role_to_user_in_scope
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
+    COURSE_STAFF,
     COURSES_CREATE_FILES,
     COURSES_EDIT_COURSE_CONTENT,
     COURSES_EDIT_FILES,
@@ -21,7 +22,6 @@ from openedx_authz.constants.permissions import (
     REUSE_LIBRARY_CONTENT,
     VIEW_LIBRARY,
 )
-from openedx_authz.constants.roles import COURSE_STAFF
 from openedx_authz.data import PermissionData
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from organizations.models import Organization

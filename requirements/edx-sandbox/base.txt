@@ -7,7 +7,7 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 chem==2.0.1
     # via edx-sandbox
-click==8.5.0
+click==8.5.1
     # via nltk
 cloudpickle==3.1.2
     # via joblib
@@ -75,7 +75,7 @@ python-dateutil==4.0.0
     # via matplotlib
 random2==1.0.2
     # via edx-sandbox
-regex==2026.9.29
+regex==2026.11.9
     # via nltk
 scipy==1.17.1
     # via

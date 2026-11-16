@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from logging import getLogger
 
-from django.conf import settings
 from django.db import transaction
 from lazy import lazy
 from openedx_learning.api import GradedObjectScore, record_graded_object_statuses
@@ -43,11 +42,9 @@ def _enqueue_competency_rollup(user_id, object_ids):
 
 def _record_competency_status(student, grades):
     """
-    Records competency status inside the caller's transaction and returns the object ids to roll up, or an empty
-    list when tracking is off, nothing is scored, or no rows changed.
+    Records competency status inside the caller's transaction and returns the object ids to roll up. Returns an
+    empty list when nothing is scored or no status row changed.
     """
-    if not settings.ENABLE_COMPETENCY_MASTERY_TRACKING:
-        return []
     scores = [score for score in (grade.graded_object_score() for grade in grades) if score]
     if not scores or not record_graded_object_statuses(user_id=student.id, scores=scores):
         return []

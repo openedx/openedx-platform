@@ -31,10 +31,10 @@ from xblock.core import XBlock
 from xblock.fields import ScopeIds
 from xblock.runtime import KvsFieldData
 from xblock.utils.resources import ResourceLoader
-from xblocks_contrib.video import VideoBlock as _ExtractedVideoBlock
-from xblocks_contrib.video.bumper_utils import bumperize
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
-from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+from xblock_video import VideoBlock as _ExtractedVideoBlock
+from xblock_video.bumper_utils import bumperize
+from xblock_video.exceptions import TranscriptNotFoundError
+from xblock_video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE, ATTR_KEY_USER_ID
 from openedx.core.djangoapps.video_config.transcripts_utils import (
@@ -121,7 +121,7 @@ class _BuiltInVideoBlock(
 
     .. deprecated:: 2026-03
        This built-in video block is deprecated. Please use the extracted ``VideoBlock``
-       from ``xblocks_contrib.video`` instead.
+       from ``xblock_video`` instead.
     """
     is_extracted = False
     has_custom_completion = True
@@ -1202,7 +1202,7 @@ if not settings.USE_EXTRACTED_VIDEO_BLOCK:
     warnings.warn(
         "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
-        "`xblocks_contrib.video.VideoBlock` instead. "
+        "`xblock_video.VideoBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,
