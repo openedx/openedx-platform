@@ -11,6 +11,7 @@ constraints = [
     { name = "django", specifier = "<6.0" },
     { name = "elasticsearch", specifier = "<7.14.0" },
     { name = "lxml", specifier = "==5.3.2" },
+    { name = "mysqlclient", specifier = "!=2.3.1" },
     { name = "pip", specifier = "<=26.2.2" },
     { name = "social-auth-app-django", specifier = "<6.0.0" },
     { name = "social-auth-core", specifier = "<5.0.0" },
