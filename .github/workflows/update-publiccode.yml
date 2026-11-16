@@ -1,0 +1,55 @@
+name: Update publiccode.yml
+
+# publiccode.yml feeds the EU Open Source Solutions Catalogue. Keep the values
+# that already live elsewhere in this repo (Python, Node.js, latest release)
+# fresh by opening a PR whenever they drift.
+
+on:
+  schedule:
+    - cron: "0 3 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-publiccode:
+    # Don't run the weekly job on forks.
+    if: github.repository == 'openedx/openedx-platform' || github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the script reads release/* tags
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Sync publiccode.yml from repo metadata
+        run: |
+          python_version=$(grep -oP '(?<=requires-python = ">=)\d+\.\d+' pyproject.toml)
+          node_version=$(grep -oP '^\d+' .nvmrc)
+          # Newest release/<name>.<N> tag (names are alphabetical) and its date.
+          release_tag=$(git tag --list 'release/*' | sed 's|release/||' | sort -V | tail -n 1)
+          release_date=$(git log -1 --format=%cs "release/${release_tag}")
+
+          # Edit only the matching lines so comments and formatting stay untouched.
+          sed -i \
+            -e "s|^softwareVersion: .*|softwareVersion: \"${release_tag}\"|" \
+            -e "s|^releaseDate: .*|releaseDate: \"${release_date}\"|" \
+            -e "/- name: Python$/{n;s|version: .*|version: \"${python_version}\"|}" \
+            -e "/- name: Node.js$/{n;s|version: .*|version: \"${node_version}\"|}" \
+            publiccode.yml
+
+      - name: Open a pull request if anything changed
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: chore/update-publiccode
+          commit-message: "chore: update publiccode.yml"
+          title: "chore: update publiccode.yml"
+          body: |
+            Automated weekly sync of `publiccode.yml` with `pyproject.toml`, `.nvmrc`
+            and the latest `release/*` tag, using the workflow in `.github/workflows/update-publiccode.yml`.
+          delete-branch: true
