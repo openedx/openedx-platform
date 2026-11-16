@@ -9,11 +9,11 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via edx-platform-user-retirement-scripts
-boto3==1.44.2
+boto3==1.44.3
     # via
     #   edx-platform-user-retirement-scripts
     #   moto
-botocore==1.44.2
+botocore==1.44.3
     # via
     #   boto3
     #   moto
@@ -152,7 +152,7 @@ responses==0.26.3
     # via moto
 s3transfer==0.19.3
     # via boto3
-simple-salesforce==1.12.10
+simple-salesforce==1.12.11
     # via edx-platform-user-retirement-scripts
 simplejson==4.3.0
     # via edx-platform-user-retirement-scripts

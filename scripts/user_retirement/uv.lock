@@ -45,30 +45,30 @@ wheels = [
 
 [[package]]
 name = "boto3"
-version = "1.44.2"
+version = "1.44.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
     { name = "jmespath" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/58/ab/c2d0e6b543e718af9b963e980f9e72d918c2b889cb2cc3749999f63f14f3/boto3-1.44.2.tar.gz", hash = "sha256:70c02826640da17c15067033af01667059dde5e86057c2d1227cd8523c2f24dd", size = 112796, upload-time = "2026-11-12T20:58:21.405Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/f3/625dd5a18c17e703f10029e16ccd991802e784b27cc627045f16d60a5d4c/boto3-1.44.3.tar.gz", hash = "sha256:bba566b5cba78db05c5f6c44d219c8f6fb2cd2b923106f767289e4cd0b87b093", size = 112741, upload-time = "2026-11-13T20:16:51.884Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/ac/d6fb4b50f688b106a9be682d5146829d717bddafef04b061b6ef43d1a859/boto3-1.44.2-py3-none-any.whl", hash = "sha256:d62ff8a9eb06cab9f0b4242d7a2907a8fff9cca630e27ef736660f9d53e5b18e", size = 140157, upload-time = "2026-11-12T20:58:19.236Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/b5/2807516d854b60f430917590fcfe470bc60c5383cd6b27dc57aa6dc6afea/boto3-1.44.3-py3-none-any.whl", hash = "sha256:8c9c4844c7ce184494b102983696d6cdb09f5307ec7f238ca4ad5849fb14e26b", size = 140155, upload-time = "2026-11-13T20:16:50.577Z" },
 ]
 
 [[package]]
 name = "botocore"
-version = "1.44.2"
+version = "1.44.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/fa/5cc188196076a432700671ef36c63fab463f41919b7a1440de906247bb16/botocore-1.44.2.tar.gz", hash = "sha256:39da314d7bab66e9da9af5531445d237beaeeab1fce0ed034bb6315d480b85ce", size = 16642983, upload-time = "2026-11-12T20:58:15.821Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/e8/130935f123174b900f55fef077c33af43825e5b68fe963bcc1fc3e4634eb/botocore-1.44.3.tar.gz", hash = "sha256:44d86fff55ce2d014bd72183ebc164b21b36598253b8234d4f59e8600e09b8b3", size = 16668982, upload-time = "2026-11-13T20:16:47.549Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/de/c9df76a63d82203a335b2ab02e5a976758747c9a5960b096dbc00c22f8eb/botocore-1.44.2-py3-none-any.whl", hash = "sha256:f255849e8adc413812162e100cf53c4d096d07d9fd6f1773d90fa6034f7d8980", size = 16342924, upload-time = "2026-11-12T20:58:11.603Z" },
+    { url = "https://files.pythonhosted.org/packages/20/65/e39cc0e0d16cf9efe0afab0edef48b89491b548e2c7d7ddc23bbb2c6422c/botocore-1.44.3-py3-none-any.whl", hash = "sha256:793eac2a7ca167e9376b136cf000e1675e9ffe8d7ec609160cc1ee00b93ace28", size = 16368633, upload-time = "2026-11-13T20:16:43.695Z" },
 ]
 
 [[package]]
@@ -1187,7 +1187,7 @@ wheels = [
 
 [[package]]
 name = "simple-salesforce"
-version = "1.12.10"
+version = "1.12.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "more-itertools" },
@@ -1196,9 +1196,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "zeep" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/2d/05a30c20fa0af40e74b4ff90a4123a0bbb2707d0e36f9c0e52f9e37398bb/simple_salesforce-1.12.10.tar.gz", hash = "sha256:37737e6256a594e9f07b26bba0f1ba6681e8c7622665abd69311a6008a2d5c0e", size = 203808, upload-time = "2026-07-08T19:43:04.938Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/2f/8f6f599f23e38173eab1aae50e0a01696e53c60de3cf42e9ba10f232c2b4/simple_salesforce-1.12.11.tar.gz", hash = "sha256:57d7e8618a90bb8daf2bd18900b45a5649c666eaf2ed3d1da2c6b49bac00be01", size = 204300, upload-time = "2026-11-16T03:40:10.509Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/d1/067958ec7aae4748fc43905e7a62a12e8281d125df3062f438e2caa88476/simple_salesforce-1.12.10-py3-none-any.whl", hash = "sha256:33eb4aedc5eb64d5d7067d4803f99ea1cdecdf660a8a8bd064e9488f219c7b92", size = 191661, upload-time = "2026-07-08T19:43:03.122Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/6b/829ec505799c30719d7b99a2246019f3e2bb3f5d2ea75de5fc554457ed30/simple_salesforce-1.12.11-py3-none-any.whl", hash = "sha256:b3042cb178fcc9b03f1e69e3277aa883ad5f65127c4da9fef50ad0772c6e7520", size = 192091, upload-time = "2026-11-16T03:40:08.725Z" },
 ]
 
 [[package]]

@@ -80,20 +80,20 @@ bleach==6.4.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.44.2
+boto3==1.44.3
     # via
     #   django-ses
     #   fs-s3fs
     #   openedx-platform
     #   ora2
     #   snowflake-connector-python
-botocore==1.44.2
+botocore==1.44.3
     # via
     #   boto3
     #   openedx-platform
     #   s3transfer
     #   snowflake-connector-python
-bracex==3.2.2
+bracex==3.2.3
     # via wcmatch
 bridgekeeper==0.9
     # via openedx-platform
@@ -215,7 +215,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-core
-diff-cover==11.0.1
+diff-cover==11.0.2
 dill==0.4.1
     # via pylint
 distlib==0.4.4
@@ -635,7 +635,7 @@ encutils==1.0.0
     # via cssutils
 enmerkar-underscore==2.4.2
     # via openedx-platform
-enterprise-integrated-channels==0.3.0
+enterprise-integrated-channels==0.4.0
 event-tracking==4.1.5
     # via
     #   edx-completion
@@ -710,7 +710,7 @@ googleapis-common-protos==1.76.0
     # via
     #   google-api-core
     #   grpcio-status
-grimp==3.19
+grimp==3.20
     # via import-linter
 grpcio==1.85.1 ; platform_python_implementation != 'PyPy'
     # via
@@ -949,13 +949,13 @@ openedx-calc==5.1.0
     # via
     #   openedx-platform
     #   xblocks-core
-openedx-core==1.23.0
+openedx-core==1.24.0
     # via openedx-platform
 openedx-django-pyfs==4.1.0
     # via xblock
 openedx-django-require==3.1.0
     # via openedx-platform
-openedx-django-wiki==3.1.2
+openedx-django-wiki==3.1.3
     # via openedx-platform
 openedx-events==11.3.0
     # via
@@ -1257,7 +1257,7 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.11.9
+regex==2026.11.15
     # via nltk
 requests==2.34.2
     # via
@@ -1383,7 +1383,7 @@ social-auth-core==4.9.1
     #   edx-auth-backends
     #   openedx-platform
     #   social-auth-app-django
-sorl-thumbnail==13.4.0
+sorl-thumbnail==13.5.0
     # via
     #   openedx-django-wiki
     #   openedx-platform
@@ -1391,7 +1391,7 @@ sortedcontainers==2.4.0
     # via
     #   openedx-platform
     #   snowflake-connector-python
-soupsieve==4.1
+soupsieve==4.1.1
     # via beautifulsoup4
 sphinx==9.1.1 ; python_full_version < '3.13'
     # via
@@ -1561,7 +1561,7 @@ vulture==2.16
 walrus==0.9.8
     # via edx-event-bus-redis
 watchdog==7.1.0
-wcmatch==12.0.1
+wcmatch==12.0.3
     # via pycasbin
 wcwidth==0.9.4
     # via prompt-toolkit
