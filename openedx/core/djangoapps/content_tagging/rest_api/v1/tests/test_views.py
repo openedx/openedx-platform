@@ -13,6 +13,8 @@ from urllib.parse import parse_qs, urlparse
 import ddt
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
@@ -2000,6 +2002,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'export_id': '13-multiple-taxonomy',
             'taxonomy_id': taxonomy.pk,
             'can_tag_object': True,
+            'taxonomy_type': 'tags',
             'tags': [
                 {
                     'value': 'Tag 1',
@@ -2043,6 +2046,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'taxonomy_id': self.t1.pk,
             'can_tag_object': True,
             'export_id': self.t1.export_id,
+            'taxonomy_type': 'tags',
             'tags': [
                 {
                     'value': 'android',
@@ -2065,19 +2069,19 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert response.data[str(object_id_2)]["taxonomies"] == expected_tags
 
     @ddt.data(
-        ('staff', 'courseA', 10),
-        ('staff', 'libraryA', 13),
-        ('staff', 'collection_key', 13),
-        ("content_creatorA", 'courseA', 15, False),
-        ("content_creatorA", 'libraryA', 18, False),
-        ("content_creatorA", 'collection_key', 18, False),
-        ("library_staffA", 'libraryA', 18, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 18, False),
-        ("library_userA", 'libraryA', 18, False),
-        ("library_userA", 'collection_key', 18, False),
-        ("instructorA", 'courseA', 15),
-        ("course_instructorA", 'courseA', 15),
-        ("course_staffA", 'courseA', 15),
+        ('staff', 'courseA', 11),
+        ('staff', 'libraryA', 14),
+        ('staff', 'collection_key', 14),
+        ("content_creatorA", 'courseA', 16, False),
+        ("content_creatorA", 'libraryA', 19, False),
+        ("content_creatorA", 'collection_key', 19, False),
+        ("library_staffA", 'libraryA', 19, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 19, False),
+        ("library_userA", 'libraryA', 19, False),
+        ("library_userA", 'collection_key', 19, False),
+        ("instructorA", 'courseA', 16),
+        ("course_instructorA", 'courseA', 16),
+        ("course_staffA", 'courseA', 16),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -2121,6 +2125,94 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         assert len(response.data[object_id]["taxonomies"]) == 1
         assert response.data[object_id]["taxonomies"][0]["can_tag_object"] == expected_perm
         assert response.data[object_id]["taxonomies"][0]["tags"] == expected_tags
+
+    def _create_competency_taxonomy(self) -> Taxonomy:
+        """
+        Create a competency taxonomy with one tag, owned by all orgs so the org filter shows it.
+        """
+        taxonomy = create_competency_taxonomy(name="Nursing Competencies", export_id="nursing-competencies")
+        Tag.objects.create(taxonomy=taxonomy, value="Triage")
+        TaxonomyOrg.objects.create(taxonomy=taxonomy, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
+        return taxonomy
+
+    def _get_taxonomy_entries(self, object_id) -> list[dict]:
+        """
+        GET the object's tags as staffA and return the taxonomy entries.
+        """
+        self.client.force_authenticate(user=self.staffA)
+        response = self.client.get(OBJECT_TAGS_URL.format(object_id=object_id))
+        assert response.status_code == 200
+        return response.data[str(object_id)]["taxonomies"]
+
+    def test_get_tags_taxonomy_type_competency(self):
+        competency = self._create_competency_taxonomy()
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=competency, tags=["Triage"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        assert [e["taxonomy_type"] for e in entries] == ["competency"]
+
+    def test_get_tags_taxonomy_type_ordinary(self):
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=self.t1, tags=["android"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        assert [e["taxonomy_type"] for e in entries] == ["tags"]
+
+    def test_get_tags_taxonomy_type_mixed(self):
+        competency = self._create_competency_taxonomy()
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=competency, tags=["Triage"])
+        tagging_api.tag_object(object_id=str(self.courseA), taxonomy=self.t1, tags=["android"])
+
+        entries = self._get_taxonomy_entries(self.courseA)
+
+        types_by_taxonomy_id = {e["taxonomy_id"]: e["taxonomy_type"] for e in entries}
+        assert types_by_taxonomy_id == {competency.pk: "competency", self.t1.pk: "tags"}
+
+    def test_get_tags_untagged_object(self):
+        self.client.force_authenticate(user=self.staffA)
+        response = self.client.get(OBJECT_TAGS_URL.format(object_id=self.courseA))
+
+        assert response.status_code == 200
+        assert response.data == {str(self.courseA): {"taxonomies": []}}
+
+    def test_put_tags_response_includes_taxonomy_type(self):
+        competency = self._create_competency_taxonomy()
+        self.client.force_authenticate(user=self.staffA)
+
+        response = self._call_put_request(self.courseA, competency.pk, ["Triage"])
+
+        assert response.status_code == 200
+        entries = response.data[str(self.courseA)]["taxonomies"]
+        assert [e["taxonomy_type"] for e in entries] == ["competency"]
+
+    def test_get_tags_query_count_independent_of_taxonomy_type_check(self):
+        """
+        The query count does not grow with the number of taxonomies, competency ones included.
+
+        All taxonomies here are all-org on purpose. For org-owned taxonomies, ``can_tag_object`` makes its own
+        organization lookups, a separate cost that this test leaves out so it isolates the cost of ``taxonomy_type``.
+        """
+        object_id = str(self.courseA)
+        url = OBJECT_TAGS_URL.format(object_id=object_id)
+        self.client.force_authenticate(user=self.staff)
+        tagging_api.tag_object(object_id=object_id, taxonomy=self.t1, tags=["android"])
+        self.client.get(url)  # Warm up the site and waffle flag caches, as test_object_tags_query_count does.
+        with CaptureQueriesContext(connection) as queries_with_one_taxonomy:
+            self.client.get(url)
+
+        competency = self._create_competency_taxonomy()
+        extra = tagging_api.create_taxonomy(name="Extra all-org taxonomy", enabled=True)
+        Tag.objects.create(taxonomy=extra, value="Extra")
+        TaxonomyOrg.objects.create(taxonomy=extra, org=None, rel_type=TaxonomyOrg.RelType.OWNER)
+        tagging_api.tag_object(object_id=object_id, taxonomy=competency, tags=["Triage"])
+        tagging_api.tag_object(object_id=object_id, taxonomy=extra, tags=["Extra"])
+
+        with CaptureQueriesContext(connection) as queries_with_three_taxonomies:
+            response = self.client.get(url)
+
+        assert len(response.data[object_id]["taxonomies"]) == 3
+        assert len(queries_with_three_taxonomies) == len(queries_with_one_taxonomy)
 
 
 @skip_unless_cms
