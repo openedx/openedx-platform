@@ -21,4 +21,5 @@ constraint-dependencies = [
     "social-auth-app-django<6.0.0",
     "social-auth-core<5.0.0",
     "pip<=26.2.2",
+    "mysqlclient!=2.3.1",
 ]

@@ -907,7 +907,7 @@ mypy-extensions==1.2.0
     # via
     #   isort
     #   mypy
-mysqlclient==2.3.1
+mysqlclient==2.3.0
     # via
     #   openedx-forum
     #   openedx-platform
