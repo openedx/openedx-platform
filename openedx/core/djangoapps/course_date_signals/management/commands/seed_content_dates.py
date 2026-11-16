@@ -4,7 +4,6 @@ ContentDate table.
 """
 
 import logging
-from typing import List
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -147,7 +146,7 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError(f"Command failed: {str(e)}") from e
 
-    def _get_course_keys(self, options) -> List[CourseKey]:
+    def _get_course_keys(self, options) -> list[CourseKey]:
         """
         Get list of course keys to process based on command options.
         """

@@ -4,17 +4,17 @@ Tests for the seed_content_dates management command.
 
 # pylint: disable=missing-function-docstring
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import StringIO
 from unittest.mock import patch
 
 import pytest
 from django.core.management import CommandError, call_command
 from django.test import TestCase
+from edx_when.api import Assignment
 from opaque_keys.edx.keys import UsageKey
 
 from common.djangoapps.student.tests.factories import UserFactory
-from edx_when.api import Assignment
 from lms.djangoapps.courseware.courses import _Assignment
 from openedx.core.djangoapps.course_date_signals.management.commands.seed_content_dates import (
     Command,
@@ -40,7 +40,7 @@ def _make_assignment(block_key=None, title='Assignment', due=None):
         block_key=block_key or _block_key(),
         title=title,
         url='',
-        date=due or datetime(2024, 6, 1, tzinfo=timezone.utc),
+        date=due or datetime(2024, 6, 1, tzinfo=UTC),
         contains_gated_content=False,
         complete=False,
         past_due=False,
