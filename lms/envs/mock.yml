@@ -231,28 +231,6 @@ CHAT_COMPLETION_MAX_TOKENS: 16385
 CHAT_COMPLETION_RESPONSE_TOKENS: 1000
 CLOSEST_CLIENT_IP_FROM_HEADERS: []
 CMS_BASE: studio-deploy_host
-CODE_JAIL:
-  limit_overrides:
-    codejail_expanded_limits:
-      CPU: 5
-      FSIZE: 5
-      PROXY: 5
-      REALTIME: 5
-      VMEM: 5
-    course-v1:Org+Course+Run:
-      CPU: 5
-      FSIZE: 5
-      PROXY: 5
-      REALTIME: 5
-      VMEM: 5
-  limits:
-    CPU: 1
-    FSIZE: 1048576
-    PROXY: 0
-    REALTIME: 3
-    VMEM: 536870912
-  python_bin: /edx/app/edxapp/venvs/edxapp-sandbox/bin/python
-  user: sandbox
 COMMENTS_SERVICE_KEY: password
 COMMENTS_SERVICE_URL: http://localhost:18080
 COMMERCE_COORDINATOR_REFUND_PATH: /lms/refund/

@@ -222,6 +222,12 @@ big_blue_button_credentials = {
 
 DEFAULT_MOBILE_AVAILABLE = True
 
+# Execute Codejail code locally in tests instead of calling a remote service.
+CODE_JAIL_REST_SERVICE_HOST = "http://localhost:8550"
+CODE_JAIL_REST_SERVICE_REMOTE_EXEC = (
+    "xblock_problem.capa.testing.codejail.send_safe_exec_request_locally"
+)
+
 # Override production settings for testing
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_CUSTOM_DOMAIN = "SET-ME-PLEASE (ex. bucket-name.s3.amazonaws.com)"

@@ -21,7 +21,6 @@ from django.test.client import RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 from submissions import api as submissions_api
-from xblock_problem.capa.testing.codejail import UseUnsafeCodejail
 from xblock_problem.capa.testing.response_xml_factory import (
     CodeResponseXMLFactory,
     CustomResponseXMLFactory,
@@ -816,7 +815,6 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
 
 
-@UseUnsafeCodejail()
 class TestPythonGradedResponse(TestSubmittingProblems):
     """
     Check that we can submit a schematic and custom response, and it answers properly.

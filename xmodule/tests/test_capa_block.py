@@ -29,7 +29,6 @@ from xblock.scorable import Score
 from xblock_problem.capa import responsetypes
 from xblock_problem.capa.correctmap import CorrectMap
 from xblock_problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xblock_problem.capa.testing.codejail import UseUnsafeCodejail
 from xblock_problem.capa.xqueue_interface import XQueueInterface
 
 from lms.djangoapps.courseware.user_state_client import XBlockUserState
@@ -3713,7 +3712,6 @@ class ComplexEncoderTest(unittest.TestCase):
 
 
 @skip_unless_lms
-@UseUnsafeCodejail()
 @pytest.mark.django_db
 class ProblemCheckTrackingTest(unittest.TestCase):
     """
