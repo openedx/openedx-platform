@@ -4,7 +4,7 @@
 import json
 from base64 import b64encode
 
-import httpretty
+import responses
 from oauth2_provider.models import Application
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from social_core.backends.facebook import API_VERSION as FACEBOOK_API_VERSION
@@ -16,7 +16,6 @@ from common.djangoapps.student.tests.factories import UserFactory
 from .testutil import ThirdPartyAuthTestMixin
 
 
-@httpretty.activate
 class ThirdPartyOAuthTestMixin(ThirdPartyAuthTestMixin):
     """
     Mixin with tests for third party oauth views. A TestCase that includes
@@ -34,6 +33,9 @@ class ThirdPartyOAuthTestMixin(ThirdPartyAuthTestMixin):
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
+        responses.start()
+        self.addCleanup(responses.stop)
+        self.addCleanup(responses.reset)
         if self.CREATE_USER:
             self.user = UserFactory.create(password='secret')
             UserSocialAuth.objects.create(user=self.user, provider=self.BACKEND, uid=self.social_uid)
@@ -81,8 +83,8 @@ class ThirdPartyOAuthTestMixin(ThirdPartyAuthTestMixin):
         """
         Register a mock response for the third party user information endpoint with given status and body.
         """
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             self.USER_URL,
             body=body,
             status=status,

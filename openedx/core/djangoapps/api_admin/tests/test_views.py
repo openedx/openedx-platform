@@ -2,9 +2,10 @@
 
 
 import json
+from urllib.parse import urlparse
 
 import ddt
-import httpretty
+import responses
 from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -231,15 +232,14 @@ class CatalogTest(ApiAdminTest):
         self.user = UserFactory(password=password, is_staff=True)
         self.client.login(username=self.user.username, password=password)
 
-    def mock_catalog_endpoint(self, data, catalog_id=None, method=httpretty.GET, status_code=200):
+    def mock_catalog_endpoint(self, data, catalog_id=None, method=responses.GET, status_code=200):
         """ Mock the Course Catalog API's catalog endpoint. """
-        assert httpretty.is_enabled(), 'httpretty must be enabled to mock Catalog API calls.'
 
         url = '{root}/catalogs/'.format(root=settings.COURSE_CATALOG_API_URL.rstrip('/'))
         if catalog_id:
             url += f'{catalog_id}/'
 
-        httpretty.register_uri(
+        responses.add(
             method,
             url,
             body=json.dumps(data),
@@ -261,7 +261,7 @@ class CatalogSearchViewTest(CatalogTest):
         response = self.client.get(self.url)
         assert response.status_code == 200
 
-    @httpretty.activate
+    @responses.activate
     def test_post(self):
         catalog_user = UserFactory()
         self.mock_catalog_endpoint({'results': []})
@@ -283,21 +283,21 @@ class CatalogListViewTest(CatalogTest):
         self.catalog_user = UserFactory()
         self.url = reverse('api_admin:catalog-list', kwargs={'username': self.catalog_user.username})
 
-    @httpretty.activate
+    @responses.activate
     def test_get(self):
         catalog = CatalogFactory(viewers=[self.catalog_user.username])
         self.mock_catalog_endpoint({'results': [catalog.attributes]})
         response = self.client.get(self.url)
         self.assertContains(response, catalog.name)
 
-    @httpretty.activate
+    @responses.activate
     def test_get_no_catalogs(self):
         """Verify that the view works when no catalogs are set up."""
         self.mock_catalog_endpoint({}, status_code=404)
         response = self.client.get(self.url)
         assert response.status_code == 200
 
-    @httpretty.activate
+    @responses.activate
     def test_post(self):
         catalog_data = {
             'name': 'test-catalog',
@@ -305,13 +305,13 @@ class CatalogListViewTest(CatalogTest):
             'viewers': [self.catalog_user.username]
         }
         catalog_id = 123
-        self.mock_catalog_endpoint(dict(catalog_data, id=catalog_id), method=httpretty.POST)
+        self.mock_catalog_endpoint(dict(catalog_data, id=catalog_id), method=responses.POST)
         response = self.client.post(self.url, catalog_data)
-        assert httpretty.last_request().method == 'POST'
+        assert responses.calls[-1].request.method == 'POST'
         self.mock_catalog_endpoint(CatalogFactory().attributes, catalog_id=catalog_id)
         self.assertRedirects(response, reverse('api_admin:catalog-edit', kwargs={'catalog_id': catalog_id}))
 
-    @httpretty.activate
+    @responses.activate
     def test_post_invalid(self):
         catalog = CatalogFactory(viewers=[self.catalog_user.username])
         self.mock_catalog_endpoint({'results': [catalog.attributes]})
@@ -322,7 +322,7 @@ class CatalogListViewTest(CatalogTest):
         })
         assert response.status_code == 400
         # Assert that no POST was made to the catalog API
-        assert len([r for r in httpretty.httpretty.latest_requests if r.method == 'POST']) == 0
+        assert len([r for r in responses.calls if r.request.method == 'POST']) == 0
 
 
 @skip_unless_lms
@@ -336,43 +336,43 @@ class CatalogEditViewTest(CatalogTest):
         self.catalog = CatalogFactory(viewers=[self.catalog_user.username])
         self.url = reverse('api_admin:catalog-edit', kwargs={'catalog_id': self.catalog.id})
 
-    @httpretty.activate
+    @responses.activate
     def test_get(self):
         self.mock_catalog_endpoint(self.catalog.attributes, catalog_id=self.catalog.id)
         response = self.client.get(self.url)
         self.assertContains(response, self.catalog.name)
 
-    @httpretty.activate
+    @responses.activate
     def test_delete(self):
         self.mock_catalog_endpoint(
             self.catalog.attributes,
-            method=httpretty.DELETE,
+            method=responses.DELETE,
             catalog_id=self.catalog.id
         )
         response = self.client.post(self.url, {'delete-catalog': 'on'})
         self.assertRedirects(response, reverse('api_admin:catalog-search'))
-        assert httpretty.last_request().method == 'DELETE'  # pylint: disable=no-member
-        assert httpretty.last_request().path == \
-               f'/api/v1/catalogs/{self.catalog.id}/'  # pylint: disable=no-member
-        assert len(httpretty.httpretty.latest_requests) == 1
+        assert responses.calls[-1].request.method == 'DELETE'  # pylint: disable=no-member
+        assert urlparse(responses.calls[-1].request.url).path == \
+               f'/api/v1/catalogs/{self.catalog.id}/'
+        assert len(responses.calls) == 1
 
-    @httpretty.activate
+    @responses.activate
     def test_edit(self):
         # Mock both PATCH and GET endpoints before making the POST request
-        self.mock_catalog_endpoint(self.catalog.attributes, method=httpretty.PATCH, catalog_id=self.catalog.id)
+        self.mock_catalog_endpoint(self.catalog.attributes, method=responses.PATCH, catalog_id=self.catalog.id)
         new_attributes = dict(self.catalog.attributes, **{'delete-catalog': 'off', 'name': 'changed'})
         self.mock_catalog_endpoint(new_attributes, catalog_id=self.catalog.id)
         response = self.client.post(self.url, new_attributes)
         self.assertRedirects(response, reverse('api_admin:catalog-edit', kwargs={'catalog_id': self.catalog.id}))
 
-    @httpretty.activate
+    @responses.activate
     def test_edit_invalid(self):
         self.mock_catalog_endpoint(self.catalog.attributes, catalog_id=self.catalog.id)
         new_attributes = dict(self.catalog.attributes, **{'delete-catalog': 'off', 'name': ''})
         response = self.client.post(self.url, new_attributes)
         assert response.status_code == 400
         # Assert that no PATCH was made to the Catalog API
-        assert len([r for r in httpretty.httpretty.latest_requests if r.method == 'PATCH']) == 0
+        assert len([r for r in responses.calls if r.request.method == 'PATCH']) == 0
 
 
 @skip_unless_lms
@@ -384,11 +384,11 @@ class CatalogPreviewViewTest(CatalogTest):
         super().setUp()
         self.url = reverse('api_admin:catalog-preview')
 
-    @httpretty.activate
+    @responses.activate
     def test_get(self):
         data = {'count': 1, 'results': ['test data'], 'next': None, 'prev': None}
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add(
+            responses.GET,
             '{root}/courses/'.format(root=settings.COURSE_CATALOG_API_URL.rstrip('/')),
             body=json.dumps(data),
             content_type='application/json'
