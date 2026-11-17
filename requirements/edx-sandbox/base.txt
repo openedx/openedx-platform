@@ -75,7 +75,7 @@ python-dateutil==4.0.0
     # via matplotlib
 random2==1.0.2
     # via edx-sandbox
-regex==2026.11.9
+regex==2026.11.15
     # via nltk
 scipy==1.17.1
     # via
