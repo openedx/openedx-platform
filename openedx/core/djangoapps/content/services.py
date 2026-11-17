@@ -1,14 +1,16 @@
 """
 Services for learning content
 """
+
 from __future__ import annotations
 
 import warnings
 from collections.abc import Callable
 from typing import Literal
 
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from opaque_keys.edx.keys import LearningContextKey
-from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.api import is_user_allowed
 from openedx_authz.authz import (
     COURSES_CREATE_FILES,
@@ -25,6 +27,7 @@ from openedx_authz.data import PermissionData
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.student.roles import enable_authz_course_authoring
+from openedx.core.djangoapps.content.file_utilities import update_course_run_asset
 from openedx.core.djangoapps.content_tagging.rules import UserType
 
 COMMON_PERM_KEY = Literal[
@@ -71,7 +74,7 @@ PERMISSION_MAP: dict[COMMON_PERM_KEY, dict[CONTEXT_TYPES, PermissionData]] = {
     },
     "manage_updates": {
         "course": COURSES_MANAGE_COURSE_UPDATES,
-    }
+    },
 }
 
 
@@ -99,6 +102,7 @@ def _course_fallback_check(fallback_function: Callable[[UserType, CourseLocator]
     system if authz is disabled for a course. Remove this decorator when the old system is
     fully removed and AuthZ is the only way we do checks.
     """
+
     def wrapper(function):
         def wrapped(self: StudioPermissionsService, context_key: LearningContextKey):
             if isinstance(context_key, CourseLocator):
@@ -106,7 +110,9 @@ def _course_fallback_check(fallback_function: Callable[[UserType, CourseLocator]
                     return function(self, context_key)
                 return fallback_function(self._user, context_key)  # pylint: disable=protected-access
             return function(self, context_key)
+
         return wrapped
+
     return wrapper
 
 
@@ -119,7 +125,7 @@ class StudioPermissionsService:
         self._user = user
 
     def _check_permission(self, perm_label: COMMON_PERM_KEY, context_key: LearningContextKey) -> bool:
-        """ Verify that a user has a specific permission for this context. """
+        """Verify that a user has a specific permission for this context."""
         return self._user.is_active and is_user_allowed(
             self._user,
             perm_for_key(perm_label, context_key).identifier,
@@ -128,31 +134,31 @@ class StudioPermissionsService:
 
     @_course_fallback_check(has_studio_read_access)
     def can_read_content(self, context_key: LearningContextKey) -> bool:
-        """ Can the user read the content of this course/library? """
+        """Can the user read the content of this course/library?"""
         return self._check_permission("read_content", context_key)
 
     @_course_fallback_check(has_studio_write_access)
     def can_edit_content(self, context_key: LearningContextKey) -> bool:
-        """ Can the user edit the content of this course/library? """
+        """Can the user edit the content of this course/library?"""
         return self._check_permission("edit_content", context_key)
 
     @_course_fallback_check(has_studio_read_access)
     def can_read_files(self, context_key: LearningContextKey) -> bool:
-        """ Can the user read files for this course/library? """
+        """Can the user read files for this course/library?"""
         return self._check_permission("read_files", context_key)
 
     @_course_fallback_check(has_studio_write_access)
     def can_create_files(self, context_key: LearningContextKey) -> bool:
-        """ Can the user create files for this course/library? """
+        """Can the user create files for this course/library?"""
         return self._check_permission("create_files", context_key)
 
     @_course_fallback_check(has_studio_write_access)
     def can_edit_files(self, context_key: LearningContextKey) -> bool:
-        """ Can the user edit files for this course/library? """
+        """Can the user edit files for this course/library?"""
         return self._check_permission("edit_files", context_key)
 
     def can_read(self, context_key: LearningContextKey) -> bool:
-        """ Does the user have read access to the given course/library? """
+        """Does the user have read access to the given course/library?"""
         warnings.warn(
             "can_read is deprecated. "
             "Use a more specific permission, like can_read_content or can_read_files instead. "
@@ -163,7 +169,7 @@ class StudioPermissionsService:
         return has_studio_read_access(self._user, context_key)
 
     def can_write(self, context_key: LearningContextKey) -> bool:
-        """ Does the user have write access to the given course/library? """
+        """Does the user have write access to the given course/library?"""
         warnings.warn(
             "can_write is deprecated. "
             "Use a more specific permission, like can_edit_content, can_create_files, "
@@ -175,10 +181,49 @@ class StudioPermissionsService:
         return has_studio_write_access(self._user, context_key)
 
     def can_reuse_content(self, context_key: LibraryLocatorV2) -> bool:
-        """ Does the user have the ability to reuse content from this library? """
+        """Does the user have the ability to reuse content from this library?"""
         return self._check_permission("reuse_content", context_key)
 
     @_course_fallback_check(has_studio_write_access)
     def can_manage_updates(self, context_key: CourseLocator) -> bool:
-        """ Does the user have the ability to manage updates for this course? """
+        """Does the user have the ability to manage updates for this course?"""
         return self._check_permission("manage_updates", context_key)
+
+
+class FileService:
+    """
+    Service that provides basic asset management functionality. Should be used
+    in conjunction with StudioPermissionsService to ensure the user has the
+    right to manage assets for this block and/or its context.
+    """
+
+    def __init__(self, user) -> None:
+        self._user = user
+
+    def add_asset_to_block(self, usage_key: LibraryUsageLocatorV2, asset: InMemoryUploadedFile) -> str:
+        """
+        Adds a file asset to a block, and returns the URL for the resulting asset.
+        """
+        from openedx.core.djangoapps.content_libraries.api import add_library_block_static_asset_file
+
+        if isinstance(usage_key, BlockUsageLocator):
+            raise NotImplementedError("Association of files to individual blocks not yet supported in courses.")
+        # Static assets with a /static/ prefix rendered by the backend have their paths
+        # translated to the paths for loading library assets.
+        path = f"static/{asset.name}"
+        # The path must be stored without the leading slash.
+        add_library_block_static_asset_file(usage_key, path, asset.read(), self._user)
+        return "/" + path
+
+    def add_asset_to_context(self, usage_key: BlockUsageLocator, asset: InMemoryUploadedFile) -> str:
+        """
+        Adds a file asset to a block, and returns the URL for the resulting asset.
+        """
+        if isinstance(usage_key, LibraryLocatorV2):
+            raise NotImplementedError("Libraries do not currently allow context-wide files.")
+        asset = update_course_run_asset(usage_key.course_key, asset)
+        return asset.get_static_path_from_location(asset.location)
+
+    # Listing, reading, and deleting not included for now, but welcome for future contribution,
+    # especially once Learning Core's asset support is ready. See:
+    # https://openedx-core--880.org.readthedocs.build/en/880/openedx_content/decisions/0013-shared-static-assets.html#openedx-content-adr-0013
