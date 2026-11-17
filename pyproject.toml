@@ -284,7 +284,7 @@ constraint-dependencies = [
     "sphinx-autoapi<3.6.1",
     "setuptools<82",
     "astroid==4.0.4",
-    "edx-enterprise==9.0.0",
+    "edx-enterprise==9.2.2",
     "djangorestframework<3.18",
     "openedx-forum<0.6.0",
     "pytest<9.2.0",
@@ -399,7 +399,7 @@ uv_constraints = [
     # The team that owns this package will manually bump this package rather than
     # having it pulled in automatically. This is to allow them to better control its
     # deployment and to do it in a process that works better for them.
-    "edx-enterprise==9.0.0",
+    "edx-enterprise==9.2.2",
     # Date: 2026-08-31
     # DRF 3.18.0 changes many=True validation errors from a list to a dict keyed by
     # item index, which breaks the error response shape of several write endpoints.
