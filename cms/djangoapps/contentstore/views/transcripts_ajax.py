@@ -21,11 +21,13 @@ from edxval.api import create_external_video, create_or_update_video_transcript
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryLocatorV2
+from openedx_authz.authz import COURSES_EDIT_COURSE_CONTENT
 from xblock_video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.video_storage_handlers import TranscriptProvider
-from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     GetTranscriptsFromYouTubeException,
@@ -772,12 +774,17 @@ def _get_item(request, data):
                 check_permission=CheckPerm.CAN_EDIT,
             )
         raise TranscriptsRequestValidationException(_('Transcripts are not yet supported for this type of block'))
-    # This is placed before has_course_author_access() to validate the location,
-    # because has_course_author_access() raises error if location is invalid.
+    # This is placed before the permission check to validate the location,
+    # because the check raises an error if the location is invalid.
     item = modulestore().get_item(usage_key)
 
     # use the item's course_key, because the usage_key might not have the run
-    if not has_course_author_access(request.user, item.location.course_key):
+    if not user_has_course_permission(
+        request.user,
+        COURSES_EDIT_COURSE_CONTENT.identifier,
+        item.location.course_key,
+        LegacyAuthoringPermission.WRITE,
+    ):
         raise PermissionDenied()
 
     return item

@@ -15,9 +15,11 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from edxval.api import create_video
 from opaque_keys.edx.keys import UsageKey
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR
 from organizations.tests.factories import OrganizationFactory
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
 from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
@@ -1173,3 +1175,51 @@ class TestCheckTranscripts(BaseTranscripts):
                 'html5_equal': False,
             }
         )
+
+
+@ddt.ddt
+class TestTranscriptsAuthz(CourseAuthoringAuthzTestMixin, BaseTranscripts):
+    """
+    Tests that the '/transcripts/*' views require ``courses.edit_course_content``,
+    with the legacy studio write access as fallback when AuthZ is disabled.
+    """
+
+    def _get_as(self, user, url_name):
+        """
+        Call a transcripts view on the test video as ``user`` and return the response.
+        """
+        self.client.login(username=user.username, password=self.password)
+        data = {
+            'locator': str(self.video_usage_key),
+            'videos': [{'type': 'html5', 'video': 'video1', 'mode': 'mp4'}],
+        }
+        return self.client.get(reverse(url_name), {'data': json.dumps(data)})
+
+    def test_editor_can_check_transcripts(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+
+        response = self._get_as(self.authorized_user, 'check_transcripts')
+
+        assert response.status_code == 200
+
+    @ddt.data('check_transcripts', 'replace_transcripts')
+    def test_auditor_cannot_check_or_import_transcripts(self, url_name):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+
+        response = self._get_as(self.authorized_user, url_name)
+
+        assert response.status_code == 403
+
+    def test_legacy_user_without_write_access_cannot_check_transcripts(self):
+        self.set_authz_enabled(False)
+
+        response = self._get_as(self.unauthorized_user, 'check_transcripts')
+
+        assert response.status_code == 403
+
+    def test_legacy_staff_can_check_transcripts_when_authz_disabled(self):
+        self.set_authz_enabled(False)
+
+        response = self._get_as(self.staff_user, 'check_transcripts')
+
+        assert response.status_code == 200
