@@ -3524,7 +3524,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/9b/58/eee5f4490efada54c
 
 [[package]]
 name = "lti-consumer-xblock"
-version = "11.5.0"
+version = "11.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -3546,9 +3546,9 @@ dependencies = [
     { name = "pyjwt" },
     { name = "xblock" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a0/bd/23166f8721a775ec683cd3fc964d83b117f559db91e914fde84e0bbabc99/lti_consumer_xblock-11.5.0.tar.gz", hash = "sha256:fb8913aa7fdc7df6b5f5fa512f4989f84f71396082bf87734dc13830f85b094c", size = 497035, upload-time = "2026-11-03T13:47:54.92Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/b5/c18a13c944b63f51428a3693390503465c688f568d89197789e0c5c7f565/lti_consumer_xblock-11.5.1.tar.gz", hash = "sha256:372b78b7cc753ef48f88bc10e9c4643b9abb4d94d6ecc093e35272db79b53b87", size = 497390, upload-time = "2026-11-17T18:05:55.273Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/c7/dbdbe7665e982e776c0c383351fd43ae7ef6b84b0aed2961e9fbdeaf5eeb/lti_consumer_xblock-11.5.0-py3-none-any.whl", hash = "sha256:862afc8e58132949051fe5f3858bde8fd1fdf03d6967f7c47ecc73d5a9c9a765", size = 465736, upload-time = "2026-11-03T13:47:53.147Z" },
+    { url = "https://files.pythonhosted.org/packages/89/97/913daa2c4011ccd385796fd0e3f42dc345ff7208441d2ca80264b8096aed/lti_consumer_xblock-11.5.1-py3-none-any.whl", hash = "sha256:58dcff6ff88814bf48e5433498a90667ed70621c254d6b447ef3c132854e8955", size = 465802, upload-time = "2026-11-17T18:05:53.556Z" },
 ]
 
 [[package]]

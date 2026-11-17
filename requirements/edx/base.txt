@@ -738,7 +738,7 @@ lazy-importer==0.1.0 ; python_full_version < '3.15'
     # via importlib-metadata
 legacy-cgi==2.6.4 ; python_full_version >= '3.13'
     # via webob
-lti-consumer-xblock==11.5.0
+lti-consumer-xblock==11.5.1
     # via openedx-platform
 lxml==5.3.2
     # via
