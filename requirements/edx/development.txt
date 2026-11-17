@@ -829,7 +829,7 @@ legacy-cgi==2.6.4 ; python_full_version >= '3.13'
 librt==0.16.0 ; platform_python_implementation != 'PyPy'
     # via mypy
 libsass==0.10.0
-lti-consumer-xblock==11.5.0
+lti-consumer-xblock==11.5.1
     # via openedx-platform
 lxml==5.3.2
     # via
