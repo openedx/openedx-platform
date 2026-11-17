@@ -861,7 +861,7 @@ loremipsum==1.0.5
     # via
     #   -r requirements/edx/base.txt
     #   ora2
-lti-consumer-xblock==9.11.3
+lti-consumer-xblock==9.11.4
     # via -r requirements/edx/base.txt
 lxml[html-clean]==5.3.0
     # via

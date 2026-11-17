@@ -1189,7 +1189,7 @@ loremipsum==1.0.5
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   ora2
-lti-consumer-xblock==9.11.3
+lti-consumer-xblock==9.11.4
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
