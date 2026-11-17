@@ -51,6 +51,12 @@ from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import (
+    COURSES_ENROLL_LEARNERS,
+    COURSES_MANAGE_COURSE_TEAM,
+    COURSES_UNENROLL_LEARNERS,
+    COURSES_VIEW_ENROLLMENTS,
+)
 from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -105,7 +111,7 @@ from lms.djangoapps.instructor.access import (
 )
 from lms.djangoapps.instructor.authz import constants as authz_constants
 from lms.djangoapps.instructor.authz import legacy as authz_legacy
-from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission, user_has_instructor_permission
 from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
@@ -2521,9 +2527,10 @@ class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
 
         * 200: OK - Returns paginated list of active enrollments
         * 401: Unauthorized - User is not authenticated
-        * 403: Forbidden - User lacks instructor permissions
+        * 403: Forbidden - User lacks ``courses.view_enrollments``
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_ENROLLMENTS.identifier,)
     permission_name = permissions.VIEW_ENROLLMENTS
     serializer_class = CourseEnrollmentSerializerV2
     filter_backends = [DjangoFilterBackend]
@@ -2970,10 +2977,17 @@ class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
         * 200: OK - Per-identifier results returned (successes and failures)
         * 400: Bad Request - Invalid top-level parameters
         * 401: Unauthorized - User is not authenticated
-        * 403: Forbidden - User lacks staff permissions
+        * 403: Forbidden - User lacks ``courses.enroll_learners`` (enroll) or
+          ``courses.unenroll_learners`` (unenroll)
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    # Either permission opens the view; ``post`` then requires the one of the requested action.
+    authz_permissions = (COURSES_ENROLL_LEARNERS.identifier, COURSES_UNENROLL_LEARNERS.identifier)
     permission_name = permissions.CAN_ENROLL
+    action_permissions = {
+        'enroll': COURSES_ENROLL_LEARNERS.identifier,
+        'unenroll': COURSES_UNENROLL_LEARNERS.identifier,
+    }
 
     def _compute_enroll_state_transition(self, before, after):
         """Compute the state transition constant for an enroll action."""
@@ -3100,6 +3114,9 @@ class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
         email_students = serializer.validated_data['email_students']
         reason = serializer.validated_data.get('reason', '')
 
+        if not user_has_instructor_permission(request.user, self.action_permissions[action], course_key):
+            raise PermissionDenied(f'This user does not have permission to {action} learners.')
+
         course = get_course_by_id(course_key) if email_students else None
         is_secure = request.is_secure()
 
@@ -3153,9 +3170,11 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
         * 200: OK - Per-identifier results returned (successes and failures)
         * 400: Bad Request - Invalid top-level parameters
         * 401: Unauthorized - User is not authenticated
-        * 403: Forbidden - User lacks instructor permissions
+        * 403: Forbidden - User lacks ``courses.manage_course_team``
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_MANAGE_COURSE_TEAM.identifier,)
+    # Instructor access, narrower than the default legacy check of ``courses.manage_course_team``.
     permission_name = permissions.CAN_BETATEST
 
     def _modify_one(self, action, course, course_key, identifier, email_students, auto_enroll, is_secure):
