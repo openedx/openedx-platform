@@ -15,6 +15,7 @@ from openedx_events.content_authoring.data import (
     CourseCatalogData,
     CourseData,
     CourseScheduleData,
+    DuplicatedXBlockData,
     LibraryBlockData,
     LibraryContainerData,
     XBlockData,
@@ -27,6 +28,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     XBLOCK_CREATED,
     XBLOCK_DELETED,
+    XBLOCK_DUPLICATED,
     XBLOCK_UPDATED,
 )
 from pytz import UTC
@@ -39,6 +41,7 @@ from common.djangoapps.track.event_transaction_utils import get_event_transactio
 from common.djangoapps.util.block_utils import yield_dynamic_block_descendants
 from lms.djangoapps.grades.api import task_compute_all_grades_for_course
 from openedx.core.djangoapps.content.learning_sequences.api import key_supports_outlines
+from openedx.core.djangoapps.content_tagging.handlers import duplicate_tags
 from openedx.core.djangoapps.discussions.tasks import update_discussions_settings_from_course_task
 from openedx.core.lib.gating import api as gating_api
 from xmodule.modulestore import ModuleStoreEnum
@@ -52,12 +55,16 @@ from ..tasks import (
     handle_unlink_upstream_block,
     handle_unlink_upstream_container,
     handle_update_xblock_upstream_link,
+    strip_competency_tags_from_duplicate,
 )
 from .signals import GRADING_POLICY_CHANGED
 
 log = logging.getLogger(__name__)
 
 GRADING_POLICY_COUNTDOWN_SECONDS = 3600
+
+# Block types whose duplicates lose their competency tags: sections and subsections.
+BLOCK_TYPES_STRIPPED_OF_COMPETENCY_TAGS_ON_DUPLICATE = frozenset({"chapter", "sequential"})
 
 
 def locked(expiry_seconds, key):  # pylint: disable=missing-function-docstring
@@ -290,6 +297,29 @@ def delete_upstream_downstream_link_handler(**kwargs):
     ContainerLink.objects.filter(
         downstream_usage_key=xblock_info.usage_key
     ).delete()
+
+
+# The tag copy must run before the receiver below, and receivers run in connect order; importing duplicate_tags
+# already connects it, so this call only matters if that import stops connecting it.
+XBLOCK_DUPLICATED.connect(duplicate_tags)
+
+
+@receiver(XBLOCK_DUPLICATED)
+def strip_competency_tags_from_duplicate_handler(**kwargs):
+    """
+    Queue the removal of the competency tags copied to a duplicated section or subsection, which has no criteria.
+    """
+    xblock_info = kwargs.get("xblock_info", None)
+    if not xblock_info or not isinstance(xblock_info, DuplicatedXBlockData):
+        log.error("Received null or incorrect data for event")
+        return
+
+    if xblock_info.block_type not in BLOCK_TYPES_STRIPPED_OF_COMPETENCY_TAGS_ON_DUPLICATE:
+        return
+
+    usage_key_string = str(xblock_info.usage_key)
+    # A failure to queue the task must not fail a request whose duplicate is already committed.
+    transaction.on_commit(lambda: strip_competency_tags_from_duplicate.delay(usage_key_string), robust=True)
 
 
 @receiver([COURSE_IMPORT_COMPLETED, COURSE_RERUN_COMPLETED])
