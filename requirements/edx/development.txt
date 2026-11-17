@@ -1209,7 +1209,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==9.16.1
+lti-consumer-xblock==9.16.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
