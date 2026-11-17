@@ -10,23 +10,18 @@ from itertools import groupby
 from typing import Iterator  # noqa: UP035
 
 import openedx_tagging.api as oel_tagging
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_catalog import api as catalog_api
-from openedx_catalog.models_api import CourseRun
 from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
 from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_learning.api import copy_competency_criteria_for_course_rerun
 from openedx_tagging.models import ObjectTag, Taxonomy
 from openedx_tagging.models.utils import TAGS_CSV_SEPARATOR
 from organizations.models import Organization
-
-from xmodule.modulestore.django import modulestore
 
 from .helpers.objecttag_export_helpers import build_object_tree_with_objecttags, iterate_with_level
 from .models import TaxonomyOrg
@@ -409,21 +404,21 @@ def copy_course_tags_and_criteria(source_course_key: CourseKey, destination_cour
     Copy the source course run's tags, as editable tags, and its competency criteria onto the destination run.
 
     Taxonomies not enabled for the destination org are skipped, along with their criteria.
-    It also creates the destination run's catalog CourseRun when the source run has one and the destination does not.
     """
     with transaction.atomic():
         all_object_tags, taxonomies = get_all_object_tags(source_course_key, prefetch_orgs=True)
         skipped_taxonomy_ids = _get_skipped_taxonomy_ids(taxonomies, source_course_key, destination_course_key)
 
         for object_id, tags_by_taxonomy_id in all_object_tags.items():
-            destination_object_id = _map_object_id_into_course(object_id, source_course_key, destination_course_key)
+            destination_object_id = _map_object_id_from_one_course_to_another(
+                object_id, source_course_key, destination_course_key,
+            )
             if destination_object_id is None:
                 continue
             for taxonomy_id, tag_values in tags_by_taxonomy_id.items():
                 if taxonomy_id not in skipped_taxonomy_ids:
                     tag_object(destination_object_id, taxonomies[taxonomy_id], tag_values)
 
-        _create_destination_course_run_if_missing(source_course_key, destination_course_key)
         copy_competency_criteria_for_course_rerun(
             source_course_key, destination_course_key, skipped_taxonomy_ids=skipped_taxonomy_ids,
         )
@@ -447,7 +442,7 @@ def _get_skipped_taxonomy_ids(
     return skipped_taxonomy_ids
 
 
-def _map_object_id_into_course(
+def _map_object_id_from_one_course_to_another(
     object_id: str, source_course_key: CourseKey, destination_course_key: CourseKey,
 ) -> str | None:
     """
@@ -460,28 +455,6 @@ def _map_object_id_into_course(
     if usage_key.course_key != source_course_key:
         return None
     return str(usage_key.map_into_course(destination_course_key))
-
-
-def _create_destination_course_run_if_missing(source_course_key: CourseKey, destination_course_key: CourseKey) -> None:
-    """
-    Create the destination run's CourseRun from the cloned course when the source run has one and it does not.
-    """
-    try:
-        catalog_api.get_course_run(source_course_key)
-    except CourseRun.DoesNotExist:
-        return
-    try:
-        catalog_api.get_course_run(destination_course_key)
-    except CourseRun.DoesNotExist:
-        # The course publish handler creates this row when it has run.
-        course = modulestore().get_course(destination_course_key)
-        language_codes = {code for code, _name in settings.ALL_LANGUAGES}
-        catalog_api.create_course_run_for_modulestore_course_with(
-            course_key=destination_course_key,
-            # The catalog rejects a title longer than its column and a language outside ALL_LANGUAGES.
-            title=course.display_name[:CourseRun._meta.get_field("title").max_length],
-            language_short=course.language if course.language in language_codes else None,
-        )
 
 
 def tag_object(

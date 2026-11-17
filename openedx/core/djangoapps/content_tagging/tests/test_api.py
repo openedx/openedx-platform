@@ -10,7 +10,7 @@ from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
-from openedx_catalog.api import create_course_run_for_modulestore_course_with, get_course_run
+from openedx_catalog.api import create_course_run_for_modulestore_course_with
 from openedx_catalog.models_api import CourseRun
 from openedx_learning.api import associate_competency_criterion, create_competency_taxonomy
 from openedx_learning.models_api import CompetencyCriteriaGroup, CompetencyCriterion, RuleType
@@ -575,11 +575,11 @@ class TestCopyCourseTagsAndCriteria(ModuleStoreTestCase):
 
         rules_cache.clear()
 
-    def _clone(self, destination_key, display_name="Rerun Course", **fields):
+    def _clone(self, destination_key):
         """Clone the source course to `destination_key`, as a rerun does."""
-        self.store.clone_course(
-            self.source_key, destination_key, self.user.id, fields={"display_name": display_name, **fields},
-        )
+        self.store.clone_course(self.source_key, destination_key, self.user.id, fields={"display_name": "Rerun Course"})
+        # The course_published receiver creates this row in a real rerun, but signals are off in these tests.
+        create_course_run_for_modulestore_course_with(destination_key, title="Rerun Course")
 
     def _tag(self, object_key, taxonomy, values):
         """Tag `object_key` with `values` from `taxonomy`."""
@@ -704,35 +704,6 @@ class TestCopyCourseTagsAndCriteria(ModuleStoreTestCase):
         assert criterion.object_tag.object_id == str(self._in_destination(self.problem_key))
         assert self._values(self._in_destination(self.problem_key), self.competency_taxonomy) == ["Writing"]
 
-    def test_creates_destination_course_run_when_missing(self):
-        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
-        self._clone(self.destination_key, display_name="Rerun Course")
-        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()
-
-        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
-
-        assert get_course_run(self.destination_key).title == "Rerun Course"
-
-    def test_destination_course_run_title_is_cut_to_the_column_length(self):
-        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
-        self._clone(self.destination_key, display_name="x" * 300)
-
-        api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
-
-        assert get_course_run(self.destination_key).title == "x" * 255
-
-    @ddt.data(("fr", "fr"), ("not-a-language", "en"))
-    @ddt.unpack
-    def test_destination_catalog_course_language(self, course_language, expected_language):
-        # A new course number, so the copy also creates the catalog course, which is what stores the language.
-        destination_key = CourseLocator(org="orgA", course="course2", run="run1")
-        create_course_run_for_modulestore_course_with(self.source_key, title="Source Course")
-        self._clone(destination_key, language=course_language)
-
-        api.copy_course_tags_and_criteria(self.source_key, destination_key)
-
-        assert get_course_run(destination_key).catalog_course.language_short == expected_language
-
     def test_course_without_tags_or_criteria_succeeds(self):
         self._clone(self.destination_key)
         assert not CourseRun.objects.filter(course_key=self.source_key).exists()
@@ -741,7 +712,6 @@ class TestCopyCourseTagsAndCriteria(ModuleStoreTestCase):
 
         assert not api.get_all_object_tags(self.destination_key)[0]
         assert not CompetencyCriteriaGroup.objects.filter(course__course_key=self.destination_key).exists()
-        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()
 
     def test_criteria_failure_rolls_back_tags(self):
         self._tag(self.source_key, self.taxonomy, ["Alpha"])
@@ -754,4 +724,3 @@ class TestCopyCourseTagsAndCriteria(ModuleStoreTestCase):
                 api.copy_course_tags_and_criteria(self.source_key, self.destination_key)
 
         assert not api.get_all_object_tags(self.destination_key)[0]
-        assert not CourseRun.objects.filter(course_key=self.destination_key).exists()

@@ -159,9 +159,11 @@ class RerunCourseTaskTestCase(CourseTestCase):  # pylint: disable=missing-class-
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     def _rerun_course(self, old_course_key, new_course_key, user=None):
+        """Rerun the course with course_published on, so its receiver creates the new run's CourseRun."""
         user = user or self.user
         CourseRerunState.objects.initiated(old_course_key, new_course_key, user, 'Test Re-run')
-        rerun_course(str(old_course_key), str(new_course_key), user.id)
+        with SignalHandler.course_published.for_state(is_enabled=True):
+            rerun_course(str(old_course_key), str(new_course_key), user.id)
 
     def _tag_course_and_add_criterion(self, org=None):
         """
