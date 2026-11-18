@@ -78,7 +78,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 <![endif]-->
 % endif
 
-% if settings.FEATURES.get('ENABLE_COOKIE_CONSENT', False):
+% if settings.ENABLE_COOKIE_CONSENT:
   <%include file="../widgets/cookie-consent.html" />
 % endif
 
