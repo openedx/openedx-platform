@@ -172,20 +172,22 @@ such that the value can be defined later than this assignment (file load order).
                     var $revokeBtn, labelTrans;
                     labelTrans = gettext('Revoke access');
 
-                    $revokeBtn = $(_.template('<div class="revoke"><span class="icon fa fa-times-circle" aria-hidden="true"></span> <%- label %></div>')({ // eslint-disable-line max-len
+                    $revokeBtn = $(_.template('<button class="btn-link font-weight-normal revoke"><span class="icon fa fa-times-circle" aria-hidden="true"></span> <%- label %></button>')({ // eslint-disable-line max-len
                         label: labelTrans
                     }), {
                         class: 'revoke'
                     });
-                    $revokeBtn.click(function() {
-                        authListWidgetReloadList.modify_member_access(member.email, 'revoke', function(err) {
-                            if (err !== null) {
-                                authListWidgetReloadList.show_errors(err);
-                                return;
-                            }
-                            authListWidgetReloadList.clear_errors();
-                            authListWidgetReloadList.reload_list();
-                        });
+                    $revokeBtn.on('keyup click', function(event) {
+                        if (event.keyCode === 13 || event.type === 'click') {
+                            authListWidgetReloadList.modify_member_access(member.email, 'revoke', function(err) {
+                                if (err !== null) {
+                                    authListWidgetReloadList.show_errors(err);
+                                    return;
+                                }
+                                authListWidgetReloadList.clear_errors();
+                                authListWidgetReloadList.reload_list();
+                            });
+                        }
                     });
                     if (authListWidgetReloadList.rolename === 'Group Moderator') {
                         if (divisionScheme !== undefined && divisionScheme === 'none') {

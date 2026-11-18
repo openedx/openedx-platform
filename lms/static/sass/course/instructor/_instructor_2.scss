@@ -864,6 +864,7 @@
         &:hover,
         &:focus {
           color: $alert-color;
+          text-decoration: none !important;
         }
       }
     }
