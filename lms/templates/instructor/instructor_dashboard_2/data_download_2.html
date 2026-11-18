@@ -50,7 +50,7 @@ from openedx.core.djangolib.markup import HTML, Text
         ${_("The reports listed below are available for download, identified by UTC date and time of generation.")}
     </p>
 
-    %if settings.FEATURES.get('ENABLE_ASYNC_ANSWER_DISTRIBUTION'):
+    %if settings.ENABLE_ASYNC_ANSWER_DISTRIBUTION:
     <p>
         ${_("The answer distribution report listed below is generated periodically by an automated background process. \
         The report is cumulative, so answers submitted after the process starts are included in a subsequent report. \
