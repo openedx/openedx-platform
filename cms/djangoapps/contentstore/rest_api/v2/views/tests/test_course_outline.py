@@ -23,7 +23,7 @@ from drf_spectacular.generators import SchemaGenerator
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import UsageKey
-from openedx_authz.constants.roles import (
+from openedx_authz.authz import (
     COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
