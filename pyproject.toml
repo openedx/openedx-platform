@@ -48,7 +48,6 @@ dependencies = [
     "edx-ace",
     "edx-auth-backends", # Allow Studio to use LMS SSO
     "edx-bulk-grades", # LMS REST API for managing bulk grading operations
-    "edx-ccx-keys",
     "edx-celeryutils",
     "edx-completion",
     "edx-django-release-util", # Release utils for the edx release pipeline
@@ -60,7 +59,7 @@ dependencies = [
     "edx-event-bus-kafka>=5.6.0", # edx-event-bus-kafka 5.6.0 adds support for putting client ids on event producers/consumers; Kafka implementation of event bus
     "edx-event-bus-redis",
     "edx-milestones",
-    "edx-opaque-keys>=2.12.0",
+    "edx-opaque-keys>=5.0.0", # edx-opaque-keys 5 provides ccx_keys, which used to come from edx-ccx-keys
     "edx-organizations",
     "edx-proctoring>=2.0.1",
     "edx-rest-api-client",

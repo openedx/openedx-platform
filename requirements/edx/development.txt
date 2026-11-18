@@ -490,12 +490,11 @@ edx-bulk-grades==2.1.0
     # via
     #   openedx-platform
     #   staff-graded-xblock
-edx-ccx-keys==2.1.0
+edx-ccx-keys==3.0.0
     # via
     #   lti-consumer-xblock
     #   openedx-authz
     #   openedx-events
-    #   openedx-platform
 edx-celeryutils==2.1.0
     # via
     #   openedx-platform
@@ -557,7 +556,7 @@ edx-i18n-tools==2.1.0
 edx-lint==6.3.0
 edx-milestones==2.1.0
     # via openedx-platform
-edx-opaque-keys==4.0.1
+edx-opaque-keys==5.0.0
     # via
     #   edx-bulk-grades
     #   edx-ccx-keys
@@ -1349,7 +1348,6 @@ six==1.17.0
     #   crowdsourcehinter-xblock
     #   edx-ace
     #   edx-auth-backends
-    #   edx-ccx-keys
     #   edx-codejail
     #   edx-django-release-util
     #   edx-lint
