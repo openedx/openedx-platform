@@ -48,6 +48,8 @@ CHECK_URL_NAME = "authoring_v1:youtube_transcript_check_list"
 IMPORT_URL_NAME = "authoring_v1:youtube_transcript_import_list"
 LEGACY_CHECK_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_check"
 LEGACY_IMPORT_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_upload"
+# A key that names a version and no course run.
+VERSION_ONLY_COURSE_KEY = "course-v1:version@5f8d0d55b54eba0b97d3dba5"
 # A V1 content library block: neither a course nor a V2 library context.
 UNSUPPORTED_CONTEXT_LOCATOR = "lib-block-v1:edX+Lib+2024+type@video+block@abc"
 
@@ -164,6 +166,10 @@ class TestYoutubeTranscriptChecksAuthorization(BaseYoutubeTranscriptTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "Success"
 
+    def test_a_version_only_course_key_is_not_found(self):
+        response = self.get_check(user=self.course_instructor, course_key=VERSION_ONLY_COURSE_KEY)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+
 
 @ddt.ddt
 @patch(DOWNLOAD_PATH, Mock(return_value=[["en", SJSON_TRANSCRIPT_CONTENT]]))
@@ -186,6 +192,10 @@ class TestYoutubeTranscriptImportsAuthorization(BaseYoutubeTranscriptTest):
         response = self.post_import(user=self.course_instructor)
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "Success"
+
+    def test_a_version_only_course_key_is_not_found(self):
+        response = self.post_import(user=self.course_instructor, course_key=VERSION_ONLY_COURSE_KEY)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
 
     def test_global_staff_is_allowed(self):
         response = self.post_import(user=self.global_staff)

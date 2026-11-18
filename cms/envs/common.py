@@ -1345,6 +1345,14 @@ SPECTACULAR_SETTINGS = {
     # service root, so /api/contentstore and /api/authoring resolve against the
     # same base URL.
     'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
+    # Both content_type enums are pinned: with two serializers claiming a
+    # content_type choice field, drf-spectacular would otherwise rename both
+    # after their serializers and drop the ContentTypeEnum name clients use.
+    'ENUM_NAME_OVERRIDES': {
+        'ContentTypeEnum': ['video/mp4', 'video/webm', 'video/ogg'],
+        'VideoUploadContentTypeEnum':
+            'cms.djangoapps.contentstore.rest_api.v1.serializers.video_uploads.SUPPORTED_UPLOAD_CONTENT_TYPES',
+    },
     # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
     # than drf-spectacular's default unpinned jsdelivr CDN URLs.
     'SWAGGER_UI_DIST': 'SIDECAR',
