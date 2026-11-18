@@ -8,8 +8,11 @@ from django.test import RequestFactory
 from django.urls import reverse
 from lti_consumer.models import CourseAllowPIISharingInLTIFlag, LtiConfiguration
 from markupsafe import Markup
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_LIMITED_STAFF
 from rest_framework.test import APITestCase
 
+from common.djangoapps.student.roles import CourseStaffRole
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import CourseUserType, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -461,3 +464,79 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
         )
         response = self.client.get(self.url)
         self.assertEqual(response.data['developer_message'], 'Course live is not enabled for this course.')  # noqa: PT009  # pylint: disable=line-too-long
+
+
+@ddt.ddt
+class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
+    """
+    Tests that the Live settings views honor AuthZ when it is enabled for the course:
+    reads need ``courses.view_pages_and_resources`` and writes need
+    ``courses.manage_pages_and_resources``. With AuthZ disabled, the legacy
+    global staff / course staff / course instructor check still applies.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
+        self.course_id = str(self.course.id)
+
+    def _get(self, url_name):
+        return self.authorized_client.get(reverse(url_name, kwargs={'course_id': self.course_id}))
+
+    def _post(self):
+        data = {'enabled': True, 'provider_type': 'zoom', 'lti_configuration': {}}
+        return self.authorized_client.post(
+            reverse('course_live', kwargs={'course_id': self.course_id}), data, format='json'
+        )
+
+    @ddt.data(
+        (COURSE_EDITOR.external_key, 'course_live', 200),
+        (COURSE_EDITOR.external_key, 'live_providers', 200),
+        (COURSE_AUDITOR.external_key, 'course_live', 200),
+        (COURSE_AUDITOR.external_key, 'live_providers', 200),
+        (COURSE_LIMITED_STAFF.external_key, 'course_live', 403),
+        (COURSE_LIMITED_STAFF.external_key, 'live_providers', 403),
+    )
+    @ddt.unpack
+    def test_read_requires_view_permission(self, role, url_name, expected_status):
+        self.add_user_to_role_in_course(self.authorized_user, role, self.course.id)
+
+        response = self._get(url_name)
+
+        assert response.status_code == expected_status
+
+    def test_editor_can_change_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+
+        response = self._post()
+
+        assert response.status_code != 403
+
+    def test_auditor_cannot_change_settings(self):
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
+
+        response = self._post()
+
+        assert response.status_code == 403
+
+    def test_user_without_role_is_denied(self):
+        response = self._get('course_live')
+
+        assert response.status_code == 403
+
+    @ddt.data('course_live', 'live_providers')
+    def test_legacy_course_staff_keeps_access_when_authz_disabled(self, url_name):
+        self.set_authz_enabled(False)
+        CourseStaffRole(self.course.id).add_users(self.authorized_user)
+
+        response = self._get(url_name)
+
+        assert response.status_code == 200
+
+    def test_authz_role_is_ignored_when_authz_disabled(self):
+        self.set_authz_enabled(False)
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+
+        response = self._get('course_live')
+
+        assert response.status_code == 403
