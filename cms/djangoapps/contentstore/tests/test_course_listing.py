@@ -14,7 +14,7 @@ from django.utils import timezone
 from opaque_keys.edx.locations import CourseLocator
 from openedx_authz.api.data import OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
 from cms.djangoapps.contentstore.utils import delete_course

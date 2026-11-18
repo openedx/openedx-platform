@@ -6,7 +6,6 @@ from unittest import mock, skipIf, skipUnless
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
@@ -2392,7 +2391,6 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
 
-@httpretty.activate
 @ddt.ddt
 class ThirdPartyRegistrationTestMixin(
     OpenEdxEventsTestMixin, ThirdPartyOAuthTestMixin, CacheIsolationTestCase

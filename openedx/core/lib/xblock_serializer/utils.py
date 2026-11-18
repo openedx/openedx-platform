@@ -13,8 +13,8 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey, CourseKey
 
 from common.djangoapps.static_replace import replace_static_urls
-from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import StaticContent
+from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.util.sandboxing import course_code_library_asset_name
@@ -32,7 +32,7 @@ def get_asset_content_from_path(course_key, asset_path):
     """
     try:
         asset_key = StaticContent.get_asset_key_from_path(course_key, asset_path)
-        return AssetManager.find(asset_key)
+        return contentstore().find(asset_key)
     except (ItemNotFoundError, NotFoundError):
         return None
 
@@ -108,7 +108,7 @@ def get_python_lib_zip_if_using(olx: str, course_id: CourseKey) -> StaticFile | 
         python_lib_filename = course_code_library_asset_name()
         asset_key = StaticContent.get_asset_key_from_path(course_id, python_lib_filename)
         # Now, it seems like this capa problem uses python_lib.zip - but does it exist in the course?
-        if AssetManager.find(asset_key, throw_on_not_found=False):
+        if contentstore().find(asset_key, throw_on_not_found=False):
             url = '/' + str(StaticContent.compute_location(course_id, python_lib_filename))
             return StaticFile(name=python_lib_filename, url=url, data=None)
     return None
@@ -141,7 +141,7 @@ def get_js_input_files_if_using(olx: str, course_id: CourseKey) -> [StaticFile]:
     if html_file_fullpath:
         html_filename = html_file_fullpath.split('/')[-1]
         asset_key = StaticContent.get_asset_key_from_path(course_id, html_filename)
-        html_file_content = AssetManager.find(asset_key, throw_on_not_found=False)
+        html_file_content = contentstore().find(asset_key, throw_on_not_found=False)
         if html_file_content:
             static_assets = _extract_static_assets(str(html_file_content.data))
             for static_asset in static_assets:

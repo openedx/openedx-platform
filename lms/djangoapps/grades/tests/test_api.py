@@ -5,7 +5,6 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import ddt
-from django.test import override_settings
 from openedx_learning.api import GradedObjectScore
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -72,7 +71,6 @@ class OverrideSubsectionGradeTests(ModuleStoreTestCase):
         super().tearDown()
         PersistentSubsectionGradeOverride.objects.all().delete()
 
-    @override_settings(ENABLE_COMPETENCY_MASTERY_TRACKING=True)
     def test_override_without_existing_grade_records_competency_status(self):
         CourseEnrollment.enroll(self.user, self.course.id)
         new_subsection = BlockFactory.create(parent=self.course, category="sequential", display_name="New Subsection")

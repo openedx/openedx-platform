@@ -11,7 +11,7 @@ from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR
 from openedx_content import models_api as content_models
 from organizations.models import Organization
 from rest_framework import status
