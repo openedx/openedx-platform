@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 # These are passed as ``custom_settings`` to SpectacularAPIView rather than
 # living in ``SPECTACULAR_SETTINGS``, because that global is already claimed by
 # a deliberately narrow schema in each service -- the Authoring API
-# (``/authoring-api/``) in CMS and the Enrollment API (``/lms-api/``) in LMS.
+# (``/authoring-api/``) in CMS and the LMS API (``/lms-api/``) in LMS.
 # Both filter the surface down via ``PREPROCESSING_HOOKS`` and trim a path
 # prefix, so ``/api-docs`` must switch that filtering off explicitly to cover
 # the whole service.
