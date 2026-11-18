@@ -62,7 +62,7 @@ INTENTIONAL_DIFFERENCES = []
 # its own error format, this version with the standard envelope.
 LEGACY_ERROR_KEYS = {
     401: {"developer_message"},
-    403: {"developer_message"},
+    403: {"developer_message", "error_code"},
     404: {"developer_message", "error_code"},
 }
 ENVELOPE_KEYS = {"type", "title", "status", "detail", "instance"}

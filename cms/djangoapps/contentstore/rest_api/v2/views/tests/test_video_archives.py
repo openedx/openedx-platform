@@ -924,7 +924,7 @@ class VideoArchiveParityTest(VideoArchiveTestBase):
 
     @ddt.data(
         (None, status.HTTP_401_UNAUTHORIZED, {"developer_message"}),
-        ("no-role", status.HTTP_403_FORBIDDEN, {"developer_message"}),
+        ("no-role", status.HTTP_403_FORBIDDEN, {"developer_message", "error_code"}),
         ("missing-course", status.HTTP_404_NOT_FOUND, {"developer_message", "error_code"}),
         ("bad-url", status.HTTP_400_BAD_REQUEST, {"developer_message"}),
     )
