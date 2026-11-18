@@ -15,8 +15,7 @@ from django.urls import Resolver404, resolve, reverse
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS, COURSES_VIEW_GROUP_CONFIGURATIONS
-from openedx_authz.constants.roles import (
+from openedx_authz.authz import (
     COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
@@ -24,6 +23,8 @@ from openedx_authz.constants.roles import (
     COURSE_EDITOR,
     COURSE_LIMITED_STAFF,
     COURSE_STAFF,
+    COURSES_MANAGE_GROUP_CONFIGURATIONS,
+    COURSES_VIEW_GROUP_CONFIGURATIONS,
 )
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.permissions import IsAuthenticated

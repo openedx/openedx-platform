@@ -2,7 +2,7 @@
 
 import logging
 
-from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS
+from openedx_authz.authz import COURSES_MANAGE_GROUP_CONFIGURATIONS
 from rest_framework.exceptions import NotFound
 
 from cms.djangoapps.contentstore.utils import get_group_configurations_context
