@@ -5,7 +5,7 @@ existing data accordingly.
 
 
 import os
-from io import StringIO
+from io import BytesIO, StringIO
 from unittest import mock
 
 from ddt import ddt
@@ -16,6 +16,7 @@ from requests import exceptions
 from requests.models import Response
 
 from common.djangoapps.third_party_auth.tests.factories import SAMLConfigurationFactory, SAMLProviderConfigFactory
+from common.djangoapps.third_party_auth.tests.testutil import mock_saml_metadata_dns
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 
 
@@ -59,6 +60,11 @@ class TestSAMLCommand(CacheIsolationTestCase):
         creation of SAMLConfiguration and SAMLProviderConfig records in database.
         """
         super().setUp()
+
+        # Resolve the providers' hostnames for URL validation without going to the network.
+        dns_patch = mock_saml_metadata_dns()
+        dns_patch.start()
+        self.addCleanup(dns_patch.stop)
 
         self.stdout = StringIO()
         self.site = Site.objects.get_current()
@@ -188,6 +194,27 @@ class TestSAMLCommand(CacheIsolationTestCase):
         with self.assertRaisesRegex(CommandError, r"HTTPError: 404 Client Error"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
+
+    @mock.patch("requests.get")
+    def test_fetch_saml_metadata_unsafe_redirect(self, mocked_get):
+        """
+        Test that a metadata URL redirecting to a cloud metadata address is not
+        followed and is reported as a failure.
+        """
+        redirect = Response()
+        redirect.status_code = 302
+        redirect.raw = BytesIO()
+        redirect.headers["Location"] = "http://169.254.169.254/latest/meta-data/"
+        mocked_get.return_value = redirect
+
+        self._create_saml_configurations()
+
+        expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
+
+        with self.assertRaisesRegex(CommandError, r"SAMLMetadataURLError: .* must use HTTPS"):  # noqa: PT027
+            call_command("saml", pull=True, stdout=self.stdout)
+        assert expected in self.stdout.getvalue()
+        mocked_get.assert_called_once()
 
     @mock.patch("requests.get", mock_get(status_code=200))
     def test_fetch_multiple_providers_data(self):

@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 from edxval.api import get_course_videos_qset
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from scipy import stats

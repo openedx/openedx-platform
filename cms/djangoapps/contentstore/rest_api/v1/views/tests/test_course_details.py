@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import ddt
 from django.test.utils import override_settings
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 

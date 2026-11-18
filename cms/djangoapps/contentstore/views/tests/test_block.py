@@ -19,12 +19,15 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.asides import AsideUsageKeyV2
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
+    COURSE_ADMIN,
+    COURSE_AUDITOR,
+    COURSE_EDITOR,
+    COURSE_STAFF,
     COURSES_EDIT_COURSE_CONTENT,
     COURSES_MANAGE_TAGS,
     COURSES_VIEW_COURSE,
 )
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.testing import OpenEdxEventsTestMixin

@@ -11,7 +11,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_MANAGE_ADVANCED_SETTINGS,
     COURSES_VIEW_ADVANCED_SETTINGS,
 )
