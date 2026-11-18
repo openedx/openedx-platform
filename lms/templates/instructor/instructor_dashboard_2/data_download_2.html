@@ -11,7 +11,7 @@ from openedx.core.djangolib.markup import HTML, Text
         <li class="nav-item ">
             <button type="button" class="btn-link reports  active-section" data-section="reports">Reports</button>
         </li>
-        %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+        %if settings.ENABLE_GRADE_DOWNLOADS:
         <li class="nav-item">
             <button type="button" class="btn-link problem-report" data-section="problem">Problem Report</button>
         </li>
@@ -30,7 +30,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
     <%include file="./data_download_2/grading.html" args="section_data=section_data, **context.kwargs" />
 
-    %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+    %if settings.ENABLE_GRADE_DOWNLOADS:
       <%include file="./data_download_2/certificates.html" args="section_data=section_data, **context.kwargs" />
       <%include file="./data_download_2/problem_report.html" args="section_data=section_data, **context.kwargs" />
     %endif

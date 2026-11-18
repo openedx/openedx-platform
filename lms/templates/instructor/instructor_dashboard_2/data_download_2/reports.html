@@ -24,7 +24,7 @@ from openedx.core.djangolib.markup import HTML, Text
                             class="${'is-disabled' if disable_buttons else ''}"
                             aria-disabled="${'true' if disable_buttons else 'false'}">Anonymized Student IDs
                     </option>
-                    %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+                    %if settings.ENABLE_GRADE_DOWNLOADS:
                     <option value="profileInformation"
                             data-endpoint="${ section_data['get_students_features_url'] + '/csv' }"
                             data-csv="true">Profile Information
