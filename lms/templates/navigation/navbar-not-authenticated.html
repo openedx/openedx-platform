@@ -26,7 +26,7 @@ from django.utils.translation import gettext as _
 
   <%block name="navigation_other_global_links">
     % if not settings.FEATURES['DISABLE_LOGIN_BUTTON'] and not combined_login_and_register:
-      % if settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
+      % if settings.ENABLE_COURSE_DISCOVERY:
         <li class="item nav-global-05">
           <a class="btn" href="/courses">${_("Explore Courses")}</a>
         </li>
