@@ -29,6 +29,9 @@ VERSIONED_ASSETS_PATTERN = r'/assets/courseware/(v[\d]/)?([a-f0-9]{32})'
 
 
 class StaticContent:  # pylint: disable=missing-class-docstring
+    location: AssetKey
+    name: str
+
     def __init__(self, loc, name, content_type, data, last_modified_at=None, thumbnail_location=None, import_path=None,
                  length=None, locked=False, content_digest=None):
         self.location = loc
@@ -104,14 +107,14 @@ class StaticContent:  # pylint: disable=missing-class-docstring
     """, re.VERBOSE | re.IGNORECASE)
 
     @staticmethod
-    def is_c4x_path(path_string):
+    def is_c4x_path(path_string) -> bool:
         """
         Returns a boolean if a path is believed to be a c4x link based on the leading element
         """
         return StaticContent.ASSET_URL_RE.match(path_string) is not None
 
     @staticmethod
-    def get_static_path_from_location(location):
+    def get_static_path_from_location(location: AssetKey) -> str | None:
         """
         This utility static method will take a location identifier and create a 'durable' /static/.. URL representation of it.  # pylint: disable=line-too-long
         This link is 'durable' as it can maintain integrity across cloning of courseware across course-ids, e.g. reruns of  # pylint: disable=line-too-long
@@ -120,7 +123,7 @@ class StaticContent:  # pylint: disable=missing-class-docstring
         the actual /c4x/... path which the client needs to reference static content
         """
         if location is not None:
-            return f"/static/{location.block_id}"
+            return f"/static/{location.path}"
         else:
             return None
 
@@ -138,9 +141,12 @@ class StaticContent:  # pylint: disable=missing-class-docstring
         return url_path.replace(placeholder_id, '')
 
     @staticmethod
-    def get_location_from_path(path):
+    def get_location_from_path(path: str) -> AssetKey | None:
         """
         Generate an AssetKey for the given path (old c4x/org/course/asset/name syntax)
+
+        Returns None if the path is not a valid AssetKey and has no leading or
+        trailing slash (e.g. it's a URL).
         """
         try:
             return AssetKey.from_string(path)
@@ -149,6 +155,7 @@ class StaticContent:  # pylint: disable=missing-class-docstring
             if path.startswith('/') or path.endswith('/'):
                 # try stripping off the leading slash and try again
                 return AssetKey.from_string(path.strip('/'))
+            return None
 
     @staticmethod
     def is_versioned_asset_path(path):
@@ -627,7 +634,7 @@ class ContentStore:
         is_svg = content.content_type == 'image/svg+xml'
         # use a naming convention to associate originals with the thumbnail
         thumbnail_name = StaticContent.generate_thumbnail_name(
-            content.location.block_id, dimensions=dimensions, extension='.svg' if is_svg else None
+            content.location.path, dimensions=dimensions, extension='.svg' if is_svg else None
         )
         thumbnail_location = StaticContent.compute_location(
             content.location.course_key, thumbnail_name, is_thumbnail=True
