@@ -107,8 +107,8 @@ class MongoContentStore(ContentStore):
             self.fs_files.drop()
             self.chunks.drop()
         else:
-            self.fs_files.remove({})
-            self.chunks.remove({})
+            self.fs_files.delete_many({})
+            self.chunks.delete_many({})
 
         if connections:
             self.close_connections()
@@ -285,7 +285,7 @@ class MongoContentStore(ContentStore):
                 self.fs.delete(asset[prefix])
                 assets_to_delete += 1
 
-            self.fs_files.remove(query)
+            self.fs_files.delete_many(query)
         return assets_to_delete
 
     def _get_all_content_for_course(self,
