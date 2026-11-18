@@ -35,7 +35,7 @@ from django.utils.translation import gettext as _
 
 <%include file="../user_dropdown.html"/>
 
-% if settings.FEATURES.get('ENABLE_HELP_LINK'):
+% if settings.ENABLE_HELP_LINK:
   <a href="${get_online_help_info(online_help_token)['doc_url']}"
           rel="noopener"
            target="_blank"
