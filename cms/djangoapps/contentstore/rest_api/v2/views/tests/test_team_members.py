@@ -20,7 +20,7 @@ from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_rest_framework_extensions.url_converters import CourseKeyConverter
 from opaque_keys.edx.keys import CourseKey
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import (
+from openedx_authz.authz import (
     COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
