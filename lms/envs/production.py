@@ -398,7 +398,7 @@ ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS = set(ENTERPRISE_EXCLUDED_REGISTRATION_F
 MIDDLEWARE.extend(_YAML_TOKENS.get('EXTRA_MIDDLEWARE_CLASSES', []))  # noqa: F405
 
 
-###################### drf-spectacular (LMS enrollment schema) ######################
+###################### drf-spectacular (LMS API schema) ######################
 SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
     {'url': LMS_ROOT_URL, 'description': 'Local'},  # noqa: F405
 ]

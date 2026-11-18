@@ -322,6 +322,20 @@ def handle_retirement_cancellation(retirement, email_address=None):
     retirement.delete()
 
 
+def get_orgs_for_user(user):
+    """
+    Returns a set of orgs that the user has enrollments with
+    """
+    orgs = set()
+    for enrollment in user.courseenrollment_set.all():
+        org = enrollment.course_id.org
+
+        # Org can conceivably be blank or this bogus default value
+        if org and org != "outdated_entry":
+            orgs.add(org)
+    return orgs
+
+
 def _is_retired_email_format(email):
     """
     Returns True if the given email address is in the retired-email domain
