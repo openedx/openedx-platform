@@ -236,7 +236,7 @@
             <a href="${get_online_help_info(online_help_token)['doc_url']}" title="${_('Contextual Online Help')}" rel="noopener" target="_blank">${_("Help")}</a>
           </li>
           % endif
-          % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.SHOW_REGISTRATION_LINKS:
+          % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS:
               <li class="nav-item nav-not-signedin-signup">
                 <a class="action action-signup" href="${settings.FRONTEND_REGISTER_URL}?next=${quote_plus(request.build_absolute_uri(settings.LOGIN_URL))}">${_("Sign Up")}</a>
               </li>

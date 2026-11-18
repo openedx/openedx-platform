@@ -17,7 +17,7 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
   courses_are_browsable = settings.COURSES_ARE_BROWSABLE
   allows_login = not settings.DISABLE_LOGIN_BUTTON and not combined_login_and_register
   can_discover_courses = settings.ENABLE_COURSE_DISCOVERY
-  allow_public_account_creation = static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.SHOW_REGISTRATION_LINKS
+  allow_public_account_creation = static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS
   should_redirect_to_authn_mfe = should_redirect_to_authn_microfrontend()
 %>
 <nav class="nav-links" aria-label=${_("Supplemental Links")}>

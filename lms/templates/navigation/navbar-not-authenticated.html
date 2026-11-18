@@ -31,7 +31,7 @@ from django.utils.translation import gettext as _
           <a class="btn" href="/courses">${_("Explore Courses")}</a>
         </li>
       %endif
-      % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.SHOW_REGISTRATION_LINKS:
+      % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS:
         <li class="item nav-global-04">
           <a class="btn btn-neutral btn-register" href="/register${login_query()}">${_("Register")}</a>
         </li>
