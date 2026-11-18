@@ -55,7 +55,7 @@ from openedx.core.djangolib.markup import HTML, Text
     %endif
 
     <p>${_("Select a problem to generate a CSV file that lists all student answers to the problem. You also select a section or chapter to include results of all problems in that section or chapter.")}</p>
-    <% max_entries = settings.FEATURES.get('MAX_PROBLEM_RESPONSES_COUNT') %>
+    <% max_entries = settings.MAX_PROBLEM_RESPONSES_COUNT %>
     %if max_entries is not None:
       <p>
         <strong>${_("NOTE")}: </strong>
