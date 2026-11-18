@@ -288,6 +288,7 @@ constraint-dependencies = [
     "djangorestframework<3.18",
     "openedx-forum<0.6.0",
     "pytest<9.2.0",
+    "lti-consumer-xblock==11.5.1",
 ]
 [tool.edx_lint]
 uv_constraints = [
@@ -419,6 +420,14 @@ uv_constraints = [
     # Upstream bug: https://github.com/pylint-dev/pylint-pytest/issues/163
     # Issue for unpinning: https://github.com/openedx/openedx-platform/issues/39337
     "pytest<9.2.0",
+    # Date: 2026-11-18
+    # The reusable LTI configuration work lands in xblock-lti-consumer as a series of
+    # PRs (https://github.com/openedx/xblock-lti-consumer/pull/715 split into #753
+    # and the PRs that follow it), each released on merge. Hold the platform at the
+    # current release so the new table, data migration and runtime switch arrive in
+    # one deliberate bump once the whole feature, UI included, is ready to roll out.
+    # Remove when we are ready to roll out the new version of xblock-lti-consumer.
+    "lti-consumer-xblock==11.5.1",
 ]
 
 [tool.setuptools]
