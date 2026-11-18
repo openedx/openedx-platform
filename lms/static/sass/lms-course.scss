@@ -25,6 +25,19 @@
     }
 }
 
+/* tab focus styling */
+.page-content-nav button.nav-item {
+    &:focus {
+        box-shadow: 0 0 0 2px #015FCC !important;
+        border-color: #1b6d99 !important;
+    }
+    &:not(.is-active) {
+        &:focus {
+            border-color: transparent !important;
+        }
+    }
+}
+
 @media only screen and (max-width: 767px) {
     .survey-table .survey-option .visible-mobile-only {
         width: calc(100% - 21px) !important;
