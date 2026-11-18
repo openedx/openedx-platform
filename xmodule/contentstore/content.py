@@ -560,13 +560,7 @@ class ContentStore:
         """
         thumbnail_content = None
         is_svg = content.content_type == 'image/svg+xml'
-        # use a naming convention to associate originals with the thumbnail
-        thumbnail_name = StaticContent.generate_thumbnail_name(
-            content.location.block_id, dimensions=dimensions, extension='.svg' if is_svg else None
-        )
-        thumbnail_file_location = StaticContent.compute_location(
-            content.location.course_key, thumbnail_name, is_thumbnail=True
-        )
+        thumbnail_name, thumbnail_file_location = self._get_thumbnail_name_and_location(content, dimensions)
 
         # if we're uploading an image, then let's generate a thumbnail so that we can
         # serve it up when needed without having to rescale on the fly
@@ -621,6 +615,24 @@ class ContentStore:
             )
 
         return thumbnail_content, thumbnail_file_location
+
+    @staticmethod
+    def _get_thumbnail_name_and_location(
+        content: StaticContent, dimensions: tuple[int, int] | None = None
+    ) -> tuple[str, AssetKey]:
+        """
+        Get the name and ``AssetKey`` that ``generate_thumbnail()`` uses for the
+        thumbnail of the given content.
+        """
+        is_svg = content.content_type == 'image/svg+xml'
+        # use a naming convention to associate originals with the thumbnail
+        thumbnail_name = StaticContent.generate_thumbnail_name(
+            content.location.block_id, dimensions=dimensions, extension='.svg' if is_svg else None
+        )
+        thumbnail_location = StaticContent.compute_location(
+            content.location.course_key, thumbnail_name, is_thumbnail=True
+        )
+        return thumbnail_name, thumbnail_location
 
     def ensure_indexes(self) -> None:
         """

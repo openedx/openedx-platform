@@ -947,6 +947,9 @@ INSTALLED_APPS = [
     # Core apps that power libraries
     "openedx_content",
     *openedx_content_backcompat_apps_to_install(),
+
+    # Stores course Files in openedx_content (the replacement for the legacy contentstore)
+    "openedx.core.djangoapps.contentstore_shim",
 ]
 
 ### Apps only installed in some instances
