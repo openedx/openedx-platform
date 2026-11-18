@@ -266,4 +266,4 @@ def get_course_youtube_edx_videos_ids(request, course_key_string):
     If the request is successful, an HTTP 200 "OK" response is returned.
     The HTTP 200 response contains a list of youtube edx_video_ids for a given course.
     """
-    return get_course_youtube_edx_video_ids(course_key_string)
+    return get_course_youtube_edx_video_ids(course_key_string, request.user)
