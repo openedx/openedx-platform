@@ -27,7 +27,7 @@ from django.utils.translation import gettext as _
     % endif
 
 
-    % if settings.FEATURES.get('COURSES_ARE_BROWSABLE') and not show_program_listing:
+    % if settings.COURSES_ARE_BROWSABLE and not show_program_listing:
       <li class="nav-item mt-2 nav-item-open-collapsed">
         <a class="nav-link" href="${marketing_link('COURSES')}">${_('Explore courses')}</a>
       </li>

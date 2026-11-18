@@ -11,7 +11,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 %>
 
 <%
-  show_explore_courses = settings.FEATURES.get('COURSES_ARE_BROWSABLE')
+  show_explore_courses = settings.COURSES_ARE_BROWSABLE
   self.real_user = getattr(user, 'real_user', user)
   enable_help_link = settings.FEATURES.get('ENABLE_HELP_LINK')
 
