@@ -18,7 +18,7 @@ from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edxval.api import create_profile, create_video, remove_video_for_course
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
