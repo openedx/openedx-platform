@@ -1098,6 +1098,12 @@ urlpatterns += [
     path('api/course_experience/', include('openedx.features.course_experience.api.v1.urls')),
 ]
 
+# Competency-based education (CBE) learner API urls. Only the learner routes are mounted here; the authoring module,
+# openedx_learning.urls, is mounted only in Studio, so the LMS answers 404 for the authoring routes.
+urlpatterns += [
+    path('api/', include('openedx_learning.learner_urls')),
+]
+
 # Bulk User Retirement API urls
 if settings.ENABLE_BULK_USER_RETIREMENT:
     urlpatterns += [
