@@ -85,8 +85,12 @@ SPECTACULAR_SETTINGS.update(API_DOCS_SETTINGS)  # noqa: F405
 
 # OpenAPI 3 security schemes, consumed by drf-spectacular. "Basic" uses the
 # OpenAPI 3 http/basic form rather than Swagger 2.0's type: basic.
+# Components the service settings already append are kept, and so are the
+# credentials they describe, which their operations name.
 SPECTACULAR_SETTINGS["APPEND_COMPONENTS"] = {  # noqa: F405
+    **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}),  # noqa: F405
     "securitySchemes": {
+        **SPECTACULAR_SETTINGS.get("APPEND_COMPONENTS", {}).get("securitySchemes", {}),  # noqa: F405
         "Basic": {
             "type": "http",
             "scheme": "basic",

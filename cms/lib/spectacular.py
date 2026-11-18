@@ -4,8 +4,8 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
-# Legacy operations superseded by a conforming address under /api/authoring/.
-# Each is listed in the truncated spelling as well as the full one: the routes
+# Legacy operations superseded by a conforming address. Each contentstore one
+# is listed in the truncated spelling as well as the full one: the routes
 # make the final character optional, so both addresses resolve, and which one
 # the generator emits depends on how it renders that regex.
 SUPERSEDED_PATHS = (
@@ -13,6 +13,38 @@ SUPERSEDED_PATHS = (
     "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
     "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+    # The user API this service mounts as the LMS does; the LMS serves the replacements.
+    # The preference addresses are left out: this service's own pages change a
+    # preference through them, and it serves no replacement for them.
+    "/api/user/v1/me",
+    "/api/user/v1/accounts",
+    "/api/user/v1/accounts/search_emails",
+    "/api/user/v1/accounts/{username}",
+    "/api/user/v1/accounts/{username}/deactivate/",
+    "/api/user/v1/accounts/{username}/image",
+    "/api/user/v1/accounts/{username}/verification_status/",
+    "/api/user/v1/accounts/{username}/verifications/",
+    "/api/user/v1/accounts/name_change/",
+    "/api/user/v1/accounts/name_change/{username}/confirm/",
+    "/api/user/v1/users/",
+    "/api/user/v1/users/{id}/",
+    "/api/user/v1/user_prefs/",
+    "/api/user/v1/user_prefs/{id}/",
+    "/api/user/v1/preferences/{pref_key}/users/",
+    "/api/user/v1/forum_roles/{name}/users/",
+    "/api/user/v1/preferences/time_zones/",
+    "/api/user/v1/accounts/{username}/retirement_status/",
+    "/api/user/v1/accounts/retirement_queue/",
+    "/api/user/v1/accounts/retirements_by_status_and_date/",
+    "/api/user/v1/accounts/update_retirement_status/",
+    "/api/user/v1/accounts/retirement_cleanup/",
+    "/api/user/v1/accounts/retirement_partner_report/",
+    "/api/user/v1/accounts/retirement_partner_report_cleanup/",
+    "/api/user/v1/accounts/cancel_retirement/",
+    "/api/user/v1/accounts/retire/",
+    "/api/user/v1/accounts/retire_misc/",
+    "/api/user/v1/accounts/deactivate_logout/",
+    "/api/user/v1/accounts/replace_usernames/",
 )
 
 # Legacy addresses of APIs migrated to /api/authoring/, marked deprecated for
