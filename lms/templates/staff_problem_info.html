@@ -26,7 +26,7 @@ ${block_content | n, decode.utf8}
 <div class="wrap-instructor-info">
   <a class="instructor-info-action" href="#${element_id}_debug" rel="leanModal" id="${element_id}_trig">${_("Staff Debug Info")}</a>
 
-  %  if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW') and \
+  %  if settings.ENABLE_STUDENT_HISTORY_VIEW and \
     location.block_type == 'problem':
     <a class="instructor-info-action" href="#${element_id}_history" rel="leanModal" id="${element_id}_history_trig">${_("Submission history")}</a>
   %  endif
