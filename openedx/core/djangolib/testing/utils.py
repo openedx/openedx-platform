@@ -313,3 +313,32 @@ def skip_unless_lms(func):
     else:
         is_lms = True
     return skipUnless(is_lms, 'Test only valid in LMS')(func)
+
+
+def unresolved_references(document):
+    """
+    Return every ``$ref`` in an OpenAPI document that names a component the document lacks.
+
+    The generator defines a component for each reference it writes, but a
+    component appended through the settings is copied in as written, and a
+    reference inside it resolves only where the document defines its target.
+    A client generator refuses a document with a reference left unresolved.
+    """
+    prefix = "#/components/"
+    components = document.get("components", {})
+    references = set()
+    pending = [document]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, dict):
+            if isinstance(node.get("$ref"), str):
+                references.add(node["$ref"])
+            pending.extend(node.values())
+        elif isinstance(node, list):
+            pending.extend(node)
+    unresolved = []
+    for reference in sorted(references):
+        kind, _, name = reference.removeprefix(prefix).partition("/")
+        if not reference.startswith(prefix) or name not in components.get(kind, {}):
+            unresolved.append(reference)
+    return unresolved

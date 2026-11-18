@@ -4,6 +4,8 @@ import re
 
 from drf_spectacular.openapi import AutoSchema
 
+from openedx.core.djangoapps.user_api.schema import SupersededUserOperations, is_superseded_user_path
+
 LEGACY_V2_PREFIX = "/api/enrollment/v2/"
 
 # The one legacy address that differs from its conforming twin only by the
@@ -11,27 +13,58 @@ LEGACY_V2_PREFIX = "/api/enrollment/v2/"
 # addresses already have distinct ids and keep them.
 COLLIDING_LEGACY_PATH = "/api/enrollment/v2/enrollments"
 
+PUBLISHED_PATH_PATTERN = re.compile(r"^/api/enrollment/v\d+/")
+
+# Older apps share this prefix, so the view's package decides what is published.
+PUBLISHED_USER_PREFIX = "/api/user/v2/"
+PUBLISHED_USER_VIEW_MODULES = (
+    "openedx.core.djangoapps.user_api.v2.",
+    "openedx.core.djangoapps.profile_images.v2.",
+)
+
+# User operations share one tag where the derived tag would only name a version.
+USER_PATH_PREFIX = "/api/user/"
+USER_TAG = "user"
+
+_VERSION_TAG = re.compile(r"v\d+")
+
+# An address that takes its version as a parameter is left out of the
+# superseded addresses this schema admits, though it is still marked wherever
+# it is published: posting there to sign in publishes the description its
+# handler carries, which is not what that sign-in reads or answers with, and
+# nothing here can replace it.
+_VERSION_PARAMETER = "{api_version}"
+
 
 def _is_legacy_path(path):
     """Conforming routes always end in a slash, so a slashless v2 path is a legacy address."""
     return path.startswith(LEGACY_V2_PREFIX) and not path.endswith("/")
 
 
+def _is_published_user_path(path, callback):
+    """A user address is documented when this version serves it, or when it is a superseded one admitted above."""
+    if is_superseded_user_path(path) and _VERSION_PARAMETER not in path:
+        return True
+    if not path.startswith(PUBLISHED_USER_PREFIX):
+        return False
+    view = getattr(callback, "cls", None)
+    return getattr(view, "__module__", "").startswith(PUBLISHED_USER_VIEW_MODULES)
+
+
 def lms_api_filter(endpoints):
     """
-    Pre-processing hook: keep only enrollment v2 endpoints tagged for the SDK.
+    Pre-processing hook: keep only the endpoints this schema documents.
     """
     filtered = []
-    ENROLLMENT_PATH_PATTERN = re.compile(r"^/api/enrollment/v\d+/")
 
     for path, path_regex, method, callback in endpoints:
-        if ENROLLMENT_PATH_PATTERN.match(path):
+        if PUBLISHED_PATH_PATTERN.match(path) or _is_published_user_path(path, callback):
             filtered.append((path, path_regex, method, callback))
 
     return filtered
 
 
-class LmsAutoSchema(AutoSchema):
+class LmsAutoSchema(SupersededUserOperations, AutoSchema):
     """
     Give the colliding legacy Enrollment v2 address a distinct operationId.
 
@@ -39,6 +72,8 @@ class LmsAutoSchema(AutoSchema):
     drf-spectacular would otherwise break the tie with a numeral suffix in
     registration order. The conforming address keeps the clean id; the
     deprecated one is suffixed ``_legacy``.
+
+    A user operation whose derived tag would name a version is tagged ``user``.
     """
 
     def get_operation_id(self):
@@ -47,6 +82,13 @@ class LmsAutoSchema(AutoSchema):
         if self.path == COLLIDING_LEGACY_PATH:
             return f"{operation_id}_legacy"
         return operation_id
+
+    def get_tags(self):
+        """Name the area whenever the tag derived for a user address would name a version."""
+        tags = super().get_tags()
+        if self.path.startswith(USER_PATH_PREFIX) and tags and _VERSION_TAG.fullmatch(tags[0]):
+            return [USER_TAG]
+        return tags
 
 
 def lms_mark_legacy_paths_deprecated(result, generator, request, public):  # pylint: disable=unused-argument
