@@ -1,6 +1,6 @@
 """Permissions for the v3 contentstore API."""
 
-from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS, COURSES_VIEW_GRADING_SETTINGS
+from openedx_authz.authz import COURSES_EDIT_GRADING_SETTINGS, COURSES_VIEW_GRADING_SETTINGS
 from rest_framework.permissions import BasePermission
 
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission

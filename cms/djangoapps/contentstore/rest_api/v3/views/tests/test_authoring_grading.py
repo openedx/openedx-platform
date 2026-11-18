@@ -18,13 +18,7 @@ from django.urls import include, path, resolve, reverse
 from drf_spectacular.generators import SchemaGenerator
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.roles import (
-    COURSE_ADMIN,
-    COURSE_AUDITOR,
-    COURSE_DATA_RESEARCHER,
-    COURSE_EDITOR,
-    COURSE_STAFF,
-)
+from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.test import APIClient
 
