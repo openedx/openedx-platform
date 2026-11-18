@@ -16,8 +16,7 @@ from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplicatio
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_PAGES_AND_RESOURCES, COURSES_VIEW_PAGES_AND_RESOURCES
-from openedx_authz.constants.roles import (
+from openedx_authz.authz import (
     COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
@@ -25,6 +24,8 @@ from openedx_authz.constants.roles import (
     COURSE_EDITOR,
     COURSE_LIMITED_STAFF,
     COURSE_STAFF,
+    COURSES_MANAGE_PAGES_AND_RESOURCES,
+    COURSES_VIEW_PAGES_AND_RESOURCES,
 )
 from openedx_authz.models.engine import PolicyCacheControl
 from rest_framework.permissions import IsAuthenticated
