@@ -96,7 +96,7 @@ from openedx.core.djangolib.markup import HTML, Text
   %endif
   <div class="data-display-table profile-data-display-table" id="data-student-profiles-table"></div>
 
-  %if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+  %if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
     <p>${_("Click to generate a CSV grade report for all currently enrolled students.")}</p>
     <p>
       <input type="button" name="calculate-grades-csv" class="async-report-btn" value="${_("Generate Grade Report")}" data-endpoint="${ section_data['calculate_grades_csv_url'] }"/>

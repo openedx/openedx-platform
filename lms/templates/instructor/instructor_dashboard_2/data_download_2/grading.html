@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 from openedx.core.djangolib.markup import HTML, Text
 %>
 
-%if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+%if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
 <section id="grading" class="idash-section tab-data" aria-labelledby="header-grading">
     <h6 class="mb-15 font-size-100" id="header-grading">
         <strong>${_("Note")}: </strong>

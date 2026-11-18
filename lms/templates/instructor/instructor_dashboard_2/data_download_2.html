@@ -18,7 +18,7 @@ from openedx.core.djangolib.markup import HTML, Text
         <li class="nav-item">
             <button type="button" class="btn-link certificates" data-section="certificate">Certificates</button>
         </li>
-        %if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+        %if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
         <li class="nav-item">
             <button type="button" class="btn-link grading" data-section="grading">Grading</button>
         </li>
