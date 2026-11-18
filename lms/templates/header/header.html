@@ -43,7 +43,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 % endif
 
 <header class="global-header ${'slim' if course else ''}">
-    % if settings.FEATURES.get('ENABLE_COOKIE_POLICY_BANNER', use_cookie_banner):
+    % if getattr(settings, 'ENABLE_COOKIE_POLICY_BANNER', use_cookie_banner):
         ${static.renderReact(
             component="CookiePolicyBanner",
             id="frontend-component-cookie-policy-banner",
