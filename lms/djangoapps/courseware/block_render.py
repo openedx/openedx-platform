@@ -16,7 +16,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.core.cache import cache
 from django.db import transaction
-from django.http import Http404, HttpResponse, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.middleware.csrf import CsrfViewMiddleware
 from django.template.context_processors import csrf
 from django.urls import reverse
@@ -662,6 +662,10 @@ def prepare_runtime_for_user(
 def load_single_xblock(request, user_id, course_id, usage_key_string, course=None, will_recheck_access=False):
     """
     Load a single XBlock identified by usage_key_string.
+
+    Nothing in the platform calls this outside of tests since the xqueue_callback view
+    was removed.  It stays for the feedback block in xblocks-extra until both callers
+    move off it: https://github.com/openedx/openedx-platform/issues/39434
     """
     usage_key = UsageKey.from_string(usage_key_string)
     course_key = CourseKey.from_string(course_id)
@@ -687,49 +691,6 @@ def load_single_xblock(request, user_id, course_id, usage_key_string, course=Non
         log.debug(msg)
         raise Http404
     return instance
-
-
-@csrf_exempt
-def xqueue_callback(request, course_id, userid, mod_id, dispatch):
-    '''
-    Entry point for graded results from the queueing system.
-    '''
-    data = request.POST.copy()
-
-    # Test xqueue package, which we expect to be:
-    #   xpackage = {'xqueue_header': json.dumps({'lms_key':'secretkey',...}),
-    #               'xqueue_body'  : 'Message from grader'}
-    for key in ['xqueue_header', 'xqueue_body']:
-        if key not in data:
-            raise Http404
-
-    header = json.loads(data['xqueue_header'])
-    if not isinstance(header, dict) or 'lms_key' not in header:
-        raise Http404
-
-    course_key = CourseKey.from_string(course_id)
-
-    with modulestore().bulk_operations(course_key):
-        course = modulestore().get_course(course_key, depth=0)
-
-        instance = load_single_xblock(request, userid, course_id, mod_id, course=course)
-
-        # Transfer 'queuekey' from xqueue response header to the data.
-        # This is required to use the interface defined by 'handle_ajax'
-        data.update({'queuekey': header['lms_key']})
-
-        # We go through the "AJAX" path
-        # So far, the only dispatch from xqueue will be 'score_update'
-        try:
-            # Can ignore the return value--not used for xqueue_callback
-            instance.handle_ajax(dispatch, data)
-            # Save any state that has changed to the underlying KeyValueStore
-            instance.save()
-        except:
-            log.exception("error processing ajax call")
-            raise
-
-        return HttpResponse("")
 
 
 @csrf_exempt

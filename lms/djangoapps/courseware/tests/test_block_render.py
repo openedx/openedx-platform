@@ -266,22 +266,6 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         self.mock_user.id = 1
         self.request_factory = RequestFactoryNoCsrf()
 
-        # Construct a mock block for the modulestore to return
-        self.mock_block = MagicMock()
-        self.mock_block.id = 1
-        self.dispatch = 'score_update'
-
-        # Construct a 'standard' xqueue_callback url
-        self.callback_url = reverse(
-            'xqueue_callback',
-            kwargs=dict(
-                course_id=str(self.course_key),
-                userid=str(self.mock_user.id),
-                mod_id=self.mock_block.id,
-                dispatch=self.dispatch
-            )
-        )
-
     def tearDown(self):
         OverrideFieldData.provider_classes = None
         super().tearDown()
@@ -316,63 +300,6 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         # See if the url got rewritten to the target link
         # note if the URL mapping changes then this assertion will break
         assert '/courses/' + str(self.course_key) + '/jump_to_id/vertical_test' in html
-
-    def test_xqueue_callback_success(self):
-        """
-        Test for happy-path xqueue_callback
-        """
-        fake_key = 'fake key'
-        xqueue_header = json.dumps({'lms_key': fake_key})
-        data = {
-            'xqueue_header': xqueue_header,
-            'xqueue_body': 'hello world',
-        }
-
-        # Patch getmodule to return our mock block
-        with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
-            # call xqueue_callback with our mocked information
-            request = self.request_factory.post(self.callback_url, data)
-            render.xqueue_callback(
-                request,
-                str(self.course_key),
-                self.mock_user.id,
-                self.mock_block.id,
-                self.dispatch
-            )
-
-        # Verify that handle ajax is called with the correct data
-        request.POST._mutable = True  # pylint: disable=protected-access
-        request.POST['queuekey'] = fake_key
-        self.mock_block.handle_ajax.assert_called_once_with(self.dispatch, request.POST)
-
-    def test_xqueue_callback_missing_header_info(self):
-        data = {
-            'xqueue_header': '{}',
-            'xqueue_body': 'hello world',
-        }
-
-        with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
-            # Test with missing xqueue data
-            with pytest.raises(Http404):  # noqa: PT012
-                request = self.request_factory.post(self.callback_url, {})
-                render.xqueue_callback(
-                    request,
-                    str(self.course_key),
-                    self.mock_user.id,
-                    self.mock_block.id,
-                    self.dispatch
-                )
-
-            # Test with missing xqueue_header
-            with pytest.raises(Http404):  # noqa: PT012
-                request = self.request_factory.post(self.callback_url, data)
-                render.xqueue_callback(
-                    request,
-                    str(self.course_key),
-                    self.mock_user.id,
-                    self.mock_block.id,
-                    self.dispatch
-                )
 
     def _get_dispatch_url(self):
         """Helper to get dispatch URL for testing xblock callback."""
@@ -608,21 +535,6 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         self.location = self.course_key.make_usage_key('chapter', 'Overview')
         self.mock_user = UserFactory.create()
         self.request_factory = RequestFactoryNoCsrf()
-
-        # Construct a mock block for the modulestore to return
-        self.mock_block = MagicMock()
-        self.mock_block.id = 1
-        self.dispatch = 'score_update'
-
-        # Construct a 'standard' xqueue_callback url
-        self.callback_url = reverse(
-            'xqueue_callback', kwargs={
-                'course_id': str(self.course_key),
-                'userid': str(self.mock_user.id),
-                'mod_id': self.mock_block.id,
-                'dispatch': self.dispatch
-            }
-        )
 
     def _mock_file(self, name='file', size=10):
         """Create a mock file object for testing uploads"""

@@ -1463,16 +1463,8 @@ ENABLE_MAX_FAILED_LOGIN_ATTEMPTS: bool
 
 ###################### CAPA External Code Evaluation #######################
 
-# Used with XQueue
+# Seconds a learner must wait between submissions to a problem graded by an external grader.
 XQUEUE_WAITTIME_BETWEEN_REQUESTS = 5  # seconds
-XQUEUE_INTERFACE = {
-    'url': 'http://localhost:18040',
-    'basic_auth': ['edx', 'edx'],
-    'django_auth': {
-        'username': 'lms',
-        'password': 'password'
-    }
-}
 
 ################################### CSRF ###################################
 
