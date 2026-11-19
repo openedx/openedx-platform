@@ -255,9 +255,11 @@ def grade_histogram(block_id):
 
 def sanitize_html_id(html_id):
     """
-    Template uses element_id in js function names, so can't allow dashes and colons.
+    Template uses element_id in js function names, and as a raw (unescaped) jQuery/CSS
+    ID selector (e.g. leanModal's `$(anchor.attr('href'))`), so it can't contain
+    dashes, colons, or periods.
     """
-    sanitized_html_id = re.sub(r'[:-]', '_', html_id)
+    sanitized_html_id = re.sub(r'[:\-.]', '_', html_id)
     return sanitized_html_id
 
 
