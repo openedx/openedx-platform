@@ -126,6 +126,16 @@ class TestCCXModulestoreWrapper(SharedModuleStoreTestCase):
             assert expected.display_name == actual.display_name
             assert expected.location == actual.location.to_block_locator()
 
+    def test_fresh_block_reads(self):
+        """verify that fresh block reads by ccx key ignore blocks changed in memory"""
+        expected = self.blocks[0]
+        block_key = self.ccx_locator.make_usage_key(expected.location.block_type, expected.location.block_id)
+        with self.store.bulk_operations(self.ccx_locator):
+            self.store.get_item(block_key).display_name = 'Changed in memory'
+            with self.store.fresh_block_reads(self.ccx_locator):
+                assert self.store.get_item(block_key).display_name == expected.display_name
+            assert self.store.get_item(block_key).display_name == 'Changed in memory'
+
     def test_publication_api(self):
         """verify that we can correctly discern a published item by ccx key"""
         with self.store.bulk_operations(self.ccx_locator):
