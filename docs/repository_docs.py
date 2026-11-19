@@ -34,9 +34,9 @@ class RepositoryDocs:
         self.patterns_to_exclude_dirs = patterns_to_exclude_dirs
         self.patterns_to_exclude_files = patterns_to_exclude_files
 
-    def build_rst_docs(self):
+    def build_rst_docs(self, root_title=None):
         os.makedirs(self.build_path, exist_ok=True)
-        self._create_index_rst_file(self.build_path)
+        self._create_index_rst_file(self.build_path, title=root_title)
         rst_files = self._find_rst_files()
         self._copy_files(rst_files)
 
@@ -62,13 +62,15 @@ class RepositoryDocs:
             path = os.path.dirname(path)
         return directory_paths
 
-    def _create_index_rst_file(self, directory_path):
+    def _create_index_rst_file(self, directory_path, title=None):
         directory_name = os.path.basename(directory_path)
         file_path = os.path.join(directory_path, "index.rst")
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and title is None:
             return
-        file_content = f"""{directory_name}
-{len(directory_name) * '='}
+        if title is None:
+            title = directory_name
+        file_content = f"""{title}
+{len(title) * '='}
 
 .. toctree::
    :glob:
@@ -113,8 +115,8 @@ class RepositoryDocs:
         Written to output_path (overwritten on each build).
         """
         lines = [
-            'App-Level Documentation',
-            '=======================',
+            'docs - App index',
+            '================',
             '',
             'Quick-scan index of Django apps that have README files or documentation.',
             'Each link opens the auto-generated index for that app.',
@@ -134,7 +136,7 @@ class RepositoryDocs:
                 has_readme = os.path.isfile(os.path.join(app_path, 'README.rst'))
                 has_docs = os.path.isdir(os.path.join(app_path, 'docs'))
                 if has_readme or has_docs:
-                    # Path relative to docs/references/docs/ (where the generated tree lives)
+                    # :doc: links below are relative to docs/references/ (where this file is generated)
                     rel = f'{service_dir}/{app_name}'
                     app_entries.append((app_name, rel))
 
@@ -144,7 +146,7 @@ class RepositoryDocs:
             heading = service_dir
             lines += [heading, '-' * len(heading), '']
             for app_name, rel in app_entries:
-                lines.append(f'* :doc:`{app_name} <../references/docs/{rel}/index>`')
+                lines.append(f'* :doc:`{app_name} <docs/{rel}/index>`')
             lines.append('')
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -178,11 +180,11 @@ class RepositoryDocs:
                 decisions_by_service[service_dir] = sorted(entries)
 
         lines = [
-            'App-Level Architecture Decision Records',
-            '========================================',
+            'docs - App ADR index',
+            '====================',
             '',
-            'Links to per-app ADR directories, supplementing the top-level',
-            ':doc:`repo-wide decisions <0001-courses-in-lms>`.',
+            'Links to per-app Architecture Decision Records (ADR) directories, supplementing the top-level',
+            ':doc:`repo-wide decisions <../decisions/0001-courses-in-lms>`.',
             '',
         ]
 
@@ -190,9 +192,7 @@ class RepositoryDocs:
             heading = service_dir
             lines += [heading, '-' * len(heading), '']
             for label, rel_from_root in entries:
-                # Path relative to docs/decisions/ (where this file lives)
-                link = f'../references/docs/{rel_from_root}/index'
-                # Normalise to forward slashes
+                link = f'docs/{rel_from_root}/index'
                 link = link.replace(os.sep, '/')
                 lines.append(f'* :doc:`{label} <{link}>`')
             lines.append('')
