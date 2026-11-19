@@ -136,6 +136,29 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
             )
         assert not updated_details.self_paced
 
+    def test_partial_update_keeps_dates(self):
+        """
+        Date keys left out of the body are unchanged; an explicit None still clears a date.
+        """
+        dates = {
+            'start_date': datetime.datetime(2040, 1, 1, tzinfo=ZoneInfo("UTC")),
+            'end_date': datetime.datetime(2041, 1, 1, tzinfo=ZoneInfo("UTC")),
+            'enrollment_start': datetime.datetime(2039, 6, 1, tzinfo=ZoneInfo("UTC")),
+            'enrollment_end': datetime.datetime(2039, 12, 1, tzinfo=ZoneInfo("UTC")),
+        }
+        with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
+            details = CourseDetails.fetch(self.course.id)
+            CourseDetails.update_from_json(self.course.id, dict(details.__dict__, **dates), self.user)
+
+            updated_details = CourseDetails.update_from_json(self.course.id, {'self_paced': True}, self.user)
+            for key, value in dates.items():
+                assert getattr(updated_details, key) == value, key
+            assert updated_details.self_paced
+
+            updated_details = CourseDetails.update_from_json(self.course.id, {'end_date': None}, self.user)
+            assert updated_details.end_date is None
+            assert updated_details.start_date == dates['start_date']
+
     @ddt.data(*ABOUT_ATTRIBUTES)
     def test_fetch_about_attribute(self, attribute_name):
         attribute_value = 'test_value'
