@@ -24,6 +24,7 @@ library_collections_router.register(
 # API endpoints needed to serve XBlocks from content libraries using the
 # standard XBlock REST API (see openedx.core.django_apps.xblock.rest_api.urls)
 
+# DiscoveryCollection-BB-9218-OEX: here listed are all the API routes discussed in this discovery
 urlpatterns = [
     path('api/libraries/v2/', include([
         # list of libraries / create a library:
