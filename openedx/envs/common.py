@@ -2160,7 +2160,6 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_DISCUSSION_BLOCK = True
 
-
 # .. toggle_name: USE_EXTRACTED_VIDEO_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
