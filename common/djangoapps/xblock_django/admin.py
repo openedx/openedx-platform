@@ -58,6 +58,15 @@ class XBlockStudioConfigurationAdmin(KeyedConfigurationModelAdmin):
             ),
             'fields': ('support_level',)
         }),
+        ('Enable in All Courses', {
+            'description': _(
+                "XBlocks that are advanced by default are offered in the Advanced component list of every course, "
+                "so that course teams do not have to add them to each course's Advanced Module List. The XBlock "
+                "must also be enabled above and in XBlockConfiguration, and, if XBlockStudioConfigurationFlag is "
+                "enabled, have a support level which allows course authors to create it."
+            ),
+            'fields': ('advanced_by_default',)
+        }),
     )
 
 
