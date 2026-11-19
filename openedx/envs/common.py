@@ -2149,7 +2149,6 @@ USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_LTI_BLOCK = True
 
-
 # .. toggle_name: USE_EXTRACTED_DISCUSSION_BLOCK
 # .. toggle_default: False
 # .. toggle_implementation: DjangoSetting
