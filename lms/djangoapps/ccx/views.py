@@ -14,10 +14,13 @@ from django.db import transaction
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.timezone import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys.edx.keys import CourseKey
+from openedx_events.content_authoring.data import CourseData
+from openedx_events.content_authoring.signals import COURSE_CREATED
 from six import StringIO
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
@@ -194,6 +197,14 @@ def create_ccx(request, course, ccx=None):
 
     ccx_id = CCXLocator.from_course_locator(course.id, str(ccx.id))
     url = reverse('ccx_coach_dashboard', kwargs={'course_id': ccx_id})
+
+    # .. event_implemented_name: COURSE_CREATED
+    COURSE_CREATED.send_event(
+        time=datetime.datetime.now(tz=timezone.utc),
+        course=CourseData(
+            course_key=ccx_id,
+        )
+    )
 
     return redirect(url)
 
