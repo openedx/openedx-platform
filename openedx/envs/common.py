@@ -2114,7 +2114,6 @@ XBLOCK_MIXINS = (
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_WORD_CLOUD_BLOCK = True
 
-
 # .. toggle_name: USE_EXTRACTED_POLL_QUESTION_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
