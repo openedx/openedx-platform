@@ -262,7 +262,7 @@ class TestCourseCriteriaContent(CourseCriteriaTestBase):
             assert response.status_code == 200, response.content
         bodies = [response.json() for response in responses]
         assert bodies[0] == bodies[1] == bodies[2]
-        assert {criterion["usage_key"] for criterion in bodies[0]["criteria"]} == self.usage_keys
+        assert {criterion["object_id"] for criterion in bodies[0]["criteria"]} == self.usage_keys
         assert len(bodies[0]["criteria"]) == 5
         assert [competency["name"] for competency in bodies[0]["competencies"]] == ["Critical Thinking"]
 
