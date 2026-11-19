@@ -10,7 +10,7 @@ from django.test import SimpleTestCase, override_settings
 from opaque_keys.edx.keys import CourseKey
 
 from xmodule.contentstore import django as contentstore_django
-from xmodule.contentstore.content import ContentStore, StaticContent
+from xmodule.contentstore.content import ContentStore, ContentStoreReadOnlyError, StaticContent
 from xmodule.contentstore.routing import RoutingContentStore
 
 COURSE_A = CourseKey.from_string("course-v1:OpenedX+Routing+A")
@@ -27,23 +27,6 @@ class FakeContentStore(ContentStore):
     def __init__(self, **kwargs):
         super().__init__()
         self.options = kwargs
-
-
-class TwoBackendRoutingContentStore(RoutingContentStore):
-    """
-    A router with a second backend, which stores the files for ``COURSE_B``.
-    """
-
-    def __init__(self, legacy_store, other_store):
-        super().__init__(legacy_store)
-        self.other_store = other_store
-
-    @property
-    def _all_stores(self):
-        return [self.legacy_store, self.other_store]
-
-    def _store_for_course(self, course_key):
-        return self.other_store if course_key == COURSE_B else self.legacy_store
 
 
 def mock_store():
@@ -97,19 +80,50 @@ RETURNS_NONE = {
 }
 
 
-@ddt.ddt
-class TestRoutingContentStore(SimpleTestCase):
+class RouterTestCase(SimpleTestCase):
     """
-    Tests for RoutingContentStore with only the legacy backend.
+    Base class for tests of a RoutingContentStore with mock backends.
+
+    ``self.statuses`` holds the ``CourseAssetBackend`` status of each course;
+    courses that aren't in it are "legacy".
     """
 
     def setUp(self):
         super().setUp()
         self.legacy = mock_store()
-        self.router = RoutingContentStore(legacy_store=self.legacy)
+        self.versioned = mock_store()
+        self.router = RoutingContentStore(legacy_store=self.legacy, versioned_store=self.versioned)
+        self.statuses: dict[CourseKey, str] = {}
+        patcher = mock.patch.object(
+            RoutingContentStore, "_get_backend_status", side_effect=lambda key: self.statuses.get(key, "legacy")
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch(
+            "openedx.core.djangoapps.contentstore_shim.api.inherit_course_asset_backend_status", autospec=True
+        )
+        self.mock_inherit = patcher.start()
+        self.addCleanup(patcher.stop)
 
-    def test_legacy_store(self):
+
+@ddt.ddt
+class TestRoutingContentStore(RouterTestCase):
+    """
+    Tests for RoutingContentStore with only legacy courses.
+    """
+
+    def test_stores(self):
         assert self.router.legacy_store is self.legacy
+        assert self.router.versioned_store is self.versioned
+
+    def test_default_versioned_store(self):
+        # pylint: disable=import-outside-toplevel
+        from openedx.core.djangoapps.contentstore_shim.store import VersionedContentStoreShim
+
+        router = RoutingContentStore(legacy_store=self.legacy)
+        assert isinstance(router.versioned_store, VersionedContentStoreShim)
+        # It's only created once:
+        assert router.versioned_store is router.versioned_store
 
     @ddt.data(*DELEGATED_CALLS)
     @ddt.unpack
@@ -122,73 +136,172 @@ class TestRoutingContentStore(SimpleTestCase):
             assert result is None
         else:
             assert result is backend_method.return_value
+        assert not self.versioned.method_calls
 
     def test_delete_by_legacy_id(self):
         """Deleting by a MongoContentStore internal ID (not an AssetKey) goes to the legacy store."""
         self.router.delete("some-mongo-id")
         self.legacy.delete.assert_called_once_with("some-mongo-id")
 
-    def test_global_methods(self):
+    def test_global_methods_use_all_backends(self):
         self.legacy.remove_redundant_content_for_courses.return_value = 3
-        assert self.router.remove_redundant_content_for_courses() == 3
-        self.router.ensure_indexes()
-        self.legacy.ensure_indexes.assert_called_once_with()
-        self.router.close_connections()
-        self.legacy.close_connections.assert_called_once_with()
-        self.router._drop_database(database=False)  # pylint: disable=protected-access
-        self.legacy._drop_database.assert_called_once_with(False, True, True)  # pylint: disable=protected-access
+        self.versioned.remove_redundant_content_for_courses.return_value = 2
+        assert self.router.remove_redundant_content_for_courses() == 5
+        for store in (self.legacy, self.versioned):
+            self.router.ensure_indexes()
+            store.ensure_indexes.assert_called_with()
+            self.router.close_connections()
+            store.close_connections.assert_called_with()
+            self.router._drop_database(database=False)  # pylint: disable=protected-access
+            store._drop_database.assert_called_with(False, True, True)  # pylint: disable=protected-access
 
 
 @ddt.ddt
-class TestRoutingBetweenBackends(SimpleTestCase):
+class TestRoutingBetweenBackends(RouterTestCase):
     """
-    Tests that a router with more than one backend sends each request to the right one.
+    Tests that each request goes to the backend for the course's status.
     """
 
     def setUp(self):
         super().setUp()
-        self.legacy = mock_store()
-        self.other = mock_store()
-        self.router = TwoBackendRoutingContentStore(self.legacy, self.other)
+        self.statuses[COURSE_B] = "migrated"
 
     @ddt.data(
         ("save", (CONTENT_B,)),
         ("find", (ASSET_B,)),
         ("delete", (ASSET_B,)),
+        ("get_attrs", (ASSET_B,)),
         ("set_attr", (ASSET_B, "locked", True)),
+        ("export", (ASSET_B, "/tmp/out")),
         ("generate_thumbnail", (CONTENT_B,)),
         ("get_all_content_for_course", (COURSE_B,)),
+        ("get_all_content_thumbnails_for_course", (COURSE_B,)),
         ("export_all_for_course", (COURSE_B, "/tmp/out", "/tmp/a.json")),
         ("delete_all_course_assets", (COURSE_B,)),
     )
     @ddt.unpack
-    def test_routes_by_course(self, method_name, args):
-        """Requests for COURSE_B go to the other store, and nothing goes to the legacy store."""
+    def test_migrated_course_uses_versioned_store(self, method_name, args):
+        """Requests for the migrated COURSE_B go to the versioned store, and nothing goes to the legacy store."""
         getattr(self.router, method_name)(*args)
-        getattr(self.other, method_name).assert_called_once()
+        getattr(self.versioned, method_name).assert_called_once()
         assert not self.legacy.method_calls
 
-    def test_routes_to_legacy(self):
+    def test_legacy_course_uses_legacy_store(self):
         """Requests for COURSE_A still go to the legacy store."""
         self.router.find(ASSET_A)
         self.legacy.find.assert_called_once()
-        assert not self.other.method_calls
+        assert not self.versioned.method_calls
 
     def test_copy_within_backend(self):
-        self.router.copy_all_course_assets(COURSE_B, COURSE_B)
-        self.other.copy_all_course_assets.assert_called_once_with(COURSE_B, COURSE_B)
+        self.statuses[COURSE_A] = "migrated"
+        self.router.copy_all_course_assets(COURSE_A, COURSE_B)
+        self.versioned.copy_all_course_assets.assert_called_once_with(COURSE_A, COURSE_B)
+        assert not self.legacy.method_calls
 
-    def test_copy_between_backends(self):
-        with pytest.raises(NotImplementedError):
-            self.router.copy_all_course_assets(COURSE_A, COURSE_B)
+    @ddt.data(
+        # (source course, dest course): legacy -> migrated, and migrated -> legacy
+        (COURSE_A, COURSE_B),
+        (COURSE_B, COURSE_A),
+    )
+    @ddt.unpack
+    def test_copy_between_backends(self, source_course, dest_course):
+        """
+        Copying between courses in different backends copies each file with the
+        generic ContentStore API.
+        """
+        source_store, dest_store = (
+            (self.legacy, self.versioned) if source_course == COURSE_A else (self.versioned, self.legacy)
+        )
+        source_asset = source_course.make_asset_key("asset", "images_photo.png")
+        source_content = StaticContent(
+            source_asset,
+            "photo.png",
+            "image/png",
+            b"photo",
+            import_path="images/photo.png",
+            locked=True,
+            thumbnail_location=source_course.make_asset_key("thumbnail", "images_photo.jpg"),
+        )
+        source_store.get_all_content_for_course.return_value = ([{"asset_key": source_asset}], 1)
+        source_store.find.return_value = source_content
 
-    def test_global_methods_use_all_backends(self):
-        self.legacy.remove_redundant_content_for_courses.return_value = 3
-        self.other.remove_redundant_content_for_courses.return_value = 2
-        assert self.router.remove_redundant_content_for_courses() == 5
-        self.router.ensure_indexes()
-        self.legacy.ensure_indexes.assert_called_once_with()
-        self.other.ensure_indexes.assert_called_once_with()
+        self.router.copy_all_course_assets(source_course, dest_course)
+
+        source_store.find.assert_called_once_with(source_asset)
+        dest_store.save.assert_called_once()
+        saved = dest_store.save.call_args.args[0]
+        assert saved.location == dest_course.make_asset_key("asset", "images_photo.png")
+        assert (saved.name, saved.content_type, saved.data) == ("photo.png", "image/png", b"photo")
+        assert (saved.import_path, saved.locked) == ("images/photo.png", True)
+        assert saved.thumbnail_location is None
+        assert not source_store.copy_all_course_assets.called
+        assert not dest_store.copy_all_course_assets.called
+
+    def test_copy_inherits_status_first(self):
+        """
+        Copying a course first lets the destination inherit the source's status,
+        and then copies the files to the destination's (new) backend.
+        """
+        dest_course = CourseKey.from_string("course-v1:OpenedX+Routing+B_rerun")
+
+        def inherit(source_course_key, dest_course_key):
+            assert (source_course_key, dest_course_key) == (COURSE_B, dest_course)
+            self.statuses[dest_course] = self.statuses[source_course_key]
+
+        self.mock_inherit.side_effect = inherit
+        self.router.copy_all_course_assets(COURSE_B, dest_course)
+        self.mock_inherit.assert_called_once_with(COURSE_B, dest_course)
+        self.versioned.copy_all_course_assets.assert_called_once_with(COURSE_B, dest_course)
+        assert not self.legacy.method_calls
+
+
+@ddt.ddt
+class TestRoutingInProgress(RouterTestCase):
+    """
+    Tests for courses whose files are being migrated: they're read from the
+    legacy store, and can't be changed.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.statuses[COURSE_A] = "in_progress"
+
+    @ddt.data(
+        ("find", (ASSET_A,)),
+        ("get_attrs", (ASSET_A,)),
+        ("get_attr", (ASSET_A, "locked")),
+        ("export", (ASSET_A, "/tmp/out")),
+        ("get_all_content_for_course", (COURSE_A,)),
+        ("get_all_content_thumbnails_for_course", (COURSE_A,)),
+        ("export_all_for_course", (COURSE_A, "/tmp/out", "/tmp/a.json")),
+    )
+    @ddt.unpack
+    def test_reads_use_legacy_store(self, method_name, args):
+        getattr(self.router, method_name)(*args)
+        getattr(self.legacy, method_name).assert_called_once()
+        assert not self.versioned.method_calls
+
+    @ddt.data(
+        ("save", (CONTENT_A,)),
+        ("delete", (ASSET_A,)),
+        ("set_attr", (ASSET_A, "locked", True)),
+        ("set_attrs", (ASSET_A, {"locked": True})),
+        ("generate_thumbnail", (CONTENT_A,)),
+        ("delete_all_course_assets", (COURSE_A,)),
+        # Copying files into the course:
+        ("copy_all_course_assets", (COURSE_B, COURSE_A)),
+    )
+    @ddt.unpack
+    def test_writes_are_blocked(self, method_name, args):
+        with pytest.raises(ContentStoreReadOnlyError, match="being migrated"):
+            getattr(self.router, method_name)(*args)
+        assert not self.legacy.method_calls
+        assert not self.versioned.method_calls
+
+    def test_copy_from_in_progress_course(self):
+        """Files can still be copied out of a course that's being migrated."""
+        self.router.copy_all_course_assets(COURSE_A, COURSE_B)
+        self.legacy.copy_all_course_assets.assert_called_once_with(COURSE_A, COURSE_B)
 
 
 @override_settings(CONTENTSTORE={

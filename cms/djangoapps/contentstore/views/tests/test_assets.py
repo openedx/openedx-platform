@@ -25,6 +25,8 @@ from cms.djangoapps.contentstore.views import assets
 from common.djangoapps.static_replace import replace_static_urls
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+from openedx.core.djangoapps.contentstore_shim.models import CourseAssetBackend
+from openedx.core.djangoapps.contentstore_shim.tests.utils import set_course_asset_backend_status_for_test
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
@@ -44,11 +46,23 @@ class AssetsTestCase(CourseTestCase):
     """
 
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
+    # Set to True in subclasses to store the course's Files in openedx_content instead of the legacy contentstore.
+    MIGRATED_COURSE = False
 
     def setUp(self):
         super().setUp()
         self.course = CourseFactory(default_store='split')
         self.url = reverse_course_url('assets_handler', self.course.id)
+        if self.MIGRATED_COURSE:
+            set_course_asset_backend_status_for_test(self.course.id, CourseAssetBackend.Status.MIGRATED)
+            self.addCleanup(self._assert_no_legacy_assets)
+
+    def _assert_no_legacy_assets(self):
+        """
+        Check that none of the migrated course's Files went to the legacy store.
+        """
+        _assets, count = contentstore().legacy_store.get_all_content_for_course(self.course.id)
+        assert count == 0
 
     def upload_asset(self, name="asset-1", asset_type='text'):
         """
@@ -735,3 +749,32 @@ class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
         # DELETE assets_handler forbidden
         resp = self._delete_asset(client)
         self.assertEqual(resp.status_code, 403)  # noqa: PT009
+
+
+class MigratedPaginationTestCase(PaginationTestCase):  # pylint: disable=test-inherits-tests
+    """
+    The pagination, sorting and filtering tests, for a course whose Files are
+    stored in openedx_content.
+    """
+    MIGRATED_COURSE = True
+
+
+class MigratedUploadTestCase(UploadTestCase):  # pylint: disable=test-inherits-tests
+    """
+    The upload tests, for a course whose Files are stored in openedx_content.
+    """
+    MIGRATED_COURSE = True
+
+
+class MigratedDownloadTestCase(DownloadTestCase):  # pylint: disable=test-inherits-tests
+    """
+    The download tests, for a course whose Files are stored in openedx_content.
+    """
+    MIGRATED_COURSE = True
+
+
+class MigratedDeleteAssetTestCase(DeleteAssetTestCase):  # pylint: disable=test-inherits-tests
+    """
+    The delete tests, for a course whose Files are stored in openedx_content.
+    """
+    MIGRATED_COURSE = True

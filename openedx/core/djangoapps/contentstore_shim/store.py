@@ -26,6 +26,7 @@ from openedx_content.api import AssetPermissions
 from openedx_content.models_api import Asset, AssetVersion, Draft, LearningPackage, Media, MediaType
 
 from xmodule.contentstore.content import ContentStore, ContentstoreAsset, StaticContent, StaticContentStream
+from xmodule.contentstore.routing import copy_course_assets_between_stores
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.django import ASSET_IGNORE_REGEX
 from xmodule.util.misc import escape_invalid_characters
@@ -351,11 +352,7 @@ class VersionedContentStoreShim(ContentStore):
         self._delete_assets(learning_package_id, assets)
 
     def copy_all_course_assets(self, source_course_key: CourseKey, dest_course_key: CourseKey) -> None:
-        assets, _count = self.get_all_content_for_course(source_course_key)
-        for asset in assets:
-            content = self.find(asset["asset_key"])
-            content.location = dest_course_key.make_asset_key("asset", content.location.path)
-            self.save(content)
+        copy_course_assets_between_stores(self, source_course_key, self, dest_course_key)
 
     # Methods that act on all courses
 
