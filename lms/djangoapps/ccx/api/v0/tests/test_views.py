@@ -16,8 +16,9 @@ from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.urls import Resolver404, resolve, reverse
 from django.utils.timezone import now
+from edx_toggles.toggles.testutils import override_waffle_flag
 from oauth2_provider import models as dot_models
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -28,11 +29,14 @@ from lms.djangoapps.ccx.api.v0 import views
 from lms.djangoapps.ccx.models import CcxFieldOverride, CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import override_field_for_ccx
 from lms.djangoapps.ccx.tests.utils import CcxTestCase
+from lms.djangoapps.ccx.toggles import V0_COURSE_MODULES_USE_SCHEDULE
 from lms.djangoapps.ccx.utils import ccx_course as ccx_course_cm
+from lms.djangoapps.ccx.utils import remove_block_from_ccx_schedule, save_ccx_schedule
 from lms.djangoapps.courseware import courses
 from lms.djangoapps.instructor.access import allow_access, list_with_level
 from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params
 from openedx.core.lib.courses import get_course_by_id
+from xmodule.modulestore.tests.factories import BlockFactory  # pylint: disable=wrong-import-order
 
 USER_PASSWORD = 'Password1234'
 
@@ -1149,3 +1153,240 @@ class CcxDetailTest(CcxRestApiTest):
             # check that there are no overrides
             assert CcxFieldOverride.objects.filter(ccx=self.ccx).count() == 0
             assert CourseEnrollment.objects.filter(course_id=self.ccx_key).count() == 0
+
+
+@override_waffle_flag(V0_COURSE_MODULES_USE_SCHEDULE, active=True)
+class CcxScheduleBackedCourseModulesTest(CcxRestApiTest):
+    """
+    Tests for the v0 course_modules backed by the CCX schedule, which is what learners see.
+    """
+    ENABLED_SIGNALS = ['course_published']
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.staff_only_chapter = BlockFactory.create(
+            parent=cls.course, category='chapter', visible_to_staff_only=True
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.list_url = reverse('ccx_api:v0:ccx:list')
+        self.chapter_0, self.chapter_1 = (str(chapter.location) for chapter in self.chapters)
+        self.staff_only = str(self.staff_only_chapter.location)
+
+    def create_ccx(self, course_modules):
+        """
+        Creates a CCX through the API and returns it with its detail URL
+        """
+        data = {
+            'master_course_id': self.master_course_key_str,
+            'max_students_allowed': 111,
+            'display_name': 'CCX Test Title',
+            'coach_email': self.coach.email,
+            'course_modules': course_modules,
+        }
+        resp = self.client.post(self.list_url, data, format='json', HTTP_AUTHORIZATION=self.auth)
+        assert resp.status_code == status.HTTP_201_CREATED
+        ccx_key = CourseKey.from_string(resp.data['ccx_course_id'])
+        ccx = CustomCourseForEdX.objects.get(pk=ccx_key.ccx)
+        return ccx, reverse('ccx_api:v0:ccx:detail', kwargs={'ccx_course_id': resp.data['ccx_course_id']})
+
+    def schedule_blocks(self, chapter_location):
+        """
+        Returns the chapter with its sequentials and verticals
+        """
+        chapter = self.mstore.get_item(UsageKey.from_string(chapter_location))
+        blocks = [chapter]
+        for sequential in chapter.get_children():
+            blocks.append(sequential)
+            blocks.extend(sequential.get_children())
+        return blocks
+
+    def assert_learners_see(self, ccx, chapter_location, visible):
+        """
+        Checks the visibility overrides of a chapter and its sequentials and verticals
+        """
+        for block in self.schedule_blocks(chapter_location):
+            override = CcxFieldOverride.objects.get(ccx=ccx, location=block.location, field='visible_to_staff_only')
+            assert json.loads(override.value) is not visible, block.location
+
+    def get_course_modules(self, detail_url):
+        """
+        Returns the course_modules reported by the API
+        """
+        resp = self.client.get(detail_url, HTTP_AUTHORIZATION=self.auth)
+        assert resp.status_code == status.HTTP_200_OK
+        return resp.data['course_modules']
+
+    def test_post_shows_course_modules_to_learners(self):
+        """
+        Learners see the course modules a CCX is created with
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        self.assert_learners_see(ccx, self.chapter_0, True)
+        self.assert_learners_see(ccx, self.chapter_1, False)
+        assert self.get_course_modules(detail_url) == [self.chapter_0]
+
+    def test_patch_shows_and_hides_course_modules_for_learners(self):
+        """
+        Learners see added course modules and stop seeing removed ones
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        resp = self.client.patch(
+            detail_url, {'course_modules': [self.chapter_1]}, format='json', HTTP_AUTHORIZATION=self.auth
+        )
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
+        self.assert_learners_see(ccx, self.chapter_0, False)
+        self.assert_learners_see(ccx, self.chapter_1, True)
+        assert self.get_course_modules(detail_url) == [self.chapter_1]
+
+    def test_patch_keeps_coach_edits_in_unchanged_chapters(self):
+        """
+        Coach edits inside chapters that stay in course_modules are kept
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        vertical = self.schedule_blocks(self.chapter_0)[-1]
+        override_field_for_ccx(ccx, vertical, 'visible_to_staff_only', True)
+        resp = self.client.patch(
+            detail_url, {'course_modules': [self.chapter_0, self.chapter_1]}, format='json',
+            HTTP_AUTHORIZATION=self.auth,
+        )
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
+        override = CcxFieldOverride.objects.get(ccx=ccx, location=vertical.location, field='visible_to_staff_only')
+        assert json.loads(override.value) is True
+        self.assert_learners_see(ccx, self.chapter_1, True)
+
+    def test_get_reports_coach_dashboard_changes(self):
+        """
+        course_modules reflects schedule changes made outside the v0 API
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0, self.chapter_1])
+        remove_block_from_ccx_schedule(ccx, get_course_by_id(self.master_course_key), self.chapter_0)
+        assert self.get_course_modules(detail_url) == [self.chapter_1]
+
+    def test_patch_null_course_modules_is_no_change(self):
+        """
+        A null course_modules leaves the schedule unchanged
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        resp = self.client.patch(detail_url, {'course_modules': None}, format='json', HTTP_AUTHORIZATION=self.auth)
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
+        self.assert_learners_see(ccx, self.chapter_0, True)
+        assert self.get_course_modules(detail_url) == [self.chapter_0]
+
+    def test_post_rejects_staff_only_chapters(self):
+        """
+        Chapters visible to staff only in the master course are rejected and nothing is created
+        """
+        ccx_count = CustomCourseForEdX.objects.count()
+        data = {
+            'master_course_id': self.master_course_key_str,
+            'max_students_allowed': 111,
+            'display_name': 'CCX Test Title',
+            'coach_email': self.coach.email,
+            'course_modules': [self.chapter_0, self.staff_only],
+        }
+        resp = self.client.post(self.list_url, data, format='json', HTTP_AUTHORIZATION=self.auth)
+        self.expect_error(status.HTTP_400_BAD_REQUEST, 'course_module_not_visible_in_master_course', resp)
+        assert resp.data['invalid_course_modules'] == [self.staff_only]
+        assert CustomCourseForEdX.objects.count() == ccx_count
+
+    def test_patch_rejects_staff_only_chapters_without_changes(self):
+        """
+        Chapters visible to staff only in the master course are rejected and nothing is changed
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        data = {'display_name': 'Changed', 'course_modules': [self.chapter_1, self.staff_only]}
+        resp = self.client.patch(detail_url, data, format='json', HTTP_AUTHORIZATION=self.auth)
+        self.expect_error(status.HTTP_400_BAD_REQUEST, 'course_module_not_visible_in_master_course', resp)
+        assert resp.data['invalid_course_modules'] == [self.staff_only]
+        assert CustomCourseForEdX.objects.get(id=ccx.id).display_name == 'CCX Test Title'
+        self.assert_learners_see(ccx, self.chapter_0, True)
+        self.assert_learners_see(ccx, self.chapter_1, False)
+
+    def test_foreign_chapters_keep_existing_error(self):
+        """
+        Chapters of another course are reported before staff only ones
+        """
+        _ccx, detail_url = self.create_ccx([self.chapter_0])
+        other_chapter = str(
+            self.staff_only_chapter.location.map_into_course(CourseKey.from_string('course-v1:Other+Course+Run'))
+        )
+        data = {'course_modules': [other_chapter, self.staff_only]}
+        resp = self.client.patch(detail_url, data, format='json', HTTP_AUTHORIZATION=self.auth)
+        self.expect_error(status.HTTP_400_BAD_REQUEST, 'course_module_list_not_belonging_to_master_course', resp)
+
+    def test_patch_dry_run(self):
+        """
+        A dry run reports the changes without applying them
+        """
+        ccx, detail_url = self.create_ccx([self.chapter_0])
+        resp = self.client.patch(
+            f'{detail_url}?dry_run=true', {'course_modules': [self.chapter_1]}, format='json',
+            HTTP_AUTHORIZATION=self.auth,
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data == {
+            'dry_run': True,
+            'course_modules_to_show': [self.chapter_1],
+            'course_modules_to_hide': [self.chapter_0],
+        }
+        self.assert_learners_see(ccx, self.chapter_0, True)
+        self.assert_learners_see(ccx, self.chapter_1, False)
+
+    def test_post_dry_run(self):
+        """
+        A dry run reports the course modules to show without creating the CCX
+        """
+        ccx_count = CustomCourseForEdX.objects.count()
+        data = {
+            'master_course_id': self.master_course_key_str,
+            'max_students_allowed': 111,
+            'display_name': 'CCX Test Title',
+            'coach_email': self.coach.email,
+            'course_modules': [self.chapter_1, self.chapter_0],
+        }
+        resp = self.client.post(f'{self.list_url}?dry_run=true', data, format='json', HTTP_AUTHORIZATION=self.auth)
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.data['course_modules_to_show'] == [self.chapter_0, self.chapter_1]
+        assert CustomCourseForEdX.objects.count() == ccx_count
+
+    def test_patch_if_match(self):
+        """
+        A PATCH with a stale If-Match is rejected
+        """
+        _ccx, detail_url = self.create_ccx([self.chapter_0])
+        etag = self.client.get(detail_url, HTTP_AUTHORIZATION=self.auth)['ETag']
+        resp = self.client.patch(
+            detail_url, {'display_name': 'First'}, format='json', HTTP_AUTHORIZATION=self.auth, HTTP_IF_MATCH=etag
+        )
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
+        new_etag = resp['ETag']
+        assert new_etag != etag
+
+        # a client still holding the old ETag must not overwrite the change
+        resp = self.client.patch(
+            detail_url, {'display_name': 'Second'}, format='json', HTTP_AUTHORIZATION=self.auth, HTTP_IF_MATCH=etag
+        )
+        self.expect_error(status.HTTP_412_PRECONDITION_FAILED, 'ccx_course_changed', resp)
+
+        resp = self.client.patch(
+            detail_url, {'display_name': 'Second'}, format='json', HTTP_AUTHORIZATION=self.auth,
+            HTTP_IF_MATCH=new_etag,
+        )
+        assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_save_ccx_schedule_keeps_staff_only_chapters_hidden(self):
+        """
+        The coach schedule cannot show chapters visible to staff only in the master course
+        """
+        ccx, _detail_url = self.create_ccx([self.chapter_0])
+        save_ccx_schedule(
+            get_course_by_id(self.master_course_key), ccx,
+            [{'location': self.staff_only, 'hidden': False, 'start': None}],
+        )
+        override = CcxFieldOverride.objects.get(
+            ccx=ccx, location=self.staff_only_chapter.location, field='visible_to_staff_only'
+        )
+        assert json.loads(override.value) is True

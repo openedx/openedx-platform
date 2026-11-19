@@ -2,6 +2,7 @@
 
 
 import datetime
+import hashlib
 import json
 import logging
 
@@ -23,7 +24,16 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseCcxCoachRole
 from lms.djangoapps.ccx.models import CcxFieldOverride, CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import override_field_for_ccx
-from lms.djangoapps.ccx.utils import add_master_course_staff_to_ccx, assign_staff_role_to_ccx, is_email
+from lms.djangoapps.ccx.toggles import v0_course_modules_use_schedule
+from lms.djangoapps.ccx.utils import (
+    add_master_course_staff_to_ccx,
+    assign_staff_role_to_ccx,
+    get_ccx_visible_chapters,
+    get_master_course_chapters,
+    get_staff_only_chapters,
+    is_email,
+    set_ccx_chapters_visibility,
+)
 from lms.djangoapps.courseware.courses import get_course_chapter_ids
 from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -203,6 +213,92 @@ def make_user_coach(user, master_course_key):
     coach_role_on_master_course.add_users(user)
 
 
+def get_course_modules_error_response(course_modules, master_course_object, use_schedule):
+    """
+    Validate a list of course modules against the master course.
+
+    Args:
+        course_modules (list): A list of strings representing Block Usage Keys, or None
+        master_course_object (CourseBlock): The master course
+        use_schedule (bool): Whether ``course_modules`` is backed by the CCX schedule,
+            in which case chapters visible to staff only in the master course are rejected
+
+    Returns:
+        Response: a 400 response describing the problem, or None if the list is valid
+    """
+    if not course_modules:
+        return None
+    if not valid_course_modules(course_modules, master_course_object.id):
+        return Response(
+            status=status.HTTP_400_BAD_REQUEST,
+            data={
+                'error_code': 'course_module_list_not_belonging_to_master_course'
+            }
+        )
+    if use_schedule:
+        staff_only = get_staff_only_chapters(master_course_object, course_modules)
+        if staff_only:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST,
+                data={
+                    'error_code': 'course_module_not_visible_in_master_course',
+                    'invalid_course_modules': staff_only,
+                }
+            )
+    return None
+
+
+def in_course_order(master_course_object, course_modules):
+    """
+    Returns the chapters in ``course_modules`` sorted in master course order.
+    """
+    course_modules = set(course_modules)
+    return [
+        location for location in get_master_course_chapters(master_course_object)
+        if location in course_modules
+    ]
+
+
+def is_dry_run(request):
+    """
+    Returns whether the request asks to validate and preview changes without applying them.
+    """
+    return request.query_params.get('dry_run', '').lower() in ('true', '1')
+
+
+def dry_run_response(course_modules_to_show, course_modules_to_hide):
+    """
+    Returns the response to a valid dry run request.
+    """
+    return Response(
+        status=status.HTTP_200_OK,
+        data={
+            'dry_run': True,
+            'course_modules_to_show': course_modules_to_show,
+            'course_modules_to_hide': course_modules_to_hide,
+        }
+    )
+
+
+def get_etag(serialized_ccx):
+    """
+    Returns a strong ETag for the serialized representation of a CCX course.
+    """
+    payload = json.dumps(serialized_ccx, sort_keys=True, default=str).encode('utf-8')
+    return f'"{hashlib.sha256(payload).hexdigest()}"'
+
+
+def if_match_fails(request, etag):
+    """
+    Returns whether the request has an If-Match header that does not match ``etag``.
+    """
+    if_match = request.headers.get('If-Match')
+    if not if_match:
+        return False
+    candidates = {candidate.strip() for candidate in if_match.split(',')}
+    return '*' not in candidates and etag not in candidates
+
+
 class CCXListView(GenericAPIView):
     """
         **Use Case**
@@ -350,6 +446,23 @@ class CCXListView(GenericAPIView):
                     "block-v1:Organization+EX101+RUN-FALL2099+type@chapter+block@week5"
                 ]
     }
+
+        **Schedule-backed course_modules**
+
+            When the ``ccx.v0_course_modules_use_schedule`` flag is enabled for the master course,
+            course_modules are the chapters learners of the CCX can see, the same ones the coach
+            dashboard shows in the schedule:
+
+            * POST makes the listed chapters, with their subsections and units, visible to learners.
+
+            * Chapters that are visible to staff only in the master course are rejected with an HTTP
+              400 response, error_code "course_module_not_visible_in_master_course" and the rejected
+              keys in invalid_course_modules. Nothing is created.
+
+            * With ?dry_run=true, the request is validated and an HTTP 200 response with
+              course_modules_to_show and course_modules_to_hide is returned. Nothing is created.
+
+            * The HTTP 201 response has an ETag header (see the CCX detail endpoint).
     """
     authentication_classes = (
         JwtAuthentication,
@@ -444,14 +557,16 @@ class CCXListView(GenericAPIView):
                 }
             )
 
-        if valid_input.get('course_modules'):
-            if not valid_course_modules(valid_input['course_modules'], master_course_key):
-                return Response(
-                    status=status.HTTP_400_BAD_REQUEST,
-                    data={
-                        'error_code': 'course_module_list_not_belonging_to_master_course'
-                    }
-                )
+        use_schedule = v0_course_modules_use_schedule(master_course_key)
+        error_response = get_course_modules_error_response(
+            valid_input.get('course_modules'), master_course_object, use_schedule
+        )
+        if error_response:
+            return error_response
+        if use_schedule and is_dry_run(request):
+            return dry_run_response(
+                in_course_order(master_course_object, valid_input.get('course_modules') or []), []
+            )
         # prepare the course_modules to be stored in a json stringified field
         course_modules_json = json.dumps(valid_input.get('course_modules'))
 
@@ -485,6 +600,11 @@ class CCXListView(GenericAPIView):
                     override_field_for_ccx(ccx_course_object, sequential, hidden, True)
                     for vertical in sequential.get_children():
                         override_field_for_ccx(ccx_course_object, vertical, hidden, True)
+            # then show the requested chapters to learners
+            if use_schedule and valid_input.get('course_modules'):
+                set_ccx_chapters_visibility(
+                    master_course_object, ccx_course_object, show=valid_input['course_modules']
+                )
 
             # make the coach user a coach on the master course
             make_user_coach(coach, master_course_key)
@@ -529,7 +649,8 @@ class CCXListView(GenericAPIView):
             log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
         return Response(
             status=status.HTTP_201_CREATED,
-            data=serializer.data
+            data=serializer.data,
+            headers={'ETag': get_etag(serializer.data)} if use_schedule else None,
         )
 
 
@@ -608,6 +729,29 @@ class CCXDetailView(GenericAPIView):
 
             If the request for modification or deletion of a CCX course is successful, an HTTP 204 "No Content"
             response is returned.
+
+        **Schedule-backed course_modules**
+
+            When the ``ccx.v0_course_modules_use_schedule`` flag is enabled for the master course,
+            course_modules are the chapters learners of the CCX can see, the same ones the coach
+            dashboard shows in the schedule:
+
+            * PATCH course_modules is the full list of chapters to show. Chapters added to the list are
+              made visible with their subsections and units, chapters dropped from it are hidden with
+              their descendants, and the others are left untouched so the coach's edits inside them are
+              kept. "course_modules": null leaves the schedule unchanged.
+
+            * Chapters that are visible to staff only in the master course are rejected with an HTTP
+              400 response, error_code "course_module_not_visible_in_master_course" and the rejected
+              keys in invalid_course_modules. Nothing is changed.
+
+            * With ?dry_run=true, the request is validated and an HTTP 200 response with
+              course_modules_to_show and course_modules_to_hide is returned. Nothing is changed.
+
+            * GET and PATCH responses have an ETag header. A PATCH with an If-Match header that does
+              not match the current ETag is rejected with an HTTP 412 response and error_code
+              "ccx_course_changed", so changes made meanwhile (for example on the coach dashboard)
+              are not overwritten.
     """
 
     authentication_classes = (
@@ -646,6 +790,8 @@ class CCXDetailView(GenericAPIView):
                 }
             )
         serializer = self.get_serializer(ccx_course_object)
+        if v0_course_modules_use_schedule(ccx_course_object.course_id):
+            return Response(serializer.data, headers={'ETag': get_etag(serializer.data)})
         return Response(serializer.data)
 
     def delete(self, request, ccx_course_id=None):
@@ -713,6 +859,49 @@ class CCXDetailView(GenericAPIView):
 
         # get the master course key and master course object
         master_course_object, master_course_key, _, _ = get_valid_course(str(ccx_course_object.course_id))
+        use_schedule = v0_course_modules_use_schedule(master_course_key)
+
+        if use_schedule and if_match_fails(request, get_etag(self.get_serializer(ccx_course_object).data)):
+            return Response(
+                status=status.HTTP_412_PRECONDITION_FAILED,
+                data={
+                    'error_code': 'ccx_course_changed'
+                }
+            )
+
+        # validate everything before writing anything: with ATOMIC_REQUESTS an
+        # error response returned after a write would still commit it
+        coach = None
+        if 'coach_email' in valid_input:
+            try:
+                coach = User.objects.get(email=valid_input['coach_email'])
+            except User.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND,
+                    data={
+                        'error_code': 'coach_user_does_not_exist'
+                    }
+                )
+        error_response = get_course_modules_error_response(
+            valid_input.get('course_modules'), master_course_object, use_schedule
+        )
+        if error_response:
+            return error_response
+
+        # with the schedule, course_modules is the full list of chapters to show:
+        # show the new ones, hide the dropped ones and leave the others untouched
+        # so that coach edits inside them are kept. null means no change.
+        course_modules_to_show = course_modules_to_hide = []
+        if use_schedule and valid_input.get('course_modules') is not None:
+            visible = get_ccx_visible_chapters(master_course_object, ccx_course_object)
+            course_modules_to_show = in_course_order(
+                master_course_object, set(valid_input['course_modules']) - set(visible)
+            )
+            course_modules_to_hide = [
+                location for location in visible if location not in valid_input['course_modules']
+            ]
+        if use_schedule and is_dry_run(request):
+            return dry_run_response(course_modules_to_show, course_modules_to_hide)
 
         with transaction.atomic():
             # update the display name
@@ -720,31 +909,20 @@ class CCXDetailView(GenericAPIView):
                 ccx_course_object.display_name = valid_input['display_name']
             # check if the coach has changed and in case update it
             old_coach = None
-            if 'coach_email' in valid_input:
-                try:
-                    coach = User.objects.get(email=valid_input['coach_email'])
-                except User.DoesNotExist:
-                    return Response(
-                        status=status.HTTP_404_NOT_FOUND,
-                        data={
-                            'error_code': 'coach_user_does_not_exist'
-                        }
-                    )
-                if ccx_course_object.coach.id != coach.id:
-                    old_coach = ccx_course_object.coach
-                    ccx_course_object.coach = coach
-            if 'course_modules' in valid_input:
-                if valid_input.get('course_modules'):
-                    if not valid_course_modules(valid_input['course_modules'], master_course_key):
-                        return Response(
-                            status=status.HTTP_400_BAD_REQUEST,
-                            data={
-                                'error_code': 'course_module_list_not_belonging_to_master_course'
-                            }
-                        )
+            if coach is not None and ccx_course_object.coach.id != coach.id:
+                old_coach = ccx_course_object.coach
+                ccx_course_object.coach = coach
+            if 'course_modules' in valid_input and not (use_schedule and valid_input['course_modules'] is None):
                 # course_modules to be stored in a json stringified field
                 ccx_course_object.structure_json = json.dumps(valid_input.get('course_modules'))
             ccx_course_object.save()
+            if course_modules_to_show or course_modules_to_hide:
+                set_ccx_chapters_visibility(
+                    master_course_object,
+                    ccx_course_object,
+                    show=course_modules_to_show,
+                    hide=course_modules_to_hide,
+                )
             # update the overridden field for the maximum amount of students
             if 'max_students_allowed' in valid_input:
                 override_field_for_ccx(
@@ -782,6 +960,12 @@ class CCXDetailView(GenericAPIView):
         for rec, response in responses:
             log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
+        headers = None
+        if use_schedule:
+            # reload so that the lazily cached start, due and max_students_allowed are fresh
+            updated_ccx_course_object = CustomCourseForEdX.objects.get(id=ccx_course_object.id)
+            headers = {'ETag': get_etag(self.get_serializer(updated_ccx_course_object).data)}
         return Response(
             status=status.HTTP_204_NO_CONTENT,
+            headers=headers,
         )

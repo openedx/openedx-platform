@@ -62,3 +62,38 @@ def use_ccx_coach_mfe(course_key):
     if not settings.CCX_COACH_MICROFRONTEND_URL:
         return False
     return not legacy_ccx_coach_dashboard(course_key)
+
+
+# .. toggle_name: ccx.v0_course_modules_use_schedule
+# .. toggle_implementation: CourseWaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Makes the ``course_modules`` field of the CCX REST API v0 read and write the
+#   CCX schedule (the ``visible_to_staff_only`` overrides that decide what learners see, and that the
+#   coach dashboard and CCX Coach API v2 edit) instead of the ``CustomCourseForEdX.structure_json``
+#   list, which nothing uses to decide what learners see. With the flag on, v0 also rejects chapters
+#   that are visible to staff only in the master course, accepts ``?dry_run=true`` on POST and PATCH,
+#   returns an ``ETag`` and honours ``If-Match`` on the CCX detail endpoint, and treats
+#   ``"course_modules": null`` on PATCH as "no change". ``structure_json`` is still written so that
+#   turning the flag off restores the old responses. Keyed on the master course, so it can be rolled
+#   out per course or per organization.
+# .. toggle_use_cases: temporary
+# .. toggle_creation_date: 2026-11-10
+# .. toggle_target_removal_date: 2027-05-01
+# .. toggle_warning: Turning the flag on for a course changes what v0 GET reports for its CCXs.
+#   Run the ``ccx_course_modules_drift`` management command first to see which CCXs will change.
+V0_COURSE_MODULES_USE_SCHEDULE = CourseWaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.v0_course_modules_use_schedule', __name__
+)
+
+
+def v0_course_modules_use_schedule(course_key):
+    """
+    Return whether the CCX REST API v0 ``course_modules`` field is backed by the CCX schedule.
+
+    Arguments:
+        course_key (CourseKey): the master course key.
+
+    Returns:
+        bool
+    """
+    return V0_COURSE_MODULES_USE_SCHEDULE.is_enabled(course_key)
