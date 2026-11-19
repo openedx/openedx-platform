@@ -2132,7 +2132,6 @@ USE_EXTRACTED_ANNOTATABLE_BLOCK = True
 # .. toggle_target_removal_date: 2026-04-10
 USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 
-
 # .. toggle_name: USE_EXTRACTED_HTML_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting

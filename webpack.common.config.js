@@ -412,7 +412,6 @@ module.exports = Merge.merge({
                         }
                     ]
                 },
-
                 {
                     test: /xmodule\/js\/src\/poll\/poll.js/,
                     use: [
