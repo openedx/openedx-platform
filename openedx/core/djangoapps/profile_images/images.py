@@ -4,6 +4,7 @@ Image file manipulation functions related to profile images.
 
 
 import binascii
+import hashlib
 from collections import namedtuple
 from contextlib import closing
 from io import BytesIO
@@ -12,7 +13,7 @@ import piexif
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext as _
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
 
@@ -37,6 +38,112 @@ IMAGE_TYPES = {
         magic=["474946383961", "474946383761"],
     ),
 }
+
+
+# Colors drawn from the Paragon light theme design tokens (primary, brand,
+# success, info, and danger families). Yellow/warning shades are excluded
+# because they lack sufficient contrast against white text (WCAG AA).
+_AVATAR_COLORS = [
+    '#0A3055',  # primary
+    '#9D0054',  # brand
+    '#178253',  # success (green)
+    '#006DAA',  # info (teal)
+    '#C32D3A',  # danger (red)
+    '#476480',  # primary-400
+    '#B6407F',  # brand-400
+    '#15754B',  # success-600
+    '#006299',  # info-600
+    '#B02934',  # danger-600
+]
+
+_AVATAR_STORAGE_PREFIX = 'auto_avatars'
+
+_AVATAR_FONT_PATHS = [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf',
+]
+
+
+def _get_avatar_color(username):
+    """Return a deterministic background color hex string for the given username."""
+    index = int(hashlib.md5(username.encode('utf-8')).hexdigest(), 16) % len(_AVATAR_COLORS)
+    return _AVATAR_COLORS[index]
+
+
+def _get_initials(name, username):
+    """
+    Return 1-2 uppercase initials derived from name, falling back to username.
+    """
+    if name and name.strip():
+        parts = name.strip().split()
+        if len(parts) >= 2:
+            return f'{parts[0][0]}{parts[1][0]}'.upper()
+        return parts[0][0].upper()
+    return username[0].upper()
+
+
+def _hex_to_rgb(hex_color):
+    """Convert a hex color string to an (R, G, B) tuple."""
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _draw_initials_image(initials, bg_color_hex, size):
+    """
+    Return a PIL Image of a colored circle with centered white initials text.
+    """
+    bg_color = _hex_to_rgb(bg_color_hex)
+    image = Image.new('RGB', (size, size), bg_color)
+    draw = ImageDraw.Draw(image)
+    draw.ellipse([0, 0, size - 1, size - 1], fill=bg_color)
+
+    font_size = size // 2
+    font = None
+    for font_path in _AVATAR_FONT_PATHS:
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+            break
+        except (OSError, IOError):
+            continue
+    if font is None:
+        font = ImageFont.load_default()
+
+    bbox = draw.textbbox((0, 0), initials, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+    x = (size - text_w) // 2 - bbox[0]
+    y = (size - text_h) // 2 - bbox[1]
+    draw.text((x, y), initials, fill=(255, 255, 255), font=font)
+
+    return image
+
+
+def generate_initials_image(username, name):
+    """
+    Return a dict {size_display_name: url} for auto-generated initials avatar images.
+
+    Images are generated once and cached in storage using a content-addressable key
+    based on username + name. If the name changes, a new image is generated
+    automatically on the next call. Old files remain in storage as unreferenced
+    orphans and can be cleaned up separately.
+    """
+    storage = get_profile_image_storage()
+    initials = _get_initials(name, username)
+    bg_color = _get_avatar_color(username)
+    cache_key = hashlib.md5(f'{username}{name or ""}'.encode('utf-8')).hexdigest()
+
+    urls = {}
+    for size_display_name, size in settings.PROFILE_IMAGE_SIZES_MAP.items():
+        filename = f'{_AVATAR_STORAGE_PREFIX}/{cache_key}_{size}.jpg'
+        if not storage.exists(filename):
+            image = _draw_initials_image(initials, bg_color, size)
+            buffer = BytesIO()
+            image.save(buffer, format='JPEG', quality=90)
+            storage.save(filename, ContentFile(buffer.getvalue()))
+        urls[size_display_name] = storage.url(filename)
+
+    return urls
 
 
 def create_profile_images(image_file, profile_image_names):
