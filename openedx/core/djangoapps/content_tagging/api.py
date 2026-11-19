@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
+from collections import Counter
 from itertools import groupby
 from typing import Iterator  # noqa: UP035
 
@@ -24,6 +26,8 @@ from .helpers.objecttag_export_helpers import build_object_tree_with_objecttags,
 from .models import TaxonomyOrg
 from .types import ContentKey, TagValuesByObjectIdDict, TagValuesByTaxonomyIdDict, TaxonomyDict
 from .utils import check_taxonomy_context_key_org, get_content_key_from_string, get_context_key_from_key
+
+log = logging.getLogger(__name__)
 
 
 class InvalidOrgException(ValidationError):
@@ -155,6 +159,7 @@ def get_all_object_tags(
 
     Includes any tags applied to the course/library as a whole.
     Returns a tuple with a dictionary of grouped object tag values for all blocks and a dictionary of taxonomies.
+    Archived associations, and those whose tag or taxonomy is archived, are left out.
 
     If `prefetch_orgs` is set, then the returned ObjectTag taxonomies will have their TaxonomyOrgs prefetched,
     which makes checking permissions faster.
@@ -176,10 +181,10 @@ def get_all_object_tags(
     if block_id_prefix:
         object_id_clause |= Q(object_id__startswith=block_id_prefix)
 
-    all_object_tags = ObjectTag.objects.filter(
+    all_object_tags = ObjectTag.objects.unarchived().filter(
         Q(tag__isnull=False, tag__taxonomy__isnull=False),
         object_id_clause,
-    ).select_related("tag__taxonomy").order_by("object_id")
+    ).select_related("tag__taxonomy").order_by("object_id", "id")
 
     if prefetch_orgs:
         all_object_tags = all_object_tags.prefetch_related("tag__taxonomy__taxonomyorg_set")
@@ -289,26 +294,40 @@ def export_tags_in_csv_file(object_id, file_dir, file_name) -> None:
 def set_exported_object_tags(
     content_key: ContentKey,
     exported_tags: TagValuesByTaxonomyIdDict,
-) -> None:
+) -> dict[str, int]:
     """
-    Sets the tags for the given exported content object.
+    Replace the object's tags with the tags from an export, keeping its hidden associations.
+
+    A hidden association is one that is archived, or whose tag or taxonomy is archived. ``exported_tags`` maps a
+    taxonomy export id to that taxonomy's tag values. Every other association of the object is cleared first, and a
+    deletion-locked one is archived instead of deleted. Tags from an archived taxonomy are skipped. Tags from a
+    taxonomy that does not exist on this instance become placeholder associations. ``delete_object_tags`` also
+    removes the hidden associations, and it too archives a deletion-locked one.
+
+    Returns the number of skipped tag values for each archived taxonomy, keyed by export id.
     """
     content_key_str = str(content_key)
+    skipped: dict[str, int] = {}
 
-    # Clear all tags related with the content.
-    oel_tagging.delete_object_tags(content_key_str)
+    oel_tagging.delete_object_tags(content_key_str, keep_hidden=True)
 
     for taxonomy_export_id, tags_values in exported_tags.items():
         if not tags_values:
             continue
 
-        taxonomy = oel_tagging.get_taxonomy_by_export_id(str(taxonomy_export_id))
+        export_id = str(taxonomy_export_id)
+        # Unfiltered on purpose: get_taxonomy_by_export_id() hides archived taxonomies, which are handled below.
+        taxonomy = Taxonomy.objects.filter(export_id=export_id).first()
+        if taxonomy is not None and taxonomy.archived:
+            # No placeholder either: ObjectTag.resync() would re-link it to the archived taxonomy.
+            skipped[export_id] = len(tags_values)
+            continue
         oel_tagging.tag_object(
             object_id=content_key_str,
             taxonomy=taxonomy,
             tags=tags_values,
             create_invalid=True,
-            taxonomy_export_id=str(taxonomy_export_id),
+            taxonomy_export_id=export_id,
         )
 
         # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
@@ -328,6 +347,8 @@ def set_exported_object_tags(
             time=now(),
             content_object=ContentObjectData(object_id=content_key_str)
         )
+
+    return skipped
 
 
 def import_course_tags_from_csv(csv_path, course_id) -> None:
@@ -351,6 +372,7 @@ def import_course_tags_from_csv(csv_path, course_id) -> None:
         return result
 
     course_key = CourseKey.from_string(str(course_id))
+    skipped_by_taxonomy: Counter[str] = Counter()
 
     for block in tags_in_blocks:
         exported_tags = get_exported_tags(block)
@@ -361,10 +383,13 @@ def import_course_tags_from_csv(csv_path, course_id) -> None:
             raise ValueError(f"Invalid format of csv in: '{block}'.")
 
         if block_type == 'course':
-            set_exported_object_tags(course_key, exported_tags)
+            skipped_by_taxonomy.update(set_exported_object_tags(course_key, exported_tags))
         else:
             block_key = course_key.make_usage_key(block_type, block_id)
-            set_exported_object_tags(block_key, exported_tags)
+            skipped_by_taxonomy.update(set_exported_object_tags(block_key, exported_tags))
+
+    for export_id, count in skipped_by_taxonomy.items():
+        log.info("Course tag import for %s skipped %d tags from archived taxonomy %s", course_key, count, export_id)
 
 
 def copy_object_tags(
