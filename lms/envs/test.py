@@ -394,6 +394,12 @@ EXAMS_SERVICE_URL = 'http://exams.example.com/api/v1'
 
 RATELIMIT_RATE = '2/m'
 
+############## openedx_content config ##############
+OPENEDX_LEARNING = {
+    # When running tests, store Component/Asset media files only in memory:
+    "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}  # noqa: F405  # pylint: disable=line-too-long
+}
+
 ##### LOGISTRATION RATE LIMIT SETTINGS #####
 LOGIN_AND_REGISTER_FORM_RATELIMIT = '5/5m'
 
