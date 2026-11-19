@@ -677,6 +677,18 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         results = response.data
         assert results.get('expired_at')
 
+    def test_entitlements_filter_on_order_number(self):
+        """
+        Verify that entitlements are filtered on order_number.
+        """
+        entitlement = CourseEntitlementFactory.create(user=self.user, order_number='EDX-1')
+        CourseEntitlementFactory.create(user=self.user, order_number='EDX-2')
+
+        url = reverse('entitlements_api:v1:entitlements-list')
+        response = self.client.get(f'{url}?user={self.user.username}&order_number=EDX-1')
+        assert response.status_code == 200
+        assert [result['uuid'] for result in response.data['results']] == [str(entitlement.uuid)]
+
     def test_entitlements_filter_on_course_uuid_and_expired_at(self):
         """
         Verify that courses filtered properly on list of course_uuids.

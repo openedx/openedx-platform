@@ -6,7 +6,7 @@ import itertools
 import json
 import re
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 from urllib.parse import quote
 from uuid import UUID, uuid4
 
@@ -53,6 +53,7 @@ from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnro
 from lms.djangoapps.support.models import CourseResetAudit
 from lms.djangoapps.support.serializers import ProgramEnrollmentSerializer
 from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
+from lms.djangoapps.support.views.enrollments import EnrollmentSupportListView
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService
 from lms.djangoapps.verify_student.tests.factories import SSOVerificationFactory
@@ -502,6 +503,119 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
             },
             json.loads(response.content.decode('utf-8'))[0]['manual_enrollment'],
         )
+
+    def test_get_latest_manual_enrollment(self):
+        enrollment = CourseEnrollment.objects.get(course_id=self.course.id, user=self.student)
+        for reason in ('First change', 'Second change'):
+            ManualEnrollmentAudit.create_manual_enrollment_audit(
+                self.user, self.student.email, ENROLLED_TO_ENROLLED, reason, enrollment
+            )
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert json.loads(response.content.decode('utf-8'))[0]['manual_enrollment']['reason'] == 'Second change'
+
+    @ddt.data(
+        # (attributes in creation order as (namespace, name, value), expected entry for the course or None)
+        ([], None),
+        ([('order', 'order_number', 'ORD-1')], {'order_number': 'ORD-1'}),
+        ([('order', 'source_system', 'commercetools')], {'source_system': 'commercetools'}),
+        ([('order', 'order_number', '')], {'order_number': ''}),
+        # Duplicates: the last order_number and the first source_system win.
+        (
+            [('order', 'order_number', 'ORD-1'), ('order', 'order_number', 'ORD-2')],
+            {'order_number': 'ORD-2'},
+        ),
+        (
+            [('order', 'source_system', 'commercetools'), ('order', 'source_system', 'other')],
+            {'source_system': 'commercetools'},
+        ),
+        # Other namespaces and names are ignored.
+        (
+            [('credit', 'provider_id', 'hogwarts'), ('order', 'date_placed', '2026-10-01T00:00:00Z'),
+             ('credit', 'order_number', 'ORD-1')],
+            None,
+        ),
+    )
+    @ddt.unpack
+    def test_get_order_attributes(self, attributes, expected):
+        for namespace, name, value in attributes:
+            CourseEnrollmentAttributeFactory(enrollment=self.enrollment, namespace=namespace, name=name, value=value)
+
+        order_attributes = EnrollmentSupportListView.get_order_attributes(self.student)
+
+        assert order_attributes.get(str(self.course.id)) == expected
+
+    def test_get_order_attributes_logs_duplicate_order_numbers_by_user_id(self):
+        for value in ('ORD-1', 'ORD-2'):
+            CourseEnrollmentAttributeFactory(
+                enrollment=self.enrollment, namespace='order', name='order_number', value=value
+            )
+
+        with patch('lms.djangoapps.support.views.enrollments.logger') as mock_logger:
+            EnrollmentSupportListView.get_order_attributes(self.student)
+
+        mock_logger.warning.assert_called_once_with(ANY, self.student.id, self.course.id)
+
+    def test_get_order_attributes_other_learner(self):
+        other_enrollment = CourseEnrollmentFactory.create(course_id=self.course.id)
+        CourseEnrollmentAttributeFactory(
+            enrollment=other_enrollment, namespace='order', name='order_number', value='ORD-9'
+        )
+
+        assert not EnrollmentSupportListView.get_order_attributes(self.student)
+
+    def test_get_manual_enrollments_ignores_unlinked_and_other_learners(self):
+        # An audit made by email before the learner enrolled has no enrollment.
+        ManualEnrollmentAudit.create_manual_enrollment_audit(
+            self.user, self.student.email, UNENROLLED_TO_ENROLLED, 'Before registration'
+        )
+        other_enrollment = CourseEnrollmentFactory.create(course_id=self.course.id)
+        ManualEnrollmentAudit.create_manual_enrollment_audit(
+            self.user, other_enrollment.user.email, ENROLLED_TO_ENROLLED, 'Other learner', other_enrollment
+        )
+
+        assert not EnrollmentSupportListView.get_manual_enrollments(self.student)
+
+    def _enroll_with_order(self, order_number):
+        """
+        Enrolls the student in a new course with an order number, source system, and manual enrollment change.
+        """
+        course = CourseFactory()
+        CourseModeFactory.create(mode_slug=CourseMode.VERIFIED, course_id=course.id)
+        enrollment = CourseEnrollmentFactory.create(mode=CourseMode.VERIFIED, user=self.student, course_id=course.id)
+        for name, value in (('order_number', order_number), ('source_system', 'commercetools')):
+            CourseEnrollmentAttributeFactory(enrollment=enrollment, namespace='order', name=name, value=value)
+        ManualEnrollmentAudit.create_manual_enrollment_audit(
+            self.user, self.student.email, ENROLLED_TO_ENROLLED, 'Support', enrollment
+        )
+        return course
+
+    def test_filter_by_order_number(self):
+        course = self._enroll_with_order('ORD-001')
+        self._enroll_with_order('ORD-002')
+
+        response = self.client.get(self.url, {'order_number': 'ORD-001'})
+
+        assert response.status_code == 200
+        data = json.loads(response.content.decode('utf-8'))
+        assert [enrollment['course_id'] for enrollment in data] == [str(course.id)]
+        assert data[0]['order_number'] == 'ORD-001'
+        assert data[0]['source_system'] == 'commercetools'
+        assert data[0]['manual_enrollment']['reason'] == 'Support'
+
+    def test_query_count(self):
+        """
+        Order attributes and manual enrollment changes are loaded once per request, not per enrollment.
+        """
+        for count in range(3):
+            self._enroll_with_order(f'ORD-00{count}')
+
+        # 73 before order attributes and manual enrollment changes were batched.
+        with self.assertNumQueries(44):
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert len(json.loads(response.content.decode('utf-8'))) == 4
 
     @disable_signal(signals, 'post_save')
     @ddt.data('username', 'email')
