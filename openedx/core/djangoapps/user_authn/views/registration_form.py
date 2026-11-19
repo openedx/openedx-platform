@@ -206,6 +206,7 @@ class AccountCreationForm(forms.Form):
             "gender": _("Your gender is required"),
             "year_of_birth": _("Your year of birth is required"),
             "mailing_address": _("Your mailing address is required"),
+            "phone_number": _("Your phone number is required"),
             "goals": _("A description of your goals is required"),
             "city": _("A city is required"),
             "country": _("A country is required")
@@ -221,6 +222,19 @@ class AccountCreationForm(forms.Form):
                         )
                 else:
                     required = field_value == "required"
+                    if field_name == "phone_number":
+                        # Reuse the model validators, including UserProfile.phone_regex,
+                        # so form validation rejects invalid input without normalizing it.
+                        phone_number_field = UserProfile._meta.get_field(field_name)
+                        self.fields[field_name] = forms.CharField(
+                            required=required,
+                            strip=False,
+                            empty_value=None,
+                            max_length=phone_number_field.max_length,
+                            validators=phone_number_field.validators,
+                            error_messages={"required": error_message_dict[field_name]},
+                        )
+                        continue
                     min_length = 1
                     error_message = error_message_dict.get(
                         field_name,
@@ -430,6 +444,7 @@ class RegistrationFormFactory:
             "job_title",
             "title",
             "mailing_address",
+            "phone_number",
             "goals",
             "honor_code",
             "terms_of_service",
@@ -970,6 +985,16 @@ class RegistrationFormFactory:
             error_messages={
                 "required": error_msg
             }
+        )
+
+    def _add_phone_number_field(self, form_desc, required=True):
+        """Add the native phone number to the registration description."""
+        form_desc.add_field(
+            "phone_number",
+            label=_("Phone number"),
+            field_type="text",
+            required=required,
+            error_messages={"required": _("Enter your phone number")},
         )
 
     def _add_goals_field(self, form_desc, required=True):

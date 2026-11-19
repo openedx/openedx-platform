@@ -1721,11 +1721,13 @@ SHOW_ACCOUNT_ACTIVATION_CTA = False
 # .. setting_name: REGISTRATION_EXTRA_FIELDS
 # .. setting_default: {'confirm_email': 'hidden', 'level_of_education': 'optional', 'gender': 'optional',
 #   'year_of_birth': 'optional', 'mailing_address': 'optional', 'goals': 'optional', 'honor_code': 'required',
-#   'terms_of_service': 'hidden', 'city': 'hidden', 'country': 'hidden'}
+#   'terms_of_service': 'hidden', 'city': 'hidden', 'country': 'hidden', 'phone_number': 'hidden'}
 # .. setting_description: The signup form may contain extra fields that are presented to every user. For every field, we
 #   can specifiy whether it should be "required": to display the field, and make it mandatory; "optional": to display
 #   the optional field as part of a toggled input field list; "optional-exposed": to display the optional fields among
 #   the required fields, and make it non-mandatory; "hidden": to not display the field.
+#   The native phone_number field uses UserProfile's format and length validators during registration,
+#   without normalizing the submitted value.
 #   When the terms of service are not visible and agreement to the honor code is required (the default), the signup page
 #   includes a paragraph that links to the honor code page (defined my MKTG_URLS["HONOR"]). This page might not be
 #   available for all Open edX platforms. In such cases, the "honor_code" registration field should be "hidden".
@@ -1735,6 +1737,7 @@ REGISTRATION_EXTRA_FIELDS = {
     'gender': 'optional',
     'year_of_birth': 'optional',
     'mailing_address': 'optional',
+    'phone_number': 'hidden',
     'goals': 'optional',
     'honor_code': 'required',
     'terms_of_service': 'hidden',
