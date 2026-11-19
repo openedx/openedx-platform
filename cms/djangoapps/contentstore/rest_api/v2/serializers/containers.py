@@ -207,10 +207,7 @@ class CourseContainerFullSerializer(serializers.Serializer):  # pylint: disable=
     )
     position = serializers.IntegerField(
         min_value=1,
-        help_text=(
-            "Position of the container's unit among the children of its subsection, starting at 1. Children "
-            "that cannot be loaded are not counted."
-        ),
+        help_text="Position of the container's unit among the children of its subsection, starting at 1.",
     )
     prev_url = serializers.CharField(
         allow_null=True,

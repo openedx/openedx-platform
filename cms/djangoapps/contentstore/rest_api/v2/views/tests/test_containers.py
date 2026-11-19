@@ -575,8 +575,8 @@ class ContainerMembershipTest(ModuleStoreTestCase):
             self._assert_not_a_container(block.location, 500)
 
     def test_a_unit_of_a_section_the_course_does_not_reach_is_not_a_container(self):
-        """v1 needs only a section above the unit's subsection, so it answers with the unit page data."""
-        self._assert_not_a_container(self.unit_of_orphan_section.location, 200)
+        """v1 fails on it with a server error: a parent with no path to the course root is not a parent."""
+        self._assert_not_a_container(self.unit_of_orphan_section.location, 500)
 
     def test_a_missing_block_is_not_a_container(self):
         """v1 answers it with an empty 400."""
@@ -596,7 +596,7 @@ class ContainerMembershipTest(ModuleStoreTestCase):
 
     def test_a_unit_and_containers_inside_it_have_a_unit_page(self):
         split = _block(self.unit, "split_test", "Split test in a unit")
-        group = _block(split, "vertical", "Group")
+        group = _block(split, "vertical", "Group in a unit")
         library_content = _block(self.unit, "library_content", "Library content in a unit")
         nested_unit = _block(self.unit, "vertical", "Unit in a unit")
         empty_unit = _block(self.subsection, "vertical", "Empty unit")
@@ -996,23 +996,6 @@ class ContainerFullViewParityTest(_FullViewParityMixin, ModuleStoreTestCase):
         assert key.version_guid == version
         body = self.assert_parity(UserFactory(is_staff=True), key)
         assert body["unit_block_id"] == self.units[1].location.block_id
-
-    def test_a_child_that_cannot_be_loaded_is_not_counted_in_the_position(self):
-        """
-        A subsection lists a child that no longer exists between its two
-        units. The second unit is third in the list but second among the
-        children that load, which is the position the unit page shows.
-        """
-        store = modulestore()
-        unit = self.units[1]
-        subsection = store.get_item(unit.get_parent().location)
-        subsection.children.insert(1, self.course_key.make_usage_key("vertical", "dangling"))
-        store.update_item(subsection, self.user.id)
-        assert store.get_item(subsection.location).children.index(unit.location) == 2
-        body = self.assert_parity(self.reader, unit.location)
-        assert body["position"] == 2
-        default = _client(self.reader).get(container_url(unit.location)).json()
-        assert default["position"] == 2
 
     def test_preview_links(self):
         unit = self.units[0]

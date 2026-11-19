@@ -96,11 +96,7 @@ def _load(store, usage_key):
 
 
 def _position(placement):
-    """
-    The 1-based position of the container's unit among its subsection's
-    children, as the Studio unit page counts it: children that cannot be
-    loaded are not counted.
-    """
+    """The 1-based position of the container's unit among its subsection's children, as the unit page counts it."""
     index = 1
     for child in placement.subsection.get_children():
         if child.location == placement.unit.location:
