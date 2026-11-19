@@ -2276,7 +2276,7 @@ wheels = [
 
 [[package]]
 name = "edx-submissions"
-version = "4.1.0"
+version = "4.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -2284,11 +2284,12 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "edx-django-release-util" },
     { name = "jsonfield" },
+    { name = "openedx-events" },
     { name = "pytz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/19/0fa572dc3bfa53e06594075e5b693c1a7ed1b2139c807a8cad3530c5e8eb/edx_submissions-4.1.0.tar.gz", hash = "sha256:58f5f8fd6aaafb3a5a90fcc80191e5124b1996971484bd6327866b4d96dbe8e2", size = 93126, upload-time = "2026-11-03T13:47:01.606Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/aa/70/694086de136f849144035927a212b33c16807456778b9bd4e0ecd26f7e36/edx_submissions-4.1.2.tar.gz", hash = "sha256:3944780a36b7f70bb69ddee081d79ffd71531e89c930e206214f8a2d61b85c39", size = 96071, upload-time = "2026-11-18T16:07:27.214Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/26/f8297c4a202a9b272ddde3eeb2bf7e5ae36959fb5ee734ca95e05fb437f3/edx_submissions-4.1.0-py3-none-any.whl", hash = "sha256:bf33bec356eb286818f8ef3a0c2fc1bf2039985f9f8e125e5adb75444a1ced9a", size = 65258, upload-time = "2026-11-03T13:47:00.267Z" },
+    { url = "https://files.pythonhosted.org/packages/65/2d/90b8553ecdb324494bd231589c030b13cd472a70d1e8e3a4446bda768108/edx_submissions-4.1.2-py3-none-any.whl", hash = "sha256:79b7bbfd30369b59cd91164e0478887bc0e1d1077594e7bee7ce23852a6b50a0", size = 67047, upload-time = "2026-11-18T16:07:25.08Z" },
 ]
 
 [[package]]
@@ -8249,7 +8250,7 @@ wheels = [
 
 [[package]]
 name = "xblocks-core"
-version = "2.0.0"
+version = "2.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -8281,9 +8282,9 @@ dependencies = [
     { name = "wrapt" },
     { name = "xblock" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/2d/8de21be077d50623ed31b8acabe39926113d6075b920fbf448ff8ddcc1f9/xblocks_core-2.0.0.tar.gz", hash = "sha256:bf294a3e8ec0c0ffb18e6f4ba0c04c1b4a680493452d792dbb8d30b3a7bc9488", size = 3982479, upload-time = "2026-11-08T15:34:41.598Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9f/45/bc7afc52ce3b09023a7e0676bc16e10d5d8f5c7094150571db7f5ebcd904/xblocks_core-2.0.2.tar.gz", hash = "sha256:7d34537b4b2fe142814bf356555b933da9a0af9d419bbead6e52aabfbfd1e594", size = 3975503, upload-time = "2026-11-18T03:13:30.971Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/89/e9/15380964dc69ec126f4373ca8b62e41e7f36911c6a828ab200969ff5ad49/xblocks_core-2.0.0-py3-none-any.whl", hash = "sha256:ea1d06d992969acd28601bdb577d62c57f6e63d4e5897e478c37d83db292cced", size = 3764418, upload-time = "2026-11-08T15:34:39.352Z" },
+    { url = "https://files.pythonhosted.org/packages/07/9d/98d2ee255425a00f94a234463dea917b351463ea8221a46eda0499075288/xblocks_core-2.0.2-py3-none-any.whl", hash = "sha256:3cf6c40bdc3950bc9b6d2248155d27e8ee94e077b0ab23d95a3ae8f4d96f3409", size = 3758126, upload-time = "2026-11-18T03:13:29.018Z" },
 ]
 
 [[package]]
