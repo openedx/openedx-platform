@@ -1,11 +1,15 @@
 """
 Tests verifying that xblock_handler enforces the correct permissions.
 """
+import json
 from unittest.mock import patch
 
+from opaque_keys.edx.keys import UsageKey
+
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from common.djangoapps.student.roles import CourseStaffRole
 from openedx.core import toggles as core_toggles
-from xmodule.modulestore.tests.factories import BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class XBlockHandlerPermissionsTest(CourseTestCase):
@@ -22,7 +26,7 @@ class XBlockHandlerPermissionsTest(CourseTestCase):
         self.vertical = BlockFactory.create(category='vertical', parent_location=self.sequential.location)
         self.html_block = BlockFactory.create(category='html', parent_location=self.vertical.location)
         self.static_tab = BlockFactory.create(category='static_tab', parent_location=self.course.location)
-        self.non_staff_client, _ = self.create_non_staff_authed_user_client()
+        self.non_staff_client, self.non_staff_user = self.create_non_staff_authed_user_client()
 
     # --- GET /xblock/{blockId} ---
 
@@ -81,6 +85,59 @@ class XBlockHandlerPermissionsTest(CourseTestCase):
             'parent_locator': str(self.vertical.location),
         }
         self.assertEqual(self.non_staff_client.ajax_post('/xblock/', data=data).status_code, 403)  # noqa: PT009
+
+    def _create_other_course_with_vertical(self, number):
+        """Create a second course with a vertical, and return (course, vertical)."""
+        other_course = CourseFactory.create(org="OtherOrg", number=number, run="2026_T1")
+        chapter = BlockFactory.create(category="chapter", parent_location=other_course.location)
+        sequential = BlockFactory.create(category="sequential", parent_location=chapter.location)
+        vertical = BlockFactory.create(category="vertical", parent_location=sequential.location)
+        return other_course, vertical
+
+    def test_post_duplicate_cross_course_staff_creates_block_in_destination(self):
+        """Users with access to both courses can duplicate across them; the copy lives in the destination."""
+        other_course, other_vertical = self._create_other_course_with_vertical("OC1")
+        source_items = len(self.store.get_items(self.course.id))
+
+        resp = self.client.ajax_post("/xblock/", data={
+            "duplicate_source_locator": str(self.html_block.location),
+            "parent_locator": str(other_vertical.location),
+        })
+
+        assert resp.status_code == 200
+        new_key = UsageKey.from_string(json.loads(resp.content)["locator"])
+        assert new_key.course_key == other_course.id
+        assert new_key in self.store.get_item(other_vertical.location).children
+        assert self.store.get_item(new_key).location == new_key
+        assert len(self.store.get_items(self.course.id)) == source_items
+
+    def test_post_duplicate_cross_course_without_source_view_access_forbidden(self):
+        """Write access on the destination is not enough: the user must also be able to view the source."""
+        other_course, other_vertical = self._create_other_course_with_vertical("OC2")
+        CourseStaffRole(other_course.id).add_users(self.non_staff_user)
+        children_before = list(self.store.get_item(other_vertical.location).children)
+
+        resp = self.non_staff_client.ajax_post("/xblock/", data={
+            "duplicate_source_locator": str(self.html_block.location),
+            "parent_locator": str(other_vertical.location),
+        })
+
+        assert resp.status_code == 403
+        assert self.store.get_item(other_vertical.location).children == children_before
+
+    def test_post_duplicate_cross_course_without_destination_write_access_forbidden(self):
+        """View access on the source is not enough: the user must also be able to edit the destination."""
+        _other_course, other_vertical = self._create_other_course_with_vertical("OC3")
+        CourseStaffRole(self.course.id).add_users(self.non_staff_user)
+        children_before = list(self.store.get_item(other_vertical.location).children)
+
+        resp = self.non_staff_client.ajax_post("/xblock/", data={
+            "duplicate_source_locator": str(self.html_block.location),
+            "parent_locator": str(other_vertical.location),
+        })
+
+        assert resp.status_code == 403
+        assert self.store.get_item(other_vertical.location).children == children_before
 
     def test_post_add_component_staff_allowed(self):
         data = {'category': 'html', 'parent_locator': str(self.vertical.location)}
@@ -367,11 +424,73 @@ class XBlockHandlerAuthzPermissionsTest(CourseTestCase):
                 'parent_locator': str(self.vertical.location),
             }
         )
-        mock_is_allowed.assert_called_with(
+        mock_is_allowed.assert_any_call(
             self.user.username,
             'courses.edit_course_content',
             str(self.course.id)
         )
+
+    def _duplicate_cross_course(self, other_vertical):
+        """Send a request to duplicate ``self.html_block`` under ``other_vertical``, in another course."""
+        return self.client.ajax_post(
+            "/xblock/",
+            data={
+                "duplicate_source_locator": str(self.html_block.location),
+                "parent_locator": str(other_vertical.location),
+            }
+        )
+
+    def _create_other_course_with_vertical(self):
+        """Create a second course with a vertical, and return (course, vertical)."""
+        other_course = CourseFactory.create(org="OtherOrg", number="OC4", run="2026_T1")
+        chapter = BlockFactory.create(category="chapter", parent_location=other_course.location)
+        sequential = BlockFactory.create(category="sequential", parent_location=chapter.location)
+        vertical = BlockFactory.create(category="vertical", parent_location=sequential.location)
+        return other_course, vertical
+
+    def test_duplicate_cross_course_checks_view_on_source_and_edit_on_destination(
+        self, _mock_flag, mock_is_allowed  # noqa: PT019
+    ):
+        """Cross-course duplicate checks courses.view_course on the source and edit_course_content on the target."""
+        other_course, other_vertical = self._create_other_course_with_vertical()
+
+        resp = self._duplicate_cross_course(other_vertical)
+
+        assert resp.status_code == 200
+        mock_is_allowed.assert_any_call(self.user.username, "courses.edit_course_content", str(other_course.id))
+        mock_is_allowed.assert_any_call(self.user.username, "courses.view_course", str(self.course.id))
+        new_key = UsageKey.from_string(json.loads(resp.content)["locator"])
+        assert new_key.course_key == other_course.id
+
+    def test_duplicate_cross_course_denied_without_source_view(self, _mock_flag, mock_is_allowed):  # noqa: PT019
+        """No courses.view_course on the source course: forbidden, and nothing is written anywhere."""
+        other_course, other_vertical = self._create_other_course_with_vertical()
+        mock_is_allowed.side_effect = lambda _user, permission, scope: not (
+            permission == "courses.view_course" and scope == str(self.course.id)
+        )
+        source_items = len(self.store.get_items(self.course.id))
+        dest_items = len(self.store.get_items(other_course.id))
+        children_before = list(self.store.get_item(other_vertical.location).children)
+
+        resp = self._duplicate_cross_course(other_vertical)
+
+        assert resp.status_code == 403
+        assert len(self.store.get_items(self.course.id)) == source_items
+        assert len(self.store.get_items(other_course.id)) == dest_items
+        assert self.store.get_item(other_vertical.location).children == children_before
+
+    def test_duplicate_cross_course_denied_without_destination_edit(self, _mock_flag, mock_is_allowed):  # noqa: PT019
+        """No courses.edit_course_content on the destination course: forbidden."""
+        other_course, other_vertical = self._create_other_course_with_vertical()
+        mock_is_allowed.side_effect = lambda _user, permission, scope: not (
+            permission == "courses.edit_course_content" and scope == str(other_course.id)
+        )
+        source_items = len(self.store.get_items(self.course.id))
+
+        resp = self._duplicate_cross_course(other_vertical)
+
+        assert resp.status_code == 403
+        assert len(self.store.get_items(self.course.id)) == source_items
 
     # --- PUT /xblock/{blockId} (reorder) ---
 

@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.test.utils import override_settings
+from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseKey, LibraryLocator
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, parse_json
@@ -746,6 +747,30 @@ class TestLibraryAccess(LibraryTestCase):
         self.assertIn(response.status_code, (200, 403))  # 400 would be ambiguous  # noqa: PT009
         duplicate_action_allowed = (response.status_code == 200)
         self.assertEqual(duplicate_action_allowed, expected_result)  # noqa: PT009
+
+    def test_duplicate_library_block_into_course_creates_block_in_course(self):
+        """
+        Duplicating a library block into a course creates the copy in that course,
+        leaves the library untouched, and the new child resolves under its parent.
+        """
+        block = self._add_simple_content_block()
+        with modulestore().default_store(ModuleStoreEnum.Type.split):
+            course = CourseFactory.create()
+        store = modulestore()
+        library_items_before = len(store.get_items(self.library.location.library_key))
+
+        response = self.client.ajax_post(reverse_url("xblock_handler"), {
+            "parent_locator": str(course.location),
+            "duplicate_source_locator": str(block.location),
+        })
+
+        assert response.status_code == 200
+        new_key = UsageKey.from_string(parse_json(response)["locator"])
+        assert new_key.course_key == course.id
+        assert len(store.get_items(self.library.location.library_key)) == library_items_before
+        parent = store.get_item(course.location)
+        assert new_key in parent.children
+        assert store.get_item(new_key).location == new_key
 
     @ddt.data(
         (LibraryUserRole, CourseStaffRole, True),
