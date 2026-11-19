@@ -12,7 +12,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_authz.constants import permissions as authz_permissions
+from openedx_authz.authz import COURSES_VIEW_LIBRARY_UPDATES, PUBLISH_LIBRARY_CONTENT
 from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission_for_upstream
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.rest_api import serializers
 from openedx.core.djangoapps.xblock import api as xblock_api
@@ -122,7 +123,10 @@ class LibraryBlockView(APIView):
         versioning.
         """
         key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
+        if not user_has_course_permission_for_upstream(
+            request, COURSES_VIEW_LIBRARY_UPDATES.identifier, key
+        ):
+            api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
         result = api.get_library_block(key, include_collections=True)
 
         return Response(self.serializer_class(result).data)
@@ -359,7 +363,7 @@ class LibraryBlockPublishView(APIView):
         api.require_permission_for_library_key(
             key.lib_key,
             request.user,
-            authz_permissions.PUBLISH_LIBRARY_CONTENT
+            PUBLISH_LIBRARY_CONTENT
         )
         api.publish_component_changes(key, request.user.id)
         return Response({})

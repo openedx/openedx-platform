@@ -22,7 +22,6 @@ from common.djangoapps.static_replace import (
 )
 from common.djangoapps.static_replace.services import ReplaceURLService
 from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
-from xmodule.assetstore.assetmgr import AssetManager  # pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
@@ -326,7 +325,7 @@ class CanonicalContentTest(SharedModuleStoreTestCase):
         asset_key = StaticContent.get_asset_key_from_path(cls.courses[prefix].id, relative_path)
 
         try:
-            content = AssetManager.find(asset_key, as_stream=True)
+            content = contentstore().find(asset_key, as_stream=True)
             return content.content_digest
         except (ItemNotFoundError, NotFoundError):
             return None

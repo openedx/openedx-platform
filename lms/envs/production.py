@@ -478,6 +478,8 @@ EXPLICIT_QUEUES = {
         'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.grades.tasks.recalculate_subsection_grade_v3': {
         'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
+    'lms.djangoapps.grades.tasks.roll_up_competency_statuses_for_user': {
+        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.award_program_certificates': {
         'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.revoke_program_certificates': {

@@ -29,6 +29,16 @@ def iter_descendants(block, ancestor_names=None):
         yield from iter_descendants(child, ancestor_names + [child.display_name])
 
 
+def get_editor(component):
+    """
+    Return the editor type ("visual" or "raw") of an html component, or an
+    empty string for any other block type.
+    """
+    if component.location.block_type != "html":
+        return ""
+    return component.editor
+
+
 def _iter_course_rows(course, exclude_core_xblocks):
     """
     Yield CSV rows for `course`.
@@ -53,6 +63,7 @@ def _iter_course_rows(course, exclude_core_xblocks):
                             + ancestors
                             + [component.display_name]
                         ),
+                        get_editor(component),
                     )
 
 
@@ -147,6 +158,7 @@ def generate_xblocks_csv(
             "Component Name",
             "Xblock Type",
             "Full Hierarchy",
+            "Editor",
         )
     )
 

@@ -5,7 +5,6 @@ from unittest import mock
 from unittest.mock import Mock
 
 import ddt
-import httpretty
 from django.conf import settings
 from django.test import override_settings
 from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
@@ -51,10 +50,6 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.disable)
-        self.addCleanup(httpretty.reset)
 
         self.course = CourseFactory.create()
 
@@ -409,8 +404,6 @@ class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCas
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
 
         self.course = CourseFactory.create()
         patcher = mock.patch(
@@ -492,7 +485,6 @@ class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCas
 
 
 @ddt.ddt
-@httpretty.activate
 @override_settings(ENABLE_DISCUSSION_SERVICE=True)
 class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
@@ -693,8 +685,6 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
 
     def setUp(self):
         super().setUp()
-        httpretty.reset()
-        httpretty.enable()
         self.set_mock_return_value('get_course_id_by_thread', str(self.course.id))
         self.set_mock_return_value('get_course_id_by_comment', str(self.course.id))
         self.user_1 = UserFactory.create()

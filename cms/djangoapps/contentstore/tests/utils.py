@@ -188,14 +188,6 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
             asset_son = asset.get('content_son', asset['_id'])
             self.assertAssetsEqual(asset_son, course1_id, course2_id)
 
-    def check_verticals(self, items):
-        """ Test getting the editing HTML for each vertical. """
-        # assert is here to make sure that the course being tested actually has verticals (units) to check.
-        self.assertGreater(len(items), 0, "Course has no verticals (units) to check")  # noqa: PT009
-        for block in items:
-            resp = self.client.get_html(get_url('container_handler', block.location))
-            self.assertEqual(resp.status_code, 200)  # noqa: PT009
-
     def assertAssetsEqual(self, asset_son, course1_id, course2_id):
         """Verifies the asset of the given key has the same attributes in both given courses."""
         content_store = contentstore()
@@ -244,3 +236,13 @@ def get_url(handler_name, key_value, key_name='usage_key_string', kwargs=None):
     Helper function for getting HTML for a page in Studio and checking that it does not error.
     """
     return reverse_url(handler_name, key_name, key_value, kwargs)
+
+
+def routed_actions(view_func):
+    """
+    Return the method-to-action map a viewset mount was registered with.
+
+    DRF adds a ``head`` entry to a mount's ``actions`` the first time it serves
+    a GET, so two mounts compared directly differ by which was requested first.
+    """
+    return {method: action for method, action in view_func.actions.items() if method != 'head'}

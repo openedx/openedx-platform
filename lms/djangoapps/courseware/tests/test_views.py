@@ -35,7 +35,7 @@ from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Scope, String
 from xblock.scorable import ShowCorrectness
-from xblocks_contrib.problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblock_problem.capa.testing.response_xml_factory import MultipleChoiceResponseXMLFactory
 
 import lms.djangoapps.courseware.views.views as views
 from common.djangoapps.course_modes.models import CourseMode
@@ -2081,7 +2081,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
     def test_user_with_passing_grade(self, mock_is_course_passed):  # pylint: disable=unused-argument
         # If user has above passing grading then json will return cert generating message and
         # status valid code
-        with patch('xblocks_contrib.problem.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_send_to_queue:
+        with patch('xblock_problem.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_send_to_queue:
             mock_send_to_queue.return_value = (0, "Successfully queued")
 
             resp = self.client.post(self.url)
@@ -2916,7 +2916,7 @@ class ContentOptimizationTestCase(ModuleStoreTestCase):
             url = reverse("render_xblock", kwargs={'usage_key_string': str(usage_key)})
             response = self.client.get(url)
             assert response.status_code == 200
-            assert b"MathJax.Hub.Config" in response.content
+            assert b"window.MathJax" in response.content
 
         # Check the one without Math...
         url = reverse("render_xblock", kwargs={
@@ -2924,7 +2924,7 @@ class ContentOptimizationTestCase(ModuleStoreTestCase):
         })
         response = self.client.get(url)
         assert response.status_code == 200
-        assert b"MathJax.Hub.Config" not in response.content
+        assert b"window.MathJax" not in response.content
 
         # The containing vertical should still return MathJax (for now)
         url = reverse("render_xblock", kwargs={
@@ -2932,7 +2932,7 @@ class ContentOptimizationTestCase(ModuleStoreTestCase):
         })
         response = self.client.get(url)
         assert response.status_code == 200
-        assert b"MathJax.Hub.Config" in response.content
+        assert b"window.MathJax" in response.content
 
     @override_waffle_flag(COURSEWARE_OPTIMIZED_RENDER_XBLOCK, False)
     def test_mathjax_detection_disabled(self):
@@ -2943,7 +2943,7 @@ class ContentOptimizationTestCase(ModuleStoreTestCase):
         })
         response = self.client.get(url)
         assert response.status_code == 200
-        assert b"MathJax.Hub.Config" in response.content
+        assert b"window.MathJax" in response.content
 
 
 @ddt.ddt

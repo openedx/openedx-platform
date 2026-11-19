@@ -91,6 +91,7 @@
     "scriptjs": "^2",
     "style-loader": "^4",
     "svg-inline-loader": "^0.8",
+    "terser-webpack-plugin": "^5",
     "uglify-js": "^3",
     "underscore": "^1",
     "underscore.string": "^3",

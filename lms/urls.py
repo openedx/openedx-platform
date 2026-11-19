@@ -3,6 +3,7 @@ URLs for LMS
 """
 
 from config_models.views import ConfigurationModelCurrentAPIView
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -12,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from edx_django_utils.plugins import get_plugin_url_patterns
+from edx_rest_framework_extensions.url_converters import register_url_converters
 from submissions import urls as submissions_urls
 
 from common.djangoapps.student import views as student_views
@@ -50,7 +52,9 @@ from openedx.core.djangoapps.plugins.constants import ProjectType
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.views.login import redirect_to_lms_login
-from openedx.features.enterprise_support.api import enterprise_enabled
+
+# Shared opaque-key path converters, registered before any pattern using them.
+register_url_converters()
 
 RESET_COURSE_DEADLINES_NAME = 'reset_course_deadlines'
 RENDER_XBLOCK_NAME = 'render_xblock'
@@ -879,8 +883,24 @@ if settings.ENABLE_THIRD_PARTY_AUTH:
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
     ]
 
+
+def _enterprise_enabled():
+    """
+    Whether the enterprise feature is installed and enabled.
+
+    Temporary duplicate of the helper that now lives in edx-enterprise
+    (``enterprise.platform_support.api.enterprise_enabled``), kept here only
+    because ``channel_integrations.urls`` still has to be included by the
+    platform. Remove this function and the whole block below once
+    enterprise-integrated-channels is modernized into a true plugin that
+    injects its own URLs via ``url_config``, at which point ``enterprise.urls``
+    moves there too. Tracked by ENT-11577.
+    """
+    return django_apps.is_installed('enterprise') and getattr(settings, 'ENABLE_ENTERPRISE_INTEGRATION', False)
+
+
 # Enterprise
-if enterprise_enabled():
+if _enterprise_enabled():
     urlpatterns += [
         path('', include('enterprise.urls')),
         path('', include('channel_integrations.urls')),
@@ -940,10 +960,11 @@ if settings.DEBUG:
     )
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# UX reference templates
-urlpatterns += [
-    path('template/<path:template>', openedx_debug_views.show_reference_template),
-]
+    # UX reference templates: development only. The view renders any template with
+    # request.GET as its context, so it must never be routed in production.
+    urlpatterns += [
+        path('template/<path:template>', openedx_debug_views.show_reference_template),
+    ]
 
 if 'debug_toolbar' in settings.INSTALLED_APPS:
     import debug_toolbar

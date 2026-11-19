@@ -7,6 +7,7 @@ from unittest.mock import patch
 import ddt
 from django.contrib.auth.models import Permission
 from django.test import TestCase
+from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
@@ -21,7 +22,7 @@ from openedx_authz.api.data import (
     UserData,
 )
 from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_STAFF
+from openedx_authz.authz import COURSE_ADMIN, COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from organizations.api import add_organization
 from organizations.tests.factories import OrganizationFactory
@@ -32,6 +33,7 @@ from common.djangoapps.student.role_helpers import get_course_roles, has_staff_r
 from common.djangoapps.student.roles import (
     ROLE_CACHE_UNGROUPED_ROLES__KEY,
     AuthzCompatCourseAccessRole,
+    BulkRoleCache,
     CourseAccessRole,
     CourseBetaTesterRole,
     CourseCreatorRole,
@@ -53,6 +55,7 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
 from lms.djangoapps.instructor import permissions as instructor_permissions
+from openedx.core.djangoapps.authz.tests.fixtures import seed_policies
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
@@ -65,7 +68,8 @@ class RolesTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self._seed_database_with_policies()
+        seed_policies()
+        AuthzEnforcer.get_enforcer().clear_policy()  # Clear to simulate fresh start for each test
         self.course_key = CourseKey.from_string('course-v1:course-v1:edX+toy+2012_Fall')
         self.course_loc = self.course_key.make_usage_key('course', '2012_Fall')
         self.course = CourseOverviewFactory.create(id=self.course_key)
@@ -75,28 +79,6 @@ class RolesTestCase(TestCase):
         self.course_staff = StaffFactory(course_key=self.course_key)
         self.course_instructor = InstructorFactory(course_key=self.course_key)
         self.orgs = ["Marvel", "DC"]
-
-    @classmethod
-    def _seed_database_with_policies(cls):
-        """Seed the database with policies from the policy file for openedx_authz tests.
-
-        This simulates the one-time database seeding that would happen
-        during application deployment, separate from the runtime policy loading.
-        """
-        import casbin
-        import pkg_resources
-        from openedx_authz.engine.utils import migrate_policy_between_enforcers
-
-        global_enforcer = AuthzEnforcer.get_enforcer()
-        global_enforcer.load_policy()
-        model_path = pkg_resources.resource_filename("openedx_authz.engine", "config/model.conf")
-        policy_path = pkg_resources.resource_filename("openedx_authz.engine", "config/authz.policy")
-
-        migrate_policy_between_enforcers(
-            source_enforcer=casbin.Enforcer(model_path, policy_path),
-            target_enforcer=global_enforcer,
-        )
-        global_enforcer.clear_policy()  # Clear to simulate fresh start for each test
 
     @ddt.data(True, False)
     def test_global_staff(self, authz_enabled):
@@ -616,6 +598,91 @@ class RoleCacheTestCase(TestCase):  # pylint: disable=missing-class-docstring
         assert roles_dict.get('library-v1:edX+quizzes').pop().course_id.course == 'quizzes'
         assert roles_dict.get('course-v1:edX+toy+2012_Summer').pop().course_id.course == 'toy'
         assert roles_dict.get('course-v1:edX+toy2+2013_Fall').pop().course_id.course == 'toy2'
+
+
+class BulkRoleCachePrefetchTestCase(TestCase):
+    """
+    Regression tests for BulkRoleCache.prefetch mixing legacy CourseAccessRole rows
+    with openedx-authz compat roles. The authz loop used to add the previous
+    iteration's `compat_role` (left over from the legacy loop above it) instead of
+    its own `role`, raising UnboundLocalError when no legacy role existed at all,
+    and silently caching the wrong role when one did.
+
+    These mock get_authz_compat_course_access_roles_for_user directly rather than
+    assigning real AuthZ roles, since that goes through the global casbin enforcer,
+    whose in-memory policy isn't rolled back between tests the way the database is.
+
+    prefetch() also stores its result in a RequestCache, which outside of an actual
+    request (as here) isn't cleared automatically between tests, so it's cleared in
+    tearDown to avoid leaking cached roles into unrelated tests that construct a
+    RoleCache for a user this class never prefetched.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course_key = CourseKey.from_string('course-v1:edX+toy+2012_Fall')
+
+    def tearDown(self):
+        super().tearDown()
+        RequestCache(BulkRoleCache.CACHE_NAMESPACE).clear()
+
+    def test_prefetch_with_only_authz_roles_does_not_crash(self):
+        """
+        A user with an authz compat role and no legacy CourseAccessRole entry used to
+        crash prefetch with UnboundLocalError, since compat_role was never assigned.
+        """
+        user = UserFactory()
+        authz_role = AuthzCompatCourseAccessRole(
+            user_id=user.id,
+            username=user.username,
+            course_id=str(self.course_key),
+            org=self.course_key.org,
+            role='staff',
+        )
+
+        with patch(
+            'common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user',
+            return_value={authz_role},
+        ):
+            BulkRoleCache.prefetch([user])
+
+        cached_roles = BulkRoleCache.get_user_roles(user)
+        assert cached_roles[get_role_cache_key_for_course(self.course_key)] == {authz_role}
+
+    def test_prefetch_with_legacy_and_authz_roles_for_different_users(self):
+        """
+        Each user's authz compat role must be cached as itself, not as whichever
+        legacy CourseAccessRole happened to be the last one scanned by the loop above.
+        """
+        legacy_user = UserFactory()
+        CourseAccessRole.objects.create(
+            user=legacy_user, org=self.course_key.org, course_id=self.course_key, role='staff',
+        )
+
+        authz_user = UserFactory()
+        authz_role = AuthzCompatCourseAccessRole(
+            user_id=authz_user.id,
+            username=authz_user.username,
+            course_id=str(self.course_key),
+            org=self.course_key.org,
+            role='instructor',
+        )
+
+        def fake_authz_roles(user):
+            return {authz_role} if user.id == authz_user.id else set()
+
+        with patch(
+            'common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user',
+            side_effect=fake_authz_roles,
+        ):
+            BulkRoleCache.prefetch([legacy_user, authz_user])
+
+        course_cache_key = get_role_cache_key_for_course(self.course_key)
+        legacy_roles = BulkRoleCache.get_user_roles(legacy_user)[course_cache_key]
+        authz_roles = BulkRoleCache.get_user_roles(authz_user)[course_cache_key]
+
+        assert {r.role for r in legacy_roles} == {'staff'}
+        assert authz_roles == {authz_role}
 
 
 class CourseAccessRoleHistoryTest(TestCase):
