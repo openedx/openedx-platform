@@ -28,11 +28,10 @@ from ..utils import answer_problem, mock_get_submissions_score
 
 
 @ddt.ddt
-class _TestMultipleProblemTypesSubsectionScoresBase(SharedModuleStoreTestCase):
+class TestMultipleProblemTypesSubsectionScores(SharedModuleStoreTestCase):
     """
     Test grading of different problem types.
     """
-    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     SCORED_BLOCK_COUNT = 7
@@ -102,17 +101,12 @@ class _TestMultipleProblemTypesSubsectionScoresBase(SharedModuleStoreTestCase):
         assert score.all_total.possible == (possible_per_block * block_count)
 
 
-class ExtractedTestMultipleProblemTypesSubsectionScores(_TestMultipleProblemTypesSubsectionScoresBase):
-    __test__ = True
-
-
 @ddt.ddt
-class _TestVariedMetadataBase(ProblemSubmissionTestMixin, ModuleStoreTestCase):
+class TestVariedMetadata(ProblemSubmissionTestMixin, ModuleStoreTestCase):
     """
     Test that changing the metadata on a block has the desired effect on the
     persisted score.
     """
-    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     default_problem_metadata = {
@@ -218,16 +212,11 @@ class _TestVariedMetadataBase(ProblemSubmissionTestMixin, ModuleStoreTestCase):
         assert score.graded_total.possible == expected_possible
 
 
-class ExtractedTestVariedMetadata(_TestVariedMetadataBase):
-    __test__ = True
-
-
 @ddt.ddt
-class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
+class TestWeightedProblems(SharedModuleStoreTestCase):
     """
     Test scores and grades with various problem weight values.
     """
-    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     @classmethod
@@ -329,7 +318,3 @@ class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
             first_attempted=datetime.datetime(2010, 1, 1),
         )
         self._verify_grades(raw_earned, raw_possible, weight, expected_score)
-
-
-class ExtractedTestWeightedProblems(_TestWeightedProblemsBase):
-    __test__ = True
