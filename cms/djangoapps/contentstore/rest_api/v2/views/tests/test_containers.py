@@ -18,7 +18,7 @@ from django.urls import Resolver404, resolve, reverse
 from edx_rest_framework_extensions.testing import assert_error_envelope
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import UsageKey
-from openedx_authz.constants.roles import (
+from openedx_authz.authz import (
     COURSE_ADMIN,
     COURSE_AUDITOR,
     COURSE_BETA_TESTER,
@@ -34,7 +34,6 @@ from xblock.core import XBlock
 from xblock.utils.studio_editable import NestedXBlockSpec, StudioContainerWithNestedXBlocksMixin
 
 from cms.djangoapps.contentstore.rest_api.v1.views.vertical_block import ContainerHandlerView
-from cms.djangoapps.contentstore.rest_api.v2 import authoring_urls
 from cms.djangoapps.contentstore.rest_api.v2.views.containers import CourseContainerViewSet
 from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import (
     FIRST_LOOKUP_WRITES,
@@ -529,6 +528,7 @@ class ContainerMembershipTest(ModuleStoreTestCase):
         self.client = _client(self.reader)
 
     def _assert_not_a_container(self, key, v1_status):
+        """Assert both views answer 404 for ``key`` while v1 answers ``v1_status``."""
         for params in ({}, {"view": "full"}):
             response = self.client.get(container_url(key), params)
             envelope = assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
@@ -923,7 +923,9 @@ class ContainerFullViewParityTest(_FullViewParityMixin, ModuleStoreTestCase):
         assert {"html", "video", "problem", "advanced"} <= set(groups)
         assert "beta" not in groups["advanced"]
         assert groups["html"]["beta"] is False
-        assert set(groups["html"]["support_legend"]) == {"show_legend", "allow_unsupported_xblocks", "documentation_label"}
+        assert set(groups["html"]["support_legend"]) == {
+            "show_legend", "allow_unsupported_xblocks", "documentation_label",
+        }
         assert {template["support_level"] for group in groups.values() for template in group["templates"]} == {True}
 
     def test_configured_support_levels_are_returned_as_stored(self):
@@ -1147,6 +1149,7 @@ class _ReadIsSideEffectFreeMixin:
         raise NotImplementedError
 
     def _reader_with_a_clipboard_from_a_course_without_an_overview(self, course):
+        """Return a reader of ``course`` whose clipboard holds a unit of a course with no overview row."""
         reader = self.reader_for(course)
         source = build_course(sections=1, subsections=1, units=1)
         content_staging_api.save_xblock_to_user_clipboard(units_of(source.id)[0], reader.id)
@@ -1155,6 +1158,7 @@ class _ReadIsSideEffectFreeMixin:
         return reader, source
 
     def _record_imports(self):
+        """Return the list that the course-details import signal appends course keys to."""
         imported = []
 
         def on_import(sender, **kwargs):  # pylint: disable=unused-argument
@@ -1198,7 +1202,7 @@ class _ReadIsSideEffectFreeMixin:
             assert effects["update_item"] == [], request
             assert effects["xblock_updated"] == [], request
             assert effects["published"] == [], request
-        assert imported == []
+        assert not imported
         assert not CourseOverview.objects.filter(id=source.id).exists()
         return client.get(container_url(unit.location), full).json()
 
@@ -1367,6 +1371,9 @@ class ContainerRoutingTest(SharedModuleStoreTestCase):
         assert resolve(v1_url(UNIT_KEY)).func.cls is ContainerHandlerView
 
     def test_the_url_name_is_unique_in_its_namespace(self):
+        # Imported here: at module import the URL converters are not registered yet.
+        from cms.djangoapps.contentstore.rest_api.v2 import authoring_urls  # noqa: PLC0415
+
         names = [pattern.name for pattern in authoring_urls.urlpatterns]
         assert names.count("container_detail") == 1
         assert len(names) == len(set(names))

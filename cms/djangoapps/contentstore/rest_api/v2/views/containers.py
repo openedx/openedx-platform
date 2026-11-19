@@ -39,7 +39,7 @@ _USAGE_KEY_PARAMETER = OpenApiParameter(
 
 _VIEW_PARAMETER = OpenApiParameter(
     name="view",
-    description=CourseContainerQuerySerializer().fields["view"].help_text,
+    description=str(CourseContainerQuerySerializer().fields["view"].help_text),
     required=False,
     location=OpenApiParameter.QUERY,
     type=str,
@@ -120,7 +120,10 @@ FULL_VIEW_EXAMPLE = OpenApiExample(
             {
                 "children": [
                     {
-                        "url": f"/course/{_EXAMPLE_COURSE}?show=block-v1%3AedX%2BDemoX%2B2026%2Btype%40chapter%2Bblock%40intro",
+                        "url": (
+                            f"/course/{_EXAMPLE_COURSE}"
+                            "?show=block-v1%3AedX%2BDemoX%2B2026%2Btype%40chapter%2Bblock%40intro"
+                        ),
                         "display_name": "Introduction",
                         "usage_key": _EXAMPLE_SECTION,
                     },

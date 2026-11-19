@@ -135,8 +135,8 @@ def build_course(sections=2, subsections=2, units=2, **course_kwargs):
 @contextmanager
 def count_mongo_calls():
     """Count Mongo reads and writes made inside the block."""
-    reads = ("find", "find_one", "count_documents", "aggregate")
-    writes = ("insert_one", "insert_many", "replace_one", "update_one", "update_many", "bulk_write",
+    read_methods = ("find", "find_one", "count_documents", "aggregate")
+    write_methods = ("insert_one", "insert_many", "replace_one", "update_one", "update_many", "bulk_write",
               "delete_one", "delete_many", "find_one_and_update", "find_one_and_replace", "find_one_and_delete")
     counts = {"reads": 0, "writes": 0}
 
@@ -148,22 +148,23 @@ def count_mongo_calls():
 
     collection = pymongo.collection.Collection
     with patch.multiple(collection, **{
-        name: counting("reads" if name in reads else "writes", getattr(collection, name)) for name in reads + writes
+        name: counting("reads" if name in read_methods else "writes", getattr(collection, name))
+        for name in read_methods + write_methods
     }):
         yield counts
 
 
 def sql_writes(queries):
     """``(statement, table)`` for each INSERT, UPDATE and DELETE among the captured ``queries``."""
-    writes = []
+    statements = []
     for query in queries.captured_queries:
         words = query["sql"].split()
         statement = words[0].upper()
         if statement in ("INSERT", "DELETE"):
-            writes.append((statement, words[2].strip('"`')))
+            statements.append((statement, words[2].strip('"`')))
         elif statement == "UPDATE":
-            writes.append((statement, words[1].strip('"`')))
-    return writes
+            statements.append((statement, words[1].strip('"`')))
+    return statements
 
 
 @contextmanager
