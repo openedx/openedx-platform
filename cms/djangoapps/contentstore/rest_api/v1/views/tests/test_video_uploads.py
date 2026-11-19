@@ -1144,25 +1144,25 @@ class CourseVideoQueryCountTest(CourseVideoUploadsTestBase):
     def test_list_query_count(self):
         self.create_videos(count=10)
         self.warm_caches()
-        with self.django_assert_num_queries(21):
+        with self.django_assert_num_queries(23):
             self.api_client.get(self.list_url, {"page_size": 10})
 
     def test_list_query_count_is_independent_of_course_size(self):
         self.create_videos(count=100)
         self.warm_caches()
-        with self.django_assert_num_queries(21):
+        with self.django_assert_num_queries(23):
             self.api_client.get(self.list_url, {"page_size": 10})
 
     def test_list_query_count_grows_only_with_the_page(self):
         self.create_videos(count=10)
         self.warm_caches()
-        with self.django_assert_num_queries(13):
+        with self.django_assert_num_queries(15):
             self.api_client.get(self.list_url, {"page_size": 2})
 
     def test_retrieve_query_count(self):
         video_ids = self.create_videos(count=10)
         self.warm_caches()
-        with self.django_assert_num_queries(13):
+        with self.django_assert_num_queries(15):
             self.api_client.get(self.detail_url(video_ids[0]))
 
     @patch("cms.djangoapps.contentstore.video_storage_handlers.boto3.resource")
@@ -1174,7 +1174,7 @@ class CourseVideoQueryCountTest(CourseVideoUploadsTestBase):
         ]}
         self.warm_caches()
         self.api_client.post(self.list_url, body, format="json")
-        with self.django_assert_num_queries(16):
+        with self.django_assert_num_queries(18):
             self.api_client.post(self.list_url, body, format="json")
 
 

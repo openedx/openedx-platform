@@ -5,6 +5,7 @@ With AuthZ enabled for the course, listing videos requires the view-files permis
 requires create-files, changing transcript preferences requires edit-files and deleting requires
 delete-files. With AuthZ disabled, Studio read access is required, as it was before AuthZ.
 """
+import json
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from unittest.mock import patch
@@ -13,6 +14,7 @@ import ddt
 from django.http import HttpResponse
 from django.test import Client
 from django.test.utils import override_settings
+from edxval.api import create_video
 from openedx_authz.authz import (
     COURSES_CREATE_FILES,
     COURSES_DELETE_FILES,
@@ -54,6 +56,14 @@ class VideoEndpointsAuthzPermissionsTest(CourseTestCase):
         self.course.video_upload_pipeline = {"course_video_upload_token": "test_token"}
         self.save_course()
         self.non_staff_client, _ = self.create_non_staff_authed_user_client()
+        create_video({
+            "edx_video_id": "some-video",
+            "status": "upload",
+            "client_video_id": "a.mp4",
+            "duration": 0,
+            "encoded_videos": [],
+            "courses": [str(self.course.id)],
+        })
 
     def url(self, view_name: str, **kwargs: str) -> str:
         """URL of the given video view for the test course."""
@@ -66,7 +76,8 @@ class VideoEndpointsAuthzPermissionsTest(CourseTestCase):
             return client.get(url, HTTP_ACCEPT="application/json")
         if method == "DELETE":
             return client.delete(url)
-        return client.post_json(url, {"files": [{"file_name": "a.mp4", "content_type": "video/mp4"}]})
+        body = {"files": [{"file_name": "a.mp4", "content_type": "video/mp4"}]}
+        return client.post(url, data=json.dumps(body), content_type="application/json")
 
     # (method, view, kwargs, permission required beyond viewing, or None for read-only operations)
     OPERATIONS = (
