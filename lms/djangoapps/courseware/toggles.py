@@ -111,6 +111,28 @@ COURSEWARE_OPTIMIZED_RENDER_XBLOCK = CourseWaffleFlag(
     f'{WAFFLE_FLAG_NAMESPACE}.optimized_render_xblock', __name__
 )
 
+# .. toggle_name: courseware.incremental_assessment_load
+# .. toggle_implementation: CourseWaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Render large assessment units as a shell -- the first few problems
+#   plus placeholders -- and load the remaining problems in batches from
+#   /api/courseware/xblock_children/. Units at or below
+#   settings.INCREMENTAL_LOAD_PROBLEM_THRESHOLD are unaffected even when this is on. Intended
+#   for assessments large enough that rendering every problem in one response risks exceeding
+#   the upstream request timeout.
+# .. toggle_use_cases: opt_in
+# .. toggle_creation_date: 2026-08-27
+COURSEWARE_INCREMENTAL_ASSESSMENT_LOAD = CourseWaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.incremental_assessment_load', __name__
+)
+
+
+def incremental_assessment_load_is_enabled(course_key=None):
+    """
+    Return whether large assessment units in this course should load incrementally.
+    """
+    return COURSEWARE_INCREMENTAL_ASSESSMENT_LOAD.is_enabled(course_key)
+
 # .. toggle_name: COURSES_INVITE_ONLY
 # .. toggle_implementation: SettingToggle
 # .. toggle_type: feature_flag
