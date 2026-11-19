@@ -6,7 +6,6 @@ from unittest.mock import patch
 from uuid import UUID
 
 import pytest
-from xblock import plugin
 
 from common.djangoapps.student.tests.factories import RequestFactoryNoCsrf
 
@@ -21,15 +20,9 @@ from .helpers import BaseTestXmodule
 
 
 @pytest.mark.usefixtures("override_descriptor_system")
-class _TestWordCloudBase(BaseTestXmodule):
+class TestWordCloud(BaseTestXmodule):
     """Integration test for Word Cloud Block."""
-    __test__ = False
     CATEGORY = "word_cloud"
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        plugin.PLUGIN_CACHE = {}
 
     def setUp(self):
         super().setUp()
@@ -260,7 +253,3 @@ class _TestWordCloudBase(BaseTestXmodule):
         # Remove i18n service
         fragment_content_clean = re.sub(r"\{.*?}", "{}", fragment.content)
         assert fragment_content_clean == self.runtime.render_template('templates/word_cloud.html', expected_context)
-
-
-class TestWordCloudExtracted(_TestWordCloudBase):
-    __test__ = True

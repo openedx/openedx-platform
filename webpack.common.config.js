@@ -304,7 +304,6 @@ module.exports = Merge.merge({
                  * we know, the only modules that absolutely need to be added to the global namespace are those
                  * which define module types, for example "Problem" (in xmodule/js/src/capa/display.js).
                  */
-
                 {
                     test: /xmodule\/js\/common_static\/js\/vendor\/draggabilly.js/,
                     use: [
