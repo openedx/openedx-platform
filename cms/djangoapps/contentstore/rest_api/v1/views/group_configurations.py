@@ -2,7 +2,7 @@
 
 import edx_api_doc_tools as apidocs
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS
+from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS, COURSES_VIEW_GROUP_CONFIGURATIONS
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseGroupConfigurationsSerializer
 from cms.djangoapps.contentstore.utils import get_group_configurations_context
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import authz_permission_required
+from openedx.core.djangoapps.authz.decorators import authz_permission_required, user_has_course_permission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
@@ -36,7 +36,7 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
     )
     @verify_course_exists()
     @authz_permission_required(
-        authz_permission=COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+        authz_permission=COURSES_VIEW_GROUP_CONFIGURATIONS.identifier,
         legacy_permission=LegacyAuthoringPermission.READ
     )
     def get(self, request: Request, course_key: CourseKey):
@@ -144,5 +144,11 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
         with store.bulk_operations(course_key):
             course = modulestore().get_course(course_key)
             group_configurations_context = get_group_configurations_context(course, store)
+            group_configurations_context['can_manage'] = user_has_course_permission(
+                request.user,
+                COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+                course_key,
+                LegacyAuthoringPermission.WRITE
+            )
             serializer = CourseGroupConfigurationsSerializer(group_configurations_context)
             return Response(serializer.data)
