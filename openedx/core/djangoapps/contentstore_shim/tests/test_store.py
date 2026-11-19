@@ -119,7 +119,9 @@ class VersionedContentStoreShimTest(TestCase):
     def test_python_lib_is_staff_only(self, locked):
         content = self.save("python_lib.zip", content_type="application/zip", locked=locked)
         assert self.get_asset("python_lib.zip").permissions == content_api.AssetPermissions.STAFF
-        assert self.store.find(content.location).locked is True
+        # It's not reported as locked, so the contentserver applies its own python_lib.zip rules:
+        assert self.store.find(content.location).locked is False
+        assert self.store.get_all_content_for_course(content.location.course_key)[0][0]["locked"] is False
         self.store.set_attr(content.location, "locked", False)
         assert self.get_asset("python_lib.zip").permissions == content_api.AssetPermissions.STAFF
 

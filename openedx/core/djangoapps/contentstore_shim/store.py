@@ -92,7 +92,10 @@ class VersionedContentStoreShim(ContentStore):
     * ``locked`` assets are restricted to enrolled users
       (``AssetPermissions.ENROLLED``), except for the course's Python code
       library (``python_lib.zip``), which is always restricted to staff
-      (``AssetPermissions.STAFF``), and is reported as ``locked``.
+      (``AssetPermissions.STAFF``), and can't be locked. It's reported as not
+      ``locked``, which is its default in the legacy store, so that the
+      contentserver applies its own rules for ``python_lib.zip`` (which allow
+      course staff, who may not be enrolled) instead of requiring enrollment.
     * ``get_all_content_for_course()`` only supports the subset of MongoDB query
       syntax described in :mod:`.mongo_query`, and ignores the ``user_language``
       filter param.
@@ -172,7 +175,7 @@ class VersionedContentStoreShim(ContentStore):
             "thumbnail_location": None,
             "import_path": _get_import_path(asset, location.path),
             "length": media.size,
-            "locked": asset.permissions != AssetPermissions.PUBLIC,
+            "locked": asset.permissions == AssetPermissions.ENROLLED,
             "content_digest": _get_md5(media),
         }
         if as_stream:
@@ -203,7 +206,7 @@ class VersionedContentStoreShim(ContentStore):
             "contentType": media.mime_type,
             "uploadDate": version.created,
             "length": media.size,
-            "locked": asset.permissions != AssetPermissions.PUBLIC,
+            "locked": asset.permissions == AssetPermissions.ENROLLED,
             "thumbnail_location": None,
             "import_path": _get_import_path(asset, location.path),
         }
@@ -546,8 +549,8 @@ class VersionedContentStoreShim(ContentStore):
                 output_field=CharField(),
             ),
             shim_locked=Case(
-                When(permissions=AssetPermissions.PUBLIC, then=Value(False)),
-                default=Value(True),
+                When(permissions=AssetPermissions.ENROLLED, then=Value(True)),
+                default=Value(False),
                 output_field=BooleanField(),
             ),
         )
