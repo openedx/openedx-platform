@@ -166,14 +166,11 @@ class WikiRedirectTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase):
         self.logout()
         course_wiki_page = reverse('wiki:get', kwargs={'path': self.toy.wiki_slug + '/'})
 
-        # When not logged in, we should get a 302
+        # When not logged in, we should get a 302 to the login page. Don't follow the
+        # redirect: the login page may itself redirect on to the authn MFE.
         resp = self.client.get(course_wiki_page, follow=False)
         assert resp.status_code == 302
-
-        # and end up at the login page
-        resp = self.client.get(course_wiki_page, follow=True)
-        target_url, __ = resp.redirect_chain[-1]
-        assert reverse('signin_user') in target_url
+        assert reverse('signin_user') in resp['Location']
 
     @override_settings(ALLOW_WIKI_ROOT_ACCESS=True)
     def test_create_wiki_with_long_course_id(self):
