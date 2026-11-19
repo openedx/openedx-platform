@@ -1196,6 +1196,9 @@ class TestTranscriptsAuthz(CourseAuthoringAuthzTestMixin, BaseTranscripts):
         return self.client.get(reverse(url_name), {'data': json.dumps(data)})
 
     def test_editor_can_check_transcripts(self):
+        """
+        A Course Editor has ``courses.edit_course_content``, so it can check transcripts.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
 
         response = self._get_as(self.authorized_user, 'check_transcripts')
@@ -1204,6 +1207,10 @@ class TestTranscriptsAuthz(CourseAuthoringAuthzTestMixin, BaseTranscripts):
 
     @ddt.data('check_transcripts', 'replace_transcripts')
     def test_auditor_cannot_check_or_import_transcripts(self, url_name):
+        """
+        A Course Auditor lacks ``courses.edit_course_content``, so checking or importing
+        transcripts is denied.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
 
         response = self._get_as(self.authorized_user, url_name)
@@ -1211,6 +1218,9 @@ class TestTranscriptsAuthz(CourseAuthoringAuthzTestMixin, BaseTranscripts):
         assert response.status_code == 403
 
     def test_legacy_user_without_write_access_cannot_check_transcripts(self):
+        """
+        With AuthZ disabled, a user without legacy studio write access is denied.
+        """
         self.set_authz_enabled(False)
 
         response = self._get_as(self.unauthorized_user, 'check_transcripts')
@@ -1218,6 +1228,9 @@ class TestTranscriptsAuthz(CourseAuthoringAuthzTestMixin, BaseTranscripts):
         assert response.status_code == 403
 
     def test_legacy_staff_can_check_transcripts_when_authz_disabled(self):
+        """
+        With AuthZ disabled, global staff keeps access through the legacy write check.
+        """
         self.set_authz_enabled(False)
 
         response = self._get_as(self.staff_user, 'check_transcripts')
