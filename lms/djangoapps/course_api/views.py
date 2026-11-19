@@ -6,14 +6,20 @@ Course API Views
 from django.core.exceptions import ValidationError
 from django.core.paginator import InvalidPage
 from edx_django_utils.monitoring import function_trace
+from edx_rest_framework_extensions.auth.jwt.authentication import get_decoded_jwt_from_auth
 from edx_rest_framework_extensions.paginators import NamespacedPageNumberPagination
+from oauth2_provider.models import Application
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.settings import api_settings
 from rest_framework.throttling import UserRateThrottle
 
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
-from . import USE_RATE_LIMIT_2_FOR_COURSE_LIST_API, USE_RATE_LIMIT_10_FOR_COURSE_LIST_API
+from . import (
+    USE_RATE_LIMIT_2_FOR_COURSE_LIST_API,
+    USE_RATE_LIMIT_10_FOR_COURSE_LIST_API,
+)
 from .api import course_detail, list_course_keys, list_courses
 from .forms import CourseDetailGetForm, CourseIdListGetForm, CourseListGetForm
 from .serializers import CourseDetailSerializer, CourseKeySerializer, CourseSerializer
@@ -131,7 +137,54 @@ class CourseDetailView(DeveloperErrorViewMixin, RetrieveAPIView):
         )
 
 
-class CourseListUserThrottle(UserRateThrottle):
+def _is_client_credentials_request(request):
+    """
+    Return True if the request was authenticated with an OAuth2 client-credentials
+    token, either a JWT or a django-oauth-toolkit bearer token.
+    """
+    jwt_payload = get_decoded_jwt_from_auth(request)
+    if jwt_payload is not None:
+        return jwt_payload.get('grant_type') == Application.GRANT_CLIENT_CREDENTIALS
+    application = getattr(request.auth, 'application', None)
+    return application is not None and application.authorization_grant_type == Application.GRANT_CLIENT_CREDENTIALS
+
+
+class ServiceUserRateMixin:
+    """
+    Throttle mixin that moves staff client-credentials requests to the ``service_user`` rate.
+
+    A client-credentials token stands for its application rather than a person logging in.
+    The user must also be global staff or a superuser, because any logged-in user can
+    register an application with that grant and would otherwise get the higher rate.
+    The course list circuit-breaker switches still take priority.
+    """
+
+    def use_service_user_rate(self, request):
+        """
+        Switch this throttle to the ``service_user`` rate if the request qualifies.
+
+        Returns True if it did.
+        """
+        # Leave the circuit breakers in charge while either of them is on.
+        if USE_RATE_LIMIT_2_FOR_COURSE_LIST_API.is_enabled() or USE_RATE_LIMIT_10_FOR_COURSE_LIST_API.is_enabled():
+            return False
+        user = request.user
+        if not (user.is_authenticated and (user.is_staff or user.is_superuser)):
+            return False
+        if not _is_client_credentials_request(request):
+            return False
+        # THROTTLE_RATES on the subclass hides the project-wide rates, so read this one directly.
+        # An operator's REST_FRAMEWORK override can drop it; keep the normal rate then.
+        rate = api_settings.DEFAULT_THROTTLE_RATES.get('service_user')
+        if not rate:
+            return False
+        self.scope = 'service_user'
+        self.rate = rate
+        self.num_requests, self.duration = self.parse_rate(self.rate)
+        return True
+
+
+class CourseListUserThrottle(ServiceUserRateMixin, UserRateThrottle):
     """Limit the number of requests users can make to the course list API."""
     # The course list endpoint is likely being inefficient with how it's querying
     # various parts of the code and can take courseware down, it needs to be rate
@@ -156,6 +209,8 @@ class CourseListUserThrottle(UserRateThrottle):
 
     def allow_request(self, request, view):
         self.check_for_switches()
+        if self.use_service_user_rate(request):
+            return super().allow_request(request, view)
         # Use a special scope for staff to allow for a separate throttle rate
         user = request.user
         if user.is_authenticated and (user.is_staff or user.is_superuser):
@@ -382,7 +437,7 @@ class CourseListView(DeveloperErrorViewMixin, ListAPIView):
         return self.list(request, *args, **kwargs)
 
 
-class CourseIdListUserThrottle(UserRateThrottle):
+class CourseIdListUserThrottle(ServiceUserRateMixin, UserRateThrottle):
     """Limit the number of requests users can make to the course list id API."""
 
     THROTTLE_RATES = {
@@ -391,6 +446,8 @@ class CourseIdListUserThrottle(UserRateThrottle):
     }
 
     def allow_request(self, request, view):
+        if self.use_service_user_rate(request):
+            return super().allow_request(request, view)
         # Use a special scope for staff to allow for a separate throttle rate
         user = request.user
         if user.is_authenticated and (user.is_staff or user.is_superuser):

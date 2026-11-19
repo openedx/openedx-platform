@@ -93,7 +93,11 @@ class DeveloperErrorViewMixin:
         elif isinstance(exc, PermissionDenied):
             return self._make_error_response(exc.status_code, exc.detail, exc.get_codes())
         elif isinstance(exc, APIException):
-            return self._make_error_response(exc.status_code, exc.detail)
+            response = self._make_error_response(exc.status_code, exc.detail)
+            # Keep the Retry-After header DRF's own exception handler adds for throttled requests.
+            if getattr(exc, 'wait', None):
+                response['Retry-After'] = f'{int(exc.wait)}'
+            return response
         elif isinstance(exc, (Http404, ObjectDoesNotExist)):
             return self._make_error_response(404, str(exc) or "Not found.")
         elif isinstance(exc, ValidationError):
