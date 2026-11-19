@@ -2105,7 +2105,6 @@ XBLOCK_MIXINS = (
 #
 # Ticket: https://github.com/openedx/edx-platform/issues/35308
 
-
 # .. toggle_name: USE_EXTRACTED_ANNOTATABLE_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
