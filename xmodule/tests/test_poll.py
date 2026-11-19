@@ -14,9 +14,8 @@ from . import get_test_system
 from .test_import import DummyModuleStoreRuntime
 
 
-class _PollBlockTestBase(TestCase):
+class PollBlockTest(TestCase):
     """Logic tests for Poll Xmodule."""
-    __test__ = False
 
     @classmethod
     def setUpClass(cls):
@@ -90,7 +89,3 @@ class _PollBlockTestBase(TestCase):
         child_texts = xml.xpath('//text()')
         # Last index of child_texts contains text of answer tag.
         assert child_texts[(- 1)] == '< 18'
-
-
-class PollBlockTestExtracted(_PollBlockTestBase):
-    __test__ = True

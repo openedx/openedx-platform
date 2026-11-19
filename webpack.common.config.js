@@ -421,7 +421,6 @@ module.exports = Merge.merge({
                         }
                     ]
                 },
-
                 {
                     test: /xmodule\/js\/src\/problem\/edit.js/,
                     use: [
