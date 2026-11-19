@@ -66,14 +66,6 @@ GITHUB_REPO_ROOT = ENV_ROOT / "data"  # noqa: F405
 USE_I18N = True
 LANGUAGE_CODE = 'en'  # tests assume they will get English.
 
-XQUEUE_INTERFACE = {
-    "url": "http://sandbox-xqueue.edx.org",
-    "django_auth": {
-        "username": "lms",
-        "password": "***REMOVED***"
-    },
-    "basic_auth": ('anant', 'agarwal'),
-}
 XQUEUE_WAITTIME_BETWEEN_REQUESTS = 5  # seconds
 
 # Don't rely on a real staff grading backend

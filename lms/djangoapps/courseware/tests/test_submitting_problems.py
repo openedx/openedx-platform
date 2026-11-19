@@ -28,7 +28,7 @@ from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,
     SchematicResponseXMLFactory,
 )
-from xblock_problem.capa.xqueue_interface import XQueueInterface
+from xblock_problem.capa.xqueue_submission import XQueueInterfaceSubmission
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
@@ -789,7 +789,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         # re-fetch the course from the database so the object is up to date
         self.refresh_course()
 
-    @patch.object(XQueueInterface, '_http_post')
+    @patch.object(XQueueInterfaceSubmission, 'send_to_submission')
     def test_three_files(self, mock_xqueue_post):
         # Open the test files, and arrange to close them later.
         filenames = "prog1.py prog2.py prog3.py"
@@ -801,19 +801,18 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
             self.addCleanup(fileobj.close)
 
         self.problem_setup("the_problem", filenames)
-        mock_xqueue_post.return_value = (0, "ok")
+        mock_xqueue_post.return_value = {}
         resp = self.submit_question_answer("the_problem", {'2_1': fileobjs})
 
         assert resp.status_code == 200
         json_resp = json.loads(resp.content.decode('utf-8'))
         assert json_resp['success'] == 'incorrect'
 
-        # See how post got called.
+        # See how the hand-off to edx-submissions got called: header, body, queue key, files.
         assert mock_xqueue_post.call_count == 1
-        args, kwargs = mock_xqueue_post.call_args
-        assert len(args) == 2
-        assert args[0].endswith('/submit/')
-        self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
+        args, _ = mock_xqueue_post.call_args
+        assert len(args) == 4
+        self.assertEqual(list(args[3].keys()), filenames.split())  # noqa: PT009
 
 
 @UseUnsafeCodejail()
