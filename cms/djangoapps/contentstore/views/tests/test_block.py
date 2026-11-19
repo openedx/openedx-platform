@@ -3231,11 +3231,17 @@ class HandlerTestBlock(XBlock):
 
     @XBlock.json_handler
     def write_text(self, data, _suffix=""):
+        """
+        Studio handler that changes the ``text`` field.
+        """
         self.text = data["text"]
         return {}
 
     @XBlock.json_handler
     def read_text(self, _data, _suffix=""):
+        """
+        Studio handler that only reads the ``text`` field.
+        """
         return {"text": self.text}
 
 
@@ -3264,6 +3270,9 @@ class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
     @XBlock.register_temp_plugin(HandlerTestBlock)
     @ddt.data(COURSE_EDITOR.external_key, COURSE_STAFF.external_key, COURSE_ADMIN.external_key)
     def test_user_with_edit_permission_persists_changes(self, role_key):
+        """
+        Roles with ``courses.edit_course_content`` get their handler changes persisted.
+        """
         self.add_user_to_role_in_course(self.authorized_user, role_key, self.course.id)
 
         response, block = self._call_handler(self.authorized_user, "write_text", {"text": "saved"})
@@ -3273,6 +3282,10 @@ class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
 
     @XBlock.register_temp_plugin(HandlerTestBlock)
     def test_user_without_edit_permission_gets_403_on_changes(self):
+        """
+        A Course Auditor lacks edit permission, so a handler that changes fields returns 403
+        and nothing is persisted.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
 
         response, block = self._call_handler(self.authorized_user, "write_text", {"text": "saved"})
@@ -3282,6 +3295,9 @@ class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
 
     @XBlock.register_temp_plugin(HandlerTestBlock)
     def test_user_without_edit_permission_can_call_read_only_handler(self):
+        """
+        A Course Auditor can still call a handler that doesn't change any field.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
 
         response, _block = self._call_handler(self.authorized_user, "read_text", {})
@@ -3291,6 +3307,9 @@ class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
 
     @XBlock.register_temp_plugin(HandlerTestBlock)
     def test_legacy_staff_persists_changes_when_authz_disabled(self):
+        """
+        With AuthZ disabled, global staff gets its changes persisted through the legacy write check.
+        """
         self.set_authz_enabled(False)
 
         response, block = self._call_handler(self.staff_user, "write_text", {"text": "saved"})
@@ -3300,6 +3319,10 @@ class TestComponentHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
 
     @XBlock.register_temp_plugin(HandlerTestBlock)
     def test_legacy_user_without_write_access_gets_403_when_authz_disabled(self):
+        """
+        With AuthZ disabled, a user without legacy write access gets 403 when the handler
+        changes fields, instead of a 200 that saved nothing.
+        """
         self.set_authz_enabled(False)
 
         response, block = self._call_handler(self.unauthorized_user, "write_text", {"text": "saved"})
