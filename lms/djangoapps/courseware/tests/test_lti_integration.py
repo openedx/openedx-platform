@@ -11,7 +11,6 @@ from unittest.mock import patch
 import oauthlib
 from django.conf import settings
 from django.urls import reverse
-from xblock import plugin
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID
 from lms.djangoapps.courseware.tests.helpers import BaseTestXmodule
@@ -27,7 +26,7 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
 from xmodule.tests.helpers import mock_render_template
 
 
-class _TestLTIBase(BaseTestXmodule):
+class TestLTI(BaseTestXmodule):
     """
     Integration test for lti xmodule.
 
@@ -35,13 +34,7 @@ class _TestLTIBase(BaseTestXmodule):
     As part of that, checks oauth signature generation by mocking signing function
     of `oauthlib` library.
     """
-    __test__ = False
     CATEGORY = "lti"
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        plugin.PLUGIN_CACHE = {}
 
     def setUp(self):
         """
@@ -147,12 +140,11 @@ class _TestLTIBase(BaseTestXmodule):
         assert generated_content.decode('utf-8') == expected_content
 
 
-class _TestLTIBlockListingBase(SharedModuleStoreTestCase):
+class TestLTIBlockListing(SharedModuleStoreTestCase):
     """
     a test for the rest endpoint that lists LTI blocks in a course
     """
 
-    __test__ = False
     # arbitrary constant
     COURSE_SLUG = "100"
     COURSE_NAME = "test_course"
@@ -237,11 +229,3 @@ class _TestLTIBlockListingBase(SharedModuleStoreTestCase):
             request.method = method
             response = get_course_lti_endpoints(request, str(self.course.id))
             assert 405 == response.status_code
-
-
-class TestLTI(_TestLTIBase):
-    __test__ = True
-
-
-class TestLTIBlockListing(_TestLTIBlockListingBase):
-    __test__ = True
