@@ -6,8 +6,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
-from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
-from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX, check_password
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import INTERNAL_RESET_SESSION_TOKEN, PasswordResetConfirmView
 from django.core.exceptions import ObjectDoesNotExist
@@ -48,6 +48,11 @@ from openedx.core.djangoapps.user_authn.message_types import PasswordReset, Pass
 from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangolib.markup import HTML
+from common.djangoapps.student.forms import send_account_recovery_email_for_user
+from common.djangoapps.student.models import AccountRecovery, LoginFailures
+from common.djangoapps.util.json_request import JsonResponse
+from common.djangoapps.util.password_policy_validators import normalize_password, validate_password
+from openedx.core.djangoapps.user_authn.toggles import PREVENT_PASSWORD_REUSE_ON_RESET
 
 POST_EMAIL_KEY = 'openedx.core.djangoapps.util.ratelimit.request_post_email'
 REAL_IP_KEY = 'openedx.core.djangoapps.util.ratelimit.real_ip'
@@ -765,6 +770,12 @@ class LogistrationPasswordResetView(APIView):  # pylint: disable=missing-class-d
             if not default_token_generator.check_token(user, token):
                 AUDIT_LOG.exception(f"Token validation failed for user {user_id}")
                 return Response({'reset_status': reset_status, 'token_invalid': True})
+
+            if PREVENT_PASSWORD_REUSE_ON_RESET.is_enabled() and check_password(password, user.password):
+                return Response({
+                    'reset_status': reset_status,
+                    'err_msg': _('Your new password must be different from your current password.')
+                })
 
             validate_password(password, user=user)
 
