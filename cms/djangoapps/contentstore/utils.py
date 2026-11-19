@@ -1124,6 +1124,8 @@ def duplicate_block(
     with store.bulk_operations(duplicate_source_usage_key.course_key):
         source_item = store.get_item(duplicate_source_usage_key)
         if not dest_usage_key:
+            if parent_usage_key.course_key != duplicate_source_usage_key.course_key:
+                raise ValueError("Cannot duplicate a block into a different course.")
             # Change the blockID to be unique.
             dest_usage_key = source_item.location.replace(name=uuid4().hex)
 

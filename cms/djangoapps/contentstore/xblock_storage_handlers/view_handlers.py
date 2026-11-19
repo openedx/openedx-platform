@@ -357,6 +357,16 @@ def _duplicate_xblock(request):
     )
     source_course = duplicate_source_usage_key.course_key
 
+    # Duplication is only supported within a single course. Reject cross-course requests up front, before any
+    # permission check or write, so no block is created in the source course nor attached to a foreign parent.
+    # Since source and destination are the same course, the destination permission check below also covers
+    # access to the source.
+    if source_course != parent_usage_key.course_key:
+        return JsonResponse(
+            {"error": _("Duplicating a block into a different course is not supported.")},
+            status=400,
+        )
+
     # Check authz permission for destination
     permission = _check_xblock_permission(request, parent_usage_key)
     # Legacy path also requires read access on the source course

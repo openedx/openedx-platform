@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core import toggles as core_toggles
-from xmodule.modulestore.tests.factories import BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class XBlockHandlerPermissionsTest(CourseTestCase):
@@ -81,6 +81,25 @@ class XBlockHandlerPermissionsTest(CourseTestCase):
             'parent_locator': str(self.vertical.location),
         }
         self.assertEqual(self.non_staff_client.ajax_post('/xblock/', data=data).status_code, 403)  # noqa: PT009
+
+    def test_post_duplicate_cross_course_rejected(self):
+        """Duplicating a block from another course is rejected and has no side effects."""
+        other_course = CourseFactory.create(org='OtherOrg', number='OC1', run='2026_T1')
+        other_chapter = BlockFactory.create(category='chapter', parent_location=other_course.location)
+        other_sequential = BlockFactory.create(category='sequential', parent_location=other_chapter.location)
+        other_vertical = BlockFactory.create(category='vertical', parent_location=other_sequential.location)
+        source_items = len(self.store.get_items(self.course.id))
+        parent_children = list(self.store.get_item(other_vertical.location).children)
+
+        data = {
+            'duplicate_source_locator': str(self.html_block.location),
+            'parent_locator': str(other_vertical.location),
+        }
+        resp = self.client.ajax_post('/xblock/', data=data)
+
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(len(self.store.get_items(self.course.id)), source_items)  # noqa: PT009
+        self.assertEqual(self.store.get_item(other_vertical.location).children, parent_children)  # noqa: PT009
 
     def test_post_add_component_staff_allowed(self):
         data = {'category': 'html', 'parent_locator': str(self.vertical.location)}
@@ -372,6 +391,26 @@ class XBlockHandlerAuthzPermissionsTest(CourseTestCase):
             'courses.edit_course_content',
             str(self.course.id)
         )
+
+    def test_duplicate_block_cross_course_rejected_before_permission_check(
+        self, _mock_flag, mock_is_allowed  # noqa: PT019
+    ):
+        """Cross-course duplicate returns 400 with authz enabled, without creating anything."""
+        other_course = CourseFactory.create(org='OtherOrg', number='OC2', run='2026_T1')
+        other_vertical = BlockFactory.create(category='vertical', parent_location=other_course.location)
+        source_items = len(self.store.get_items(self.course.id))
+
+        resp = self.client.ajax_post(
+            '/xblock/',
+            data={
+                'duplicate_source_locator': str(self.html_block.location),
+                'parent_locator': str(other_vertical.location),
+            }
+        )
+
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        mock_is_allowed.assert_not_called()
+        self.assertEqual(len(self.store.get_items(self.course.id)), source_items)  # noqa: PT009
 
     # --- PUT /xblock/{blockId} (reorder) ---
 
