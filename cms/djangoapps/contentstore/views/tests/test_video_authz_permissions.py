@@ -5,6 +5,7 @@ With AuthZ enabled for the course, listing videos requires the view-files permis
 requires create-files, changing transcript preferences requires edit-files and deleting requires
 delete-files. With AuthZ disabled, Studio read access is required, as it was before AuthZ.
 """
+
 import json
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -24,9 +25,10 @@ from openedx_authz.authz import (
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
+from cms.djangoapps.contentstore.views.tests.test_videos import setup_s3_mocks
 from openedx.core import toggles as core_toggles
 
-VIDEO_PIPELINE = {"BUCKET": "test_bucket", "ROOT_PATH": "test_root"}
+VIDEO_PIPELINE = {"BUCKET": "test_bucket", "ROOT_PATH": "test_root", "VEM_S3_BUCKET": "vem_test_bucket"}
 IS_ALLOWED = "openedx.core.djangoapps.authz.decorators.authz_api.is_user_allowed"
 
 
@@ -56,14 +58,20 @@ class VideoEndpointsAuthzPermissionsTest(CourseTestCase):
         self.course.video_upload_pipeline = {"course_video_upload_token": "test_token"}
         self.save_course()
         self.non_staff_client, _ = self.create_non_staff_authed_user_client()
-        create_video({
-            "edx_video_id": "some-video",
-            "status": "upload",
-            "client_video_id": "a.mp4",
-            "duration": 0,
-            "encoded_videos": [],
-            "courses": [str(self.course.id)],
-        })
+        patcher = patch("cms.djangoapps.contentstore.video_storage_handlers.boto3.resource")
+        s3_client, *_ = setup_s3_mocks(patcher.start())
+        s3_client.generate_presigned_url.return_value = "http://example.com/put_video"
+        self.addCleanup(patcher.stop)
+        create_video(
+            {
+                "edx_video_id": "some-video",
+                "status": "upload",
+                "client_video_id": "a.mp4",
+                "duration": 0,
+                "encoded_videos": [],
+                "courses": [str(self.course.id)],
+            }
+        )
 
     def url(self, view_name: str, **kwargs: str) -> str:
         """URL of the given video view for the test course."""
@@ -144,9 +152,7 @@ class VideoEndpointsAuthzPermissionsTest(CourseTestCase):
     def test_authz_pagination_preference_needs_only_view(self) -> None:
         """Changing the page size stores a session preference; it must not need create permission."""
         with authz_enabled(COURSES_VIEW_FILES):
-            response = self.client.post(
-                self.url("videos_handler"), {"id": "videos_per_page", "value": "10"}
-            )
+            response = self.client.post(self.url("videos_handler"), {"id": "videos_per_page", "value": "10"})
         assert response.status_code != 403
 
     # --- Legacy (AuthZ disabled): same Studio read access check as before ---
