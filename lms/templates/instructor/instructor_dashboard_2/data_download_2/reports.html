@@ -24,7 +24,7 @@ from openedx.core.djangolib.markup import HTML, Text
                             class="${'is-disabled' if disable_buttons else ''}"
                             aria-disabled="${'true' if disable_buttons else 'false'}">Anonymized Student IDs
                     </option>
-                    %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+                    %if settings.ENABLE_GRADE_DOWNLOADS:
                     <option value="profileInformation"
                             data-endpoint="${ section_data['get_students_features_url'] + '/csv' }"
                             data-csv="true">Profile Information
@@ -54,7 +54,7 @@ from openedx.core.djangolib.markup import HTML, Text
                         Survey Result report
                     </option>
                     %endif
-                    %if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+                    %if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
                     <option value="ORADataReport" data-graderelated="true"
                             data-endpoint="${ section_data['export_ora2_data_url'] }">ORA Data
                         report
