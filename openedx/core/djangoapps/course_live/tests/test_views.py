@@ -481,9 +481,15 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
         self.course_id = str(self.course.id)
 
     def _get(self, url_name):
+        """
+        GET a Live settings view for the test course as the authorized user.
+        """
         return self.authorized_client.get(reverse(url_name, kwargs={'course_id': self.course_id}))
 
     def _post(self):
+        """
+        POST a Live configuration for the test course as the authorized user.
+        """
         data = {'enabled': True, 'provider_type': 'zoom', 'lti_configuration': {}}
         return self.authorized_client.post(
             reverse('course_live', kwargs={'course_id': self.course_id}), data, format='json'
@@ -499,6 +505,10 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
     )
     @ddt.unpack
     def test_read_requires_view_permission(self, role, url_name, expected_status):
+        """
+        Reading Live settings requires ``courses.view_pages_and_resources``: Editor and
+        Auditor have it, Limited Staff doesn't.
+        """
         self.add_user_to_role_in_course(self.authorized_user, role, self.course.id)
 
         response = self._get(url_name)
@@ -506,6 +516,9 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
         assert response.status_code == expected_status
 
     def test_editor_can_change_settings(self):
+        """
+        A Course Editor has ``courses.manage_pages_and_resources``, so it can change Live settings.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
 
         response = self._post()
@@ -513,6 +526,9 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
         assert response.status_code != 403
 
     def test_auditor_cannot_change_settings(self):
+        """
+        A Course Auditor only has view permission, so changing Live settings is denied.
+        """
         self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, self.course.id)
 
         response = self._post()
@@ -520,12 +536,18 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
         assert response.status_code == 403
 
     def test_user_without_role_is_denied(self):
+        """
+        A user without any role in the course can't read Live settings.
+        """
         response = self._get('course_live')
 
         assert response.status_code == 403
 
     @ddt.data('course_live', 'live_providers')
     def test_legacy_course_staff_keeps_access_when_authz_disabled(self, url_name):
+        """
+        With AuthZ disabled, legacy course staff keeps access through the legacy check.
+        """
         self.set_authz_enabled(False)
         CourseStaffRole(self.course.id).add_users(self.authorized_user)
 
@@ -534,6 +556,9 @@ class TestCourseLiveAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
         assert response.status_code == 200
 
     def test_authz_role_is_ignored_when_authz_disabled(self):
+        """
+        With AuthZ disabled, an AuthZ-only role grants no access, the legacy check applies.
+        """
         self.set_authz_enabled(False)
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
 
