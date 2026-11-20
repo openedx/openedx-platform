@@ -17,10 +17,12 @@ from openedx_authz.authz import (
     COURSE_LIMITED_STAFF,
     COURSE_STAFF,
     COURSES_VIEW_COURSE_INFO,
+    COURSES_VIEW_ENROLLMENTS,
 )
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
 from common.djangoapps.student.tests.factories import (
     InstructorFactory,
@@ -29,6 +31,7 @@ from common.djangoapps.student.tests.factories import (
 )
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor.authz import constants
+from lms.djangoapps.instructor.authz.api import user_has_instructor_permission
 from lms.djangoapps.instructor.authz.tests.mixins import InstructorAuthzTestMixin
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -313,3 +316,187 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
         self.set_authz_enabled(False)
 
         assert not self._has_instructor_tab(UserFactory())
+
+
+@ddt.ddt
+class CourseMetadataViewCourseInfoAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    ``CourseMetadataView`` returns the Course Info fields only with ``courses.view_course_info``.
+
+    Without it, a user who can open the dashboard gets ``200`` with those fields set to ``null``,
+    and the header and tab fields unchanged.
+    """
+
+    # Fields only the Course Info tab reads.
+    COURSE_INFO_FIELDS = (
+        "enrollment_start",
+        "enrollment_end",
+        "start",
+        "end",
+        "pacing",
+        "has_started",
+        "has_ended",
+        "total_enrollment",
+        "learner_count",
+        "staff_count",
+        "enrollment_counts",
+        "num_sections",
+        "grade_cutoffs",
+        "course_errors",
+        "studio_url",
+    )
+    # Course Info fields that always have a value for the test course when shown.
+    VALUED_COURSE_INFO_FIELDS = (
+        "start",
+        "pacing",
+        "has_started",
+        "has_ended",
+        "total_enrollment",
+        "learner_count",
+        "staff_count",
+        "enrollment_counts",
+        "num_sections",
+        "grade_cutoffs",
+        "course_errors",
+    )
+    # Fields the page header and the other tabs read, always returned.
+    SHARED_FIELDS = (
+        "course_id",
+        "username",
+        "display_name",
+        "org",
+        "course_number",
+        "course_run",
+        "tabs",
+        "permissions",
+        "authz_enabled",
+        "disable_buttons",
+        "gradebook_url",
+        "studio_grading_url",
+        "admin_console_url",
+        "certificates_enabled",
+        "analytics_dashboard_message",
+        "proctored_exams_enabled",
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.url = reverse("instructor_api_v2:course_metadata", kwargs={"course_id": str(self.course_key)})
+
+    def _get(self, user):
+        self.client.force_authenticate(user=user)
+        return self.client.get(self.url)
+
+    @staticmethod
+    def _allow_only(*permissions):
+        """Return an ``is_user_allowed`` side effect that grants only the given permissions."""
+        identifiers = {permission.identifier for permission in permissions}
+        return lambda _user, permission, _scope: permission in identifiers
+
+    def _assert_course_info_shown(self, response):
+        """Assert a ``200`` with the Course Info fields filled in."""
+        assert response.status_code == status.HTTP_200_OK
+        for field in self.VALUED_COURSE_INFO_FIELDS:
+            assert response.data[field] is not None, field
+
+    def _assert_course_info_hidden(self, response):
+        """Assert a ``200`` with the Course Info fields ``null`` and the shared fields returned."""
+        assert response.status_code == status.HTTP_200_OK
+        for field in self.COURSE_INFO_FIELDS:
+            assert response.data[field] is None, field
+        for field in self.SHARED_FIELDS:
+            assert field in response.data, field
+        assert response.data["course_id"] == str(self.course_key)
+        assert response.data["display_name"] == self.course.display_name
+        assert response.data["org"] == self.course_key.org
+        assert response.data["course_number"] == self.course_key.course
+
+    @ddt.data(COURSE_ADMIN, COURSE_STAFF)
+    def test_authz_role_sees_course_info(self, role):
+        """With the flag on, Course Admin and Course Staff get the Course Info fields."""
+        user = self.create_user_with_authz_role(role.external_key, self.course_key)
+
+        self._assert_course_info_shown(self._get(user))
+
+    def test_authz_view_course_info_alone_shows_course_info(self):
+        """With the flag on, ``courses.view_course_info`` alone is enough to get the Course Info fields."""
+        user = UserFactory()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=self._allow_only(COURSES_VIEW_COURSE_INFO)):
+            self._assert_course_info_shown(self._get(user))
+
+    @ddt.data(*(p for p in constants.INSTRUCTOR_DASHBOARD_PERMISSIONS if p != COURSES_VIEW_COURSE_INFO.identifier))
+    def test_authz_other_dashboard_permission_hides_course_info(self, permission):
+        """
+        With the flag on, a user who opens the dashboard without ``courses.view_course_info``
+        gets the Course Info fields as ``null`` and the shared fields unchanged.
+        """
+        user = UserFactory()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=lambda _u, perm, _s: perm == permission):
+            self._assert_course_info_hidden(self._get(user))
+
+    def test_authz_denied_hides_course_info_from_legacy_staff(self):
+        """With the flag on, AuthZ decides: legacy staff without ``courses.view_course_info`` gets no fields."""
+        staff = StaffFactory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=self._allow_only(COURSES_VIEW_ENROLLMENTS)):
+            self._assert_course_info_hidden(self._get(staff))
+
+    def test_authz_data_researcher_keeps_course_info(self):
+        """
+        With the flag on, a data researcher keeps the Course Info fields it had before AuthZ.
+
+        Its AuthZ role holds no dashboard permission, so the legacy ``VIEW_DASHBOARD`` rule decides.
+        """
+        user = self.create_user_with_authz_role(COURSE_DATA_RESEARCHER.external_key, self.course_key)
+
+        self._assert_course_info_shown(self._get(user))
+
+    def test_hidden_fields_are_not_computed(self):
+        """Without ``courses.view_course_info``, the enrollment counts are not queried."""
+        user = UserFactory()
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=self._allow_only(COURSES_VIEW_ENROLLMENTS)):
+            with patch.object(CourseEnrollment.objects, "enrollment_counts") as enrollment_counts:
+                self._assert_course_info_hidden(self._get(user))
+
+        enrollment_counts.assert_not_called()
+
+    def test_view_course_info_is_resolved_once(self):
+        """``courses.view_course_info`` is checked once per response, not once per field."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course_key)
+
+        with patch(
+            "lms.djangoapps.instructor.views.serializers_v2.user_has_instructor_permission",
+            wraps=user_has_instructor_permission,
+        ) as check:
+            self._assert_course_info_shown(self._get(user))
+
+        assert check.call_count == 1
+
+    @ddt.data(StaffFactory, InstructorFactory)
+    def test_legacy_role_sees_course_info(self, user_factory):
+        """With the flag off, legacy staff and instructors get the Course Info fields without querying AuthZ."""
+        self.set_authz_enabled(False)
+        user = user_factory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed") as is_user_allowed:
+            self._assert_course_info_shown(self._get(user))
+
+        is_user_allowed.assert_not_called()
+
+    def test_legacy_data_researcher_sees_course_info(self):
+        """With the flag off, a data researcher keeps the Course Info fields through ``VIEW_DASHBOARD``."""
+        self.set_authz_enabled(False)
+        user = UserFactory()
+        CourseDataResearcherRole(self.course_key).add_users(user)
+
+        self._assert_course_info_shown(self._get(user))
