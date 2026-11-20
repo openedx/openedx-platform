@@ -24,6 +24,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey, CourseKey, UsageKey
 from opaque_keys.edx.locations import CourseLocator
 from path import Path as path
+from xblock_problem import ProblemBlock
 
 from cms.djangoapps.contentstore.config import waffle
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, get_url, parse_json
@@ -35,7 +36,6 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseCreatorRole, CourseInstructorRole
 from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
 from openedx.core.lib.tempdir import mkdtemp_clean
-from xmodule.capa_block import ProblemBlock
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.contentstore.utils import empty_asset_trashcan, restore_asset_from_trashcan
