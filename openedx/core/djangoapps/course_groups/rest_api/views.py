@@ -6,12 +6,14 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.authz import COURSES_VIEW_COHORTS
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from openedx.core.djangoapps.course_groups.constants import COHORT_SCHEME
 from openedx.core.djangoapps.course_groups.partition_scheme import get_cohorted_user_partition
 from openedx.core.djangoapps.course_groups.rest_api.serializers import (
@@ -28,7 +30,8 @@ class GroupConfigurationsListView(DeveloperErrorViewMixin, APIView):
     """
     API view for listing content group configurations.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_COHORTS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -97,7 +100,8 @@ class GroupConfigurationDetailView(DeveloperErrorViewMixin, APIView):
     """
     API view for retrieving a specific content group configuration.
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_VIEW_COHORTS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(

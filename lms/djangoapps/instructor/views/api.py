@@ -38,11 +38,11 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_when.api import get_date_for_block
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import COURSES_MANAGE_COHORTS
 from rest_framework import serializers, status  # pylint: disable=wrong-import-order
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import (  # pylint: disable=wrong-import-order
     BasePermission,
-    IsAdminUser,
     IsAuthenticated,
 )
 from rest_framework.response import Response  # pylint: disable=wrong-import-order
@@ -81,6 +81,8 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor import enrollment
 from lms.djangoapps.instructor.access import ROLES, allow_access, list_with_level, revoke_access, update_forum_role
+from lms.djangoapps.instructor.authz.legacy import is_django_staff
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import INVOICE_KEY
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
@@ -1850,12 +1852,16 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
     **Response Values**
         * Empty as this is executed asynchronously.
     """
+
     authentication_classes = (
         JwtAuthentication,
         BearerAuthenticationAllowInactiveUser,
         SessionAuthenticationAllowInactiveUser,
     )
-    permission_classes = (IsAuthenticated, IsAdminUser)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = (COURSES_MANAGE_COHORTS.identifier,)
+    course_id_url_kwarg = "course_key_string"
+    legacy_permission_check = staticmethod(is_django_staff)
 
     def post(self, request, course_key_string):
         """
