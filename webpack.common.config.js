@@ -422,24 +422,6 @@ module.exports = Merge.merge({
                     ]
                 },
                 {
-                    test: /xmodule\/js\/src\/poll\/poll.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
-                    test: /xmodule\/js\/src\/poll\/poll_main.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
                     test: /xmodule\/js\/src\/problem\/edit.js/,
                     use: [
                         {
