@@ -394,11 +394,11 @@ EVENT_BUS_PRODUCER_CONFIG = merge_producer_configs(
 )
 
 ############## Authoring API drf-spectacular openapi settings ##############
-# These fields override the spectacular settings default values.
-# Any fields not included here will use the default values.
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Authoring API',
-    'DESCRIPTION': f'''Experimental API to edit xblocks and course content.
+# The rest of SPECTACULAR_SETTINGS, the hooks included, is defined once in
+# common.py. Only the parts that depend on CMS_BASE and AUTHORING_API_URL are
+# set here.
+SPECTACULAR_SETTINGS['DESCRIPTION'] = (  # noqa: F405
+    f'''Experimental API to edit xblocks and course content.
     \n\nDanger: Do not use on running courses!
     \n\n - How to gain access: Please email the owners of this openedx service.
     \n - How to use: This API uses oauth2 authentication with the
@@ -410,34 +410,12 @@ SPECTACULAR_SETTINGS = {
     \n - Public vs. Local servers: The "Public" server is where you can reach the API externally. The "Local" server is
     for development with a local edx-platform version,  and for use via the
     [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
-    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)''',  # noqa: F405
-    'VERSION': '0.1.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    # restrict spectacular to CMS API endpoints (cms/lib/spectacular.py):
-    'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter'],
-    # Mark superseded and migrated legacy addresses deprecated, and BFF surfaces
-    # x-internal. The enum hook is drf-spectacular's default, restated because
-    # setting this key replaces the default list.
-    'POSTPROCESSING_HOOKS': [
-        'drf_spectacular.hooks.postprocess_schema_enums',
-        'cms.lib.spectacular.cms_mark_superseded_paths',
-        'cms.lib.spectacular.cms_mark_migrated_paths',
-        'openedx.core.apidocs.untag_deprecated_operations',
-    ],
-    # Stripped from each path to derive its tags and operationId, so changing
-    # it renames every operationId. Paths themselves are emitted in full so
-    # they resolve against the service-root SERVERS below.
-    'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)',
-    # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
-    # than drf-spectacular's default unpinned jsdelivr CDN URLs.
-    'SWAGGER_UI_DIST': 'SIDECAR',
-    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
-    'REDOC_DIST': 'SIDECAR',
-    'SERVERS': [
-        {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
-        {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405
-    ],
-}
+    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)'''  # noqa: F405
+)
+SPECTACULAR_SETTINGS['SERVERS'] = [  # noqa: F405
+    {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
+    {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405
+]
 
 
 #######################################################################################################################

@@ -18,7 +18,7 @@ from cms.envs.common import (  # pylint: disable=unused-import
     VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,  # noqa: F401
 )
 from lms.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
-from openedx.core.apidocs import get_api_docs_settings
+from openedx.core.apidocs import API_DOCS_SETTINGS
 from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included
@@ -77,8 +77,11 @@ openapi_security_info_csrf = (
 )
 # The docs build publishes the whole API surface, so use the same unfiltered
 # configuration that /api-docs does rather than the narrow, SDK-facing schema
-# that SPECTACULAR_SETTINGS carries by default.
-SPECTACULAR_SETTINGS.update(get_api_docs_settings())  # noqa: F405
+# that SPECTACULAR_SETTINGS carries by default. Use the constant rather than
+# get_api_docs_settings(): that helper reads django.conf.settings, which must
+# not happen while this settings module is still being imported. (The only
+# thing it adds is an optional contact email, which the docs don't need.)
+SPECTACULAR_SETTINGS.update(API_DOCS_SETTINGS)  # noqa: F405
 
 # OpenAPI 3 security schemes, consumed by drf-spectacular. "Basic" uses the
 # OpenAPI 3 http/basic form rather than Swagger 2.0's type: basic.

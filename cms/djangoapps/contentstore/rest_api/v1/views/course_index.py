@@ -6,7 +6,7 @@ from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from rest_framework.fields import BooleanField
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -32,7 +32,12 @@ from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=
 
 @view_auth_classes(is_authenticated=True)
 class CourseIndexView(DeveloperErrorViewMixin, APIView):
-    """View for Course Index"""
+    """
+    View for Course Index
+
+    Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/outline/?view=full``
+    instead. See https://github.com/openedx/openedx-platform/issues/39128.
+    """
 
     @extend_schema(
         parameters=[
@@ -54,6 +59,11 @@ class CourseIndexView(DeveloperErrorViewMixin, APIView):
     def get(self, request: Request, course_id: str):
         """
         Get an object containing course index for outline.
+
+        Deprecated: use ``GET /api/authoring/v2/courses/{course_key}/outline/?view=full``,
+        which returns these fields except ``initial_user_clipboard``. The clipboard is read
+        from ``GET /api/content-staging/v1/clipboard/``.
+        See https://github.com/openedx/openedx-platform/issues/39128.
 
         **Example Request**
 

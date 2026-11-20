@@ -16,8 +16,8 @@ from path import Path as path
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, List, Scope, String
-from xblocks_contrib.html import HtmlBlock as _ExtractedHtmlBlock
-from xblocks_contrib.html import HtmlBlockMixin as _ExtractedHtmlBlockMixin
+from xblock_html import HtmlBlock as _ExtractedHtmlBlock
+from xblock_html import HtmlBlockMixin as _ExtractedHtmlBlockMixin
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID
 from xmodule.contentstore.content import StaticContent
@@ -50,7 +50,7 @@ class _BuiltinHtmlBlockMixin(  # pylint: disable=abstract-method
 
     .. deprecated:: 2026-03
        This built-in HTML block mixin is deprecated. Please use the extracted ``HtmlBlockMixin``
-       from ``xblocks_contrib.html`` instead.
+       from ``xblock_html`` instead.
     """
 
     display_name = String(
@@ -378,7 +378,7 @@ class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # pylint: disable=abstract-met
 
     .. deprecated:: 2026-03
        This built-in HTML block is deprecated. Please use the extracted ``HtmlBlock``
-       from ``xblocks_contrib.html`` instead.
+       from ``xblock_html`` instead.
     """
     is_extracted = False
 
@@ -551,7 +551,7 @@ if not settings.USE_EXTRACTED_HTML_BLOCK:
     warnings.warn(
         "The built-in `xmodule.html_block` HtmlBlock implementation is deprecated. "
         "To fix this warning, enable `USE_EXTRACTED_HTML_BLOCK` (set it to True) to use "
-        "`xblocks_contrib.html.HtmlBlock` instead. "
+        "`xblock_html.HtmlBlock` instead. "
         "Support for the built-in implementation, and the `USE_EXTRACTED_HTML_BLOCK` setting, "
         "will be removed in Willow.",
         DeprecationWarning,

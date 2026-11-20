@@ -3,7 +3,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES, COURSES_VIEW_CERTIFICATES
+from openedx_authz.authz import COURSES_MANAGE_CERTIFICATES, COURSES_VIEW_CERTIFICATES
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView

@@ -34,3 +34,15 @@
         width: 54px !important;
     }
 }
+
+mjx-container {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+table>tbody>tr>td>mjx-container {
+    max-width: inherit;
+    overflow-x: auto;
+    overflow-y: hidden;
+}

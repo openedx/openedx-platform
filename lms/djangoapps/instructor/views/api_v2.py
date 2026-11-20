@@ -103,6 +103,10 @@ from lms.djangoapps.instructor.access import (
     revoke_access,
     update_forum_role,
 )
+from lms.djangoapps.instructor.authz import constants as authz_constants
+from lms.djangoapps.instructor.authz import legacy as authz_legacy
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
@@ -168,12 +172,22 @@ from .serializers_v2 import (
     UnitExtensionSerializer,
     derive_exam_type,
 )
-from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
+from .tools import (
+    find_unit,
+    get_units_with_due_date,
+    keep_field_private,
+    proctored_exams_enabled,
+    set_due_date_extension,
+    title_or_url,
+)
 
 User = get_user_model()
 log = logging.getLogger(__name__)
 
 VALID_TEAM_ROLES = frozenset(ROLES.keys()) | frozenset(FORUM_ROLES)
+
+# Legacy check of the dashboard
+LEGACY_VIEW_DASHBOARD_CHECK = authz_legacy.bridgekeeper_check(permissions.VIEW_DASHBOARD)
 
 # Shared OpenAPI parameters, each used identically by several endpoints below.
 COURSE_ID_PATH_PARAMETER = OpenApiParameter(
@@ -204,7 +218,9 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
         permissions, and navigation sections.
     """
 
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    # Holding any of the dashboard permissions is enough, as for the "Instructor" course tab.
+    authz_permissions = authz_constants.INSTRUCTOR_DASHBOARD_PERMISSIONS
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(
@@ -281,6 +297,7 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
                     },
                 ],
                 "disable_buttons": false,
+                "proctored_exams_enabled": false,
                 "analytics_dashboard_message": "To gain insights into student enrollment and participation..."
             }
 
@@ -298,6 +315,24 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key)
 
+        def can_view_dashboard(user):
+            """
+            Return whether the user can view the instructor dashboard.
+
+            With ``authz.enable_course_authoring`` enabled for the course, holding any of
+            the dashboard AuthZ permissions is enough. With it disabled, the legacy
+            dashboard permission is used.
+            """
+            return user_has_any_instructor_permission(
+                user,
+                authz_constants.INSTRUCTOR_DASHBOARD_PERMISSIONS,
+                course_key,
+                LEGACY_VIEW_DASHBOARD_CHECK,
+            )
+
+        # Masquerading is not migrated to AuthZ yet: it keeps requiring legacy staff access.
+        # The AuthZ course staff and course admin roles satisfy it through the legacy
+        # compatibility layer, which maps them to the legacy roles.
         original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
         _, request.user = setup_masquerade(
             request,
@@ -305,8 +340,7 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
             staff_access=original_user_is_staff,
         )
 
-        if get_masquerade_role(request.user, course_key) == 'student' or \
-                not request.user.has_perm(permissions.VIEW_DASHBOARD, course):
+        if get_masquerade_role(request.user, course_key) == 'student' or not can_view_dashboard(request.user):
             raise PermissionDenied('This user does not have access to the instructor dashboard.')
 
         tabs = get_course_tab_list(request.user, course)
@@ -837,6 +871,8 @@ class ReportDownloadsView(DeveloperErrorViewMixin, APIView):
         # Match exact report names from the filename format: {course_prefix}_{csv_name}_{timestamp}.csv
         if 'inactive_enrolled' in name_lower:
             return ReportType.PENDING_ACTIVATIONS.value
+        elif 'proctored_exam_results' in name_lower:
+            return ReportType.PROCTORED_EXAM_RESULTS.value
         elif 'problem_grade_report' in name_lower:
             return ReportType.PROBLEM_GRADE.value
         elif 'ora2_submission' in name_lower or 'submission_files' in name_lower or 'ora_submission' in name_lower:
@@ -919,6 +955,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             - ora2_data: ORA Data Report
             - ora2_submission_files: ORA Submission Files Report
             - issued_certificates: Issued Certificates Report
+            - proctored_exam_results: Proctored Exam Results Report (only for courses with proctored exams)
 
     **Returns**
 
@@ -936,12 +973,15 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
         """
         Return the appropriate permission name based on the requested report type.
         For the issued certificates report, mirror the v1 behavior by using
-        VIEW_ISSUED_CERTIFICATES (course-level staff access). For all other reports,
+        VIEW_ISSUED_CERTIFICATES (course-level staff access). For the proctored exam
+        results report, mirror v1 by using EXAM_RESULTS. For all other reports,
         require CAN_RESEARCH.
         """
         report_type = self.kwargs.get('report_type')
         if report_type == ReportType.ISSUED_CERTIFICATES.value:
             return permissions.VIEW_ISSUED_CERTIFICATES
+        if report_type == ReportType.PROCTORED_EXAM_RESULTS.value:
+            return permissions.EXAM_RESULTS
         return permissions.CAN_RESEARCH
 
     @extend_schema(
@@ -955,7 +995,8 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
                     "Type of report to generate. Valid values: "
                     "enrolled_students, pending_enrollments, pending_activations, "
                     "anonymized_student_ids, grade, problem_grade, problem_responses, "
-                    "ora2_summary, ora2_data, ora2_submission_files, issued_certificates"
+                    "ora2_summary, ora2_data, ora2_submission_files, issued_certificates, "
+                    "proctored_exam_results"
                 ),
             ),
         ],
@@ -986,6 +1027,7 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
             ReportType.ORA2_DATA.value: self._generate_ora2_data_report,
             ReportType.ORA2_SUBMISSION_FILES.value: self._generate_ora2_submission_files_report,
             ReportType.ISSUED_CERTIFICATES.value: self._generate_issued_certificates_report,
+            ReportType.PROCTORED_EXAM_RESULTS.value: self._generate_proctored_exam_results_report,
         }
 
         handler = report_handlers.get(report_type)
@@ -1161,6 +1203,13 @@ class GenerateReportView(DeveloperErrorViewMixin, APIView):
         """Generate ORA2 submission files archive."""
         task_api.submit_export_ora2_submission_files(request, course_key)
         return _('The ORA2 submission files archive is being created.')
+
+    def _generate_proctored_exam_results_report(self, request, course_key):
+        """Generate proctored exam results report."""
+        if not proctored_exams_enabled(get_course_by_id(course_key)):
+            raise ValueError(_('Proctored exams are not enabled for this course.'))
+        task_api.submit_proctored_exam_results_report(request, course_key)
+        return _('The proctored exam results report is being created.')
 
     def _generate_issued_certificates_report(self, request, course_key):
         """Generate issued certificates report."""

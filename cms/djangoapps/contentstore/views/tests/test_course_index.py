@@ -11,7 +11,7 @@ import ddt
 import pytz
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
-from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_authz.authz import COURSE_STAFF
 from search.api import perform_search
 
 from cms.djangoapps.contentstore.courseware_index import CoursewareSearchIndexer, SearchIndexingError
@@ -29,7 +29,7 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
     check_mongo_calls,
 )
 
-from ..course import _deprecated_blocks_info, course_outline_initial_state, reindex_course_and_check_access
+from ..course import course_outline_initial_state, deprecated_blocks_info, reindex_course_and_check_access
 
 
 @ddt.ddt
@@ -190,7 +190,7 @@ class TestCourseOutline(CourseTestCase):
         # get updated course_block
         course_block = modulestore().get_item(self.course.location)
 
-        info = _deprecated_blocks_info(course_block, block_types)
+        info = deprecated_blocks_info(course_block, block_types)
         self._verify_deprecated_info(
             course_block.id,
             course_block.advanced_modules,
@@ -215,7 +215,7 @@ class TestCourseOutline(CourseTestCase):
         self._create_test_data(course_block, create_blocks=True, block_types=enabled_block_types)
         # get updated course_module
         course_block = modulestore().get_item(self.course.location)
-        info = _deprecated_blocks_info(course_block, deprecated_block_types)
+        info = deprecated_blocks_info(course_block, deprecated_block_types)
         self._verify_deprecated_info(
             course_block.id,
             course_block.advanced_modules,
@@ -291,7 +291,7 @@ class TestCourseReIndex(CourseTestCase):
 
         self.client.logout()
         response = self.client.get(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 302)  # noqa: PT009
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_negative_conditions(self):
         """

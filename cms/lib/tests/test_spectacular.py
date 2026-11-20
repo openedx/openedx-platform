@@ -1,8 +1,10 @@
 """Tests for the CMS drf-spectacular hooks and schema class."""
 
+import re
 from pathlib import Path
 from unittest import TestCase, mock
 
+from django.conf import settings
 from django.test import SimpleTestCase
 from django.urls import path as url_path
 from drf_spectacular.generators import SchemaGenerator
@@ -70,23 +72,50 @@ class CmsMarkSupersededPathsTest(TestCase):
         for path in SUPERSEDED_PATHS:
             assert result["paths"][path]["get"]["deprecated"] is True
 
-    def test_both_spellings_of_each_superseded_path_are_listed(self):
+    def test_the_superseded_paths_are_exactly_these(self):
+        """Optional-final-character routes appear in both spellings; the others appear once."""
         assert set(SUPERSEDED_PATHS) == {
             "/api/contentstore/v0/youtube_transcripts/{course_id}/chec",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/check",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/uploa",
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
+            "/api/contentstore/v1/help_urls",
+            "/api/contentstore/v1/course_index/{course_id}",
         }
+        assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
     def test_the_conforming_paths_are_left_unmarked(self):
-        conforming = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
-        result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
-        assert result["paths"][conforming]["get"] == {"operationId": "x"}
+        for conforming in (
+            "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/",
+            "/api/authoring/v2/courses/{course_key}/outline/",
+        ):
+            result = self._run({"paths": {conforming: {"get": {"operationId": "x"}}}})
+            assert result["paths"][conforming]["get"] == {"operationId": "x"}
+
+    def test_the_course_index_read_is_marked_and_its_sibling_container_route_is_not(self):
+        index = "/api/contentstore/v1/course_index/{course_id}"
+        container = "/api/contentstore/v1/container/{usage_key_string}/children"
+        result = self._run({"paths": {index: {"get": {}}, container: {"get": {}}}})
+        assert result["paths"][index]["get"] == {"deprecated": True}
+        assert result["paths"][container]["get"] == {}
 
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
         other = "/api/contentstore/v0/advanced_settings/{course_id}"
         result = self._run({"paths": {other: {"get": {}}}})
         assert "deprecated" not in result["paths"][other]["get"]
+
+    def test_only_the_legacy_help_urls_address_is_marked(self):
+        legacy = "/api/contentstore/v1/help_urls"
+        others = (
+            "/api/authoring/v2/help_urls/",
+            "/api/contentstore/v1/help_urls/",
+            "/api/contentstore/v1/proctored_exam_settings/{course_id}",
+            "/api/authoring/v2/courses/{course_key}/textbooks/",
+        )
+        result = self._run(_schema(legacy, *others))
+        assert result["paths"][legacy]["get"] == {"operationId": legacy, "deprecated": True}
+        for other in others:
+            assert result["paths"][other]["get"] == {"operationId": other}, other
 
     def test_path_level_keys_are_not_treated_as_operations(self):
         path = SUPERSEDED_PATHS[0]
@@ -134,44 +163,47 @@ class CmsMarkMigratedPathsTest(SimpleTestCase):
         assert list(result["paths"]) == ["/api/contentstore/v1/xblock/"]
 
 
-class SpectacularSettingsTest(TestCase):
+class SpectacularSettingsTest(SimpleTestCase):
     """
     The service settings the hooks depend on.
 
-    Read from the environment modules that define them, because the test
-    settings module does not configure the schema at all.
+    They are defined once in cms/envs/common.py, which every environment
+    inherits, so the test settings carry the same values.
     """
 
+    # devstack.py and production.py only add environment-specific keys.
     SETTINGS_MODULES = ("cms/envs/devstack.py", "cms/envs/production.py")
 
     def _source(self, module):
         return (Path(__file__).resolve().parents[3] / module).read_text()
 
-    def test_both_hooks_are_configured_in_every_environment(self):
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'PREPROCESSING_HOOKS': ['cms.lib.spectacular.cms_api_filter']" in source, module
-            assert "'cms.lib.spectacular.cms_mark_superseded_paths'," in source, module
-            assert "'cms.lib.spectacular.cms_mark_migrated_paths'," in source, module
+    def test_both_hooks_are_configured(self):
+        assert settings.SPECTACULAR_SETTINGS["PREPROCESSING_HOOKS"] == ["cms.lib.spectacular.cms_api_filter"]
+        hooks = settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+        assert "cms.lib.spectacular.cms_mark_superseded_paths" in hooks
+        assert "cms.lib.spectacular.cms_mark_migrated_paths" in hooks
 
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'drf_spectacular.hooks.postprocess_schema_enums'," in source, module
+        assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
 
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
-        for module in self.SETTINGS_MODULES:
-            assert "SCHEMA_PATH_PREFIX_TRIM" not in self._source(module), module
+        assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
 
     def test_the_tag_prefix_covers_both_mounts(self):
-        for module in self.SETTINGS_MODULES:
-            source = self._source(module)
-            assert "'SCHEMA_PATH_PREFIX': r'/api/(contentstore|authoring)'," in source, module
+        assert settings.SPECTACULAR_SETTINGS["SCHEMA_PATH_PREFIX"] == r"/api/(contentstore|authoring)"
 
     def test_no_server_advertises_a_single_mount_as_its_root(self):
         for module in self.SETTINGS_MODULES:
             assert "CMS-contentstore" not in self._source(module), module
+
+    def test_environments_do_not_replace_the_common_settings(self):
+        """Replacing the dict drops every hook common.py adds unless it is copied in."""
+        for module in self.SETTINGS_MODULES:
+            source = self._source(module)
+            assert "SPECTACULAR_SETTINGS = {" not in source, module
+            # A hook is set by its quoted key; a comment that names one is fine.
+            assert not re.search(r"_HOOKS['\"]", source), module
 
 
 class _EmptySerializer(serializers.Serializer):  # pylint: disable=abstract-method

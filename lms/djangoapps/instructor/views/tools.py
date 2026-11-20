@@ -7,6 +7,7 @@ import json
 import operator
 
 import dateutil
+from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponseBadRequest
 from django.utils.translation import gettext as _
@@ -270,3 +271,8 @@ def keep_field_private(query_features, field_name):
         query_features.remove(field_name)
     except ValueError:
         pass
+
+
+def proctored_exams_enabled(course):
+    """ Whether the proctored exam results report is available for the course """
+    return settings.ENABLE_SPECIAL_EXAMS and course.enable_proctored_exams

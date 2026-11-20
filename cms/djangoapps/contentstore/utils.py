@@ -42,7 +42,6 @@ from cms.djangoapps.contentstore.toggles import (
     libraries_v1_enabled,
     libraries_v2_enabled,
     split_library_view_on_dashboard,
-    use_new_unit_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -426,13 +425,10 @@ def get_unit_url(course_locator, unit_locator) -> str:
     """
     Gets course authoring microfrontend URL for unit page view.
     """
-    unit_url = None
-    if use_new_unit_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
-        if mfe_base_url:
-            unit_url = course_mfe_url
-    return unit_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    if mfe_base_url:
+        return f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
+    return None
 
 
 def get_certificates_url(course_locator) -> str:
@@ -1872,8 +1868,8 @@ def _get_course_index_context(request, course_key, course_block):
 
     from cms.djangoapps.contentstore.views.course import (
         _course_outline_json,
-        _deprecated_blocks_info,
         course_outline_initial_state,
+        deprecated_blocks_info,
         user_can_reindex_course,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
@@ -1900,7 +1896,7 @@ def _get_course_index_context(request, course_key, course_block):
         current_action = None
 
     deprecated_block_names = [block.name for block in deprecated_xblocks()]
-    deprecated_blocks_info = _deprecated_blocks_info(course_block, deprecated_block_names)
+    deprecated_info = deprecated_blocks_info(course_block, deprecated_block_names)
 
     frontend_app_publisher_url = configuration_helpers.get_value_for_org(
         course_block.location.org,
@@ -1932,7 +1928,7 @@ def _get_course_index_context(request, course_key, course_block):
         'course_release_date': course_release_date,
         'settings_url': settings_url,
         'reindex_link': reindex_link,
-        'deprecated_blocks_info': deprecated_blocks_info,
+        'deprecated_blocks_info': deprecated_info,
         'notification_dismiss_url': reverse_course_url(
             'course_notifications_handler',
             current_action.course_key,

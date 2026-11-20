@@ -43,10 +43,9 @@ class UntagDeprecatedOperationsTest(SimpleTestCase):
 class UntagDeprecatedOperationsRegistrationTest(SimpleTestCase):
     """Every schema configuration runs the hook after the hooks that mark operations deprecated."""
 
+    # The other environments inherit the hooks from these two modules.
     MARKING_HOOKS = {
         "cms/envs/common.py": "'cms.lib.spectacular.cms_mark_migrated_paths',",
-        "cms/envs/devstack.py": "'cms.lib.spectacular.cms_mark_migrated_paths',",
-        "cms/envs/production.py": "'cms.lib.spectacular.cms_mark_migrated_paths',",
         "lms/envs/common.py": "'lms.lib.spectacular.lms_mark_legacy_paths_deprecated',",
     }
 

@@ -497,7 +497,11 @@ LOG_POSTPAY_CALLBACKS = True
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
 # .. toggle_description: Set to True to enable custom certificate templates which are configured via Django admin.
-# .. toggle_warning: None
+#   Templates are rendered with Mako.
+# .. toggle_warning: Mako templates can run arbitrary Python on the LMS server. Any user who can add or change a
+#   certificate template in Django admin (the certificates.add_certificatetemplate and
+#   certificates.change_certificatetemplate permissions) can run code as the LMS process. Only grant those permissions
+#   to users you would trust with shell access to the LMS.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2015-08-13
 # .. toggle_target_removal_date: None
@@ -792,6 +796,25 @@ ENABLE_AUTO_GENERATED_USERNAME = False
 # Should be a list of tuples of (block_type, field_name), where block_type can also be "*" for all block types.
 # e.g. COURSE_BLOCKS_API_EXTRA_FIELDS = [  ('course', 'other_course_settings'), ("problem", "weight")  ]
 COURSE_BLOCKS_API_EXTRA_FIELDS = []
+
+# .. setting_name: XBLOCK_NOAUTH_HANDLER_ALLOWLIST
+# .. setting_default: LTI 1.1 outcome handlers and the video transcript handler (see below)
+# .. setting_description: Dotted paths to the XBlock handler methods that may be called through the
+#     unauthenticated ``handler_noauth`` URL. Requests for any other handler on that URL get a 404. Handlers
+#     on this URL always run as an anonymous user, so each one must do its own authentication (for example, an
+#     OAuth signature from an LTI tool) or serve only public data. Paths name the class that defines the method,
+#     e.g. ``'my_package.blocks.MyXBlock.my_callback_handler'``. Paths that cannot be imported are skipped.
+XBLOCK_NOAUTH_HANDLER_ALLOWLIST = [
+    # LTI 1.1 tools posting grades back; these verify the OAuth1 body signature.
+    'xmodule.lti_block._BuiltInLTIBlock.grade_handler',
+    'xmodule.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'xblock_lti.block.LTIBlock.grade_handler',
+    'xblock_lti.lti_2_util.LTI20BlockMixin.lti_2_0_result_rest_handler',
+    'lti_consumer.lti_xblock.LtiConsumerXBlock.outcome_service_handler',
+    'lti_consumer.lti_xblock.LtiConsumerXBlock.result_service_handler',
+    # Video transcripts, fetched without a session by the mobile apps.
+    'xblock_video.video_handlers.VideoStudentViewHandlers.transcript',
+]
 
 # Used for A/B testing
 DEFAULT_GROUPS = []
@@ -2061,7 +2084,6 @@ INSTALLED_APPS = [
     'openedx.features.calendar_sync',
     'openedx.features.course_bookmarks',
     'openedx.features.course_experience',
-    'openedx.features.enterprise_support.apps.EnterpriseSupportConfig',
     'openedx.features.course_duration_limits',
     'openedx.features.content_type_gating',
     'openedx.features.discounts',
