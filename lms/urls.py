@@ -1098,7 +1098,8 @@ urlpatterns += [
     path('api/course_experience/', include('openedx.features.course_experience.api.v1.urls')),
 ]
 
-# CBE authoring routes (openedx_learning.urls) are mounted only in Studio, so the LMS serves only the learner routes.
+# CBE (competency-based education) authoring routes, openedx_learning.urls, are mounted only in Studio, so the LMS
+# serves only the learner routes.
 urlpatterns += [
     path('api/', include('openedx_learning.learner_urls')),
 ]

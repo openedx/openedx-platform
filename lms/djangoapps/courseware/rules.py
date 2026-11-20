@@ -48,17 +48,18 @@ def can_view_course_competency_criteria(user, course_key):
     Return True if the user may read the competency criteria of the given course run.
 
     Allowed: users with an active enrollment in the course run, and users with staff access to it as
-    ``has_access(user, 'staff', course_key)`` grants it. The answer does not depend on the course's start
-    date, on subsection visibility, or on content groups, and the endpoint never sets up masquerade, so
-    the signed-in user is judged and every permitted caller gets the same result.
+    ``has_access(user, 'staff', course_key)`` grants it. The answer ignores the course's start date, subsection
+    visibility, and content groups, and the criteria endpoint never sets up masquerade. So the signed-in user is
+    judged, and every permitted caller gets the same result.
     """
     if not isinstance(course_key, CourseKey):
         return False
     return bool(CourseEnrollment.is_enrolled(user, course_key) or has_access(user, 'staff', course_key))
 
 
-# openedx-core's course criteria endpoint checks this permission by name. This app loads before openedx_learning,
-# so this registers first, and openedx-core registers its default (any signed-in user) only when the name is free.
+# openedx-core's course criteria endpoint checks this permission by name. lms.djangoapps.courseware loads before
+# openedx_learning, so this set_perm runs first, and openedx-core adds its default rule (any signed-in user) only
+# when no rule with this name exists yet.
 rules.set_perm(
     'openedx_learning.view_course_competency_criteria',
     rules.is_authenticated & can_view_course_competency_criteria,
