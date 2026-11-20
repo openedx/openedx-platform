@@ -19,8 +19,9 @@ from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
 from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF, MANAGE_LIBRARY_TAGS
-from openedx_learning.api import create_competency_taxonomy
-from openedx_learning.models_api import CompetencyTaxonomy
+from openedx_catalog.api import create_course_run_for_modulestore_course_with
+from openedx_learning.api import associate_competency_criterion, create_competency_taxonomy
+from openedx_learning.models_api import CompetencyTaxonomy, RuleType
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
@@ -60,6 +61,7 @@ OBJECT_TAGS_URL = "/api/content_tagging/v1/object_tags/{object_id}/"
 TAXONOMY_TEMPLATE_URL = "/api/content_tagging/v1/taxonomies/import/{filename}"
 TAXONOMY_CREATE_IMPORT_URL = "/api/content_tagging/v1/taxonomies/import/"
 TAXONOMY_TAGS_IMPORT_URL = "/api/content_tagging/v1/taxonomies/{pk}/tags/import/"
+TAXONOMY_TAGS_IMPORT_PLAN_URL = "/api/content_tagging/v1/taxonomies/{pk}/tags/import/plan/"
 TAXONOMY_TAGS_URL = "/api/content_tagging/v1/taxonomies/{pk}/tags/"
 
 
@@ -3185,6 +3187,120 @@ class TestImportTagsView(ImportTaxonomyMixin, APITestCase):
         assert len(tags) == len(self.old_tags)
         for i, tag in enumerate(tags):
             assert tag["value"] == self.old_tags[i].value
+
+    def _create_thinking_skills(self, competency: bool, org: str = "orgA") -> tuple[Tag, CourseLocator]:
+        """
+        Create a Thinking Skills taxonomy with "Deduction" under "Evaluation" and return Deduction and a course key.
+
+        In a competency taxonomy, "Critical Thinking" and "Deduction" each get a criterion in that course.
+        """
+        if competency:
+            taxonomy = create_competency_taxonomy(name="Thinking Skills", export_id="thinking-skills")
+        else:
+            taxonomy = tagging_api.create_taxonomy(name="Thinking Skills", export_id="thinking-skills")
+        set_taxonomy_orgs(taxonomy, orgs=[self.orgA, self.orgB])
+        critical_thinking = Tag.objects.create(
+            taxonomy=taxonomy, external_id="critical-thinking", value="Critical Thinking",
+        )
+        evaluation = Tag.objects.create(taxonomy=taxonomy, external_id="evaluation", value="Evaluation")
+        deduction = Tag.objects.create(taxonomy=taxonomy, external_id="deduction", value="Deduction", parent=evaluation)
+        course_key = CourseLocator(org, "CT101", "2026")
+        if competency:
+            create_course_run_for_modulestore_course_with(course_key, title="Critical Thinking 101")
+            # Without migrations no default rule profile exists, so each criterion carries its own rule.
+            for tag, block_id in ((critical_thinking, "s1"), (deduction, "s2")):
+                associate_competency_criterion(
+                    tag.id,
+                    str(BlockUsageLocator(course_key, "sequential", block_id)),
+                    rule_type_override=RuleType.GRADE,
+                    rule_payload_override={"op": "gte", "value": 0.8, "scale": "percent"},
+                )
+        return deduction, course_key
+
+    def _get_file_moving_deduction(self) -> SimpleUploadedFile:
+        """
+        Returns a file that moves "Deduction" under "Critical Thinking".
+        """
+        return self._get_file([
+            {"id": "critical-thinking", "value": "Critical Thinking"},
+            {"id": "evaluation", "value": "Evaluation"},
+            {"id": "deduction", "value": "Deduction", "parent_id": "critical-thinking"},
+        ], "json")
+
+    def _assert_names_conflict(self, error: str, course_key: CourseLocator) -> None:
+        """
+        Asserts that the error names the moved row, Deduction as the descendant, Critical Thinking as its ancestor,
+        and the course.
+        """
+        expected = (
+            'Row 3: Competency "Deduction" (deduction) and its ancestor "Critical Thinking" '
+            f"(critical-thinking) both have criteria in course {course_key}."
+        )
+        assert expected in error
+
+    def test_import_rejects_dominance_conflict_in_competency_taxonomy(self) -> None:
+        """
+        Tests that importing a move that breaks competency dominance fails and leaves the tag in place.
+        """
+        deduction, course_key = self._create_thinking_skills(competency=True)
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.put(
+            TAXONOMY_TAGS_IMPORT_URL.format(pk=deduction.taxonomy_id),
+            {"file": self._get_file_moving_deduction()},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self._assert_names_conflict(response.data, course_key)
+        deduction.refresh_from_db()
+        assert deduction.parent.external_id == "evaluation"
+
+    def test_import_skips_dominance_validator_in_plain_taxonomy(self) -> None:
+        """
+        Tests that importing into a taxonomy that is not a competency taxonomy does not run the dominance validator.
+        """
+        deduction, _course_key = self._create_thinking_skills(competency=False)
+        self.client.force_authenticate(user=self.staff)
+        with patch(
+            "openedx.core.djangoapps.content_tagging.rest_api.v1.views.validate_tag_import_dominance",
+            return_value=[],
+        ) as mock_validator:
+            response = self.client.put(
+                TAXONOMY_TAGS_IMPORT_URL.format(pk=deduction.taxonomy_id),
+                {"file": self._get_file_moving_deduction()},
+                format="multipart",
+            )
+        assert response.status_code == status.HTTP_200_OK
+        mock_validator.assert_not_called()
+        deduction.refresh_from_db()
+        assert deduction.parent.external_id == "critical-thinking"
+
+    def test_import_plan_rejects_dominance_conflict_in_competency_taxonomy(self) -> None:
+        """
+        Tests that the import plan reports a move that breaks competency dominance.
+        """
+        deduction, course_key = self._create_thinking_skills(competency=True)
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.put(
+            TAXONOMY_TAGS_IMPORT_PLAN_URL.format(pk=deduction.taxonomy_id),
+            {"file": self._get_file_moving_deduction()},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self._assert_names_conflict(response.data["error"], course_key)
+
+    def test_import_plan_by_org_admin_names_conflict_in_another_orgs_course(self) -> None:
+        """
+        Tests that an org admin sees a conflict in a course that belongs to another org.
+        """
+        deduction, course_key = self._create_thinking_skills(competency=True, org="orgB")
+        self.client.force_authenticate(user=self.staffA)
+        response = self.client.put(
+            TAXONOMY_TAGS_IMPORT_PLAN_URL.format(pk=deduction.taxonomy_id),
+            {"file": self._get_file_moving_deduction()},
+            format="multipart",
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self._assert_names_conflict(response.data["error"], course_key)
 
 
 @skip_unless_cms
