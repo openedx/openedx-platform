@@ -413,15 +413,6 @@ module.exports = Merge.merge({
                     ]
                 },
                 {
-                    test: /xmodule\/js\/src\/lti\/lti.js/,
-                    use: [
-                        {
-                            loader: 'imports-loader',
-                            options: 'this=>window'
-                        }
-                    ]
-                },
-                {
                     test: /xmodule\/js\/src\/poll\/poll.js/,
                     use: [
                         {
