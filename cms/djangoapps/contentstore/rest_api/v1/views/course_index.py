@@ -156,6 +156,7 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
         responses={
             200: ContainerChildrenSerializer,
             401: OpenApiResponse(description="The requester is not authenticated."),
+            403: OpenApiResponse(description="The requester does not have view access to the course."),
             404: OpenApiResponse(description="The requested locator does not exist."),
         },
     )
@@ -266,6 +267,15 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
         ```
         """
         usage_key = self.get_object(usage_key_string)
+
+        if not user_has_course_permission(
+            request.user,
+            COURSES_VIEW_COURSE.identifier,
+            usage_key.course_key,
+            LegacyAuthoringPermission.READ,
+        ):
+            self.permission_denied(request)
+
         current_xblock = get_xblock(usage_key, request.user)
         get_upstream_info = BooleanField().to_internal_value(request.GET.get("get_upstream_info", False))
         is_course = current_xblock.scope_ids.usage_id.context_key.is_course
