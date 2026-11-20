@@ -53,7 +53,9 @@ class CourseCriteriaTestBase(ModuleStoreTestCase, MasqueradeMixin):
 
     def setUp(self):
         super().setUp()
-        self.course = self.create_course(org="Org1", number="Python100", run="Fall2026")
+        self.course = self.create_course(
+            org="Org1", number="Python100", run="Fall2026", metadata={"start": datetime.now(UTC) - timedelta(days=60)}
+        )
         self.url = criteria_url(self.course.id)
         taxonomy = create_competency_taxonomy(name="Competencies")
         self.tag = add_tag_to_taxonomy(taxonomy, self.COMPETENCY_NAME)
@@ -249,14 +251,16 @@ class TestCourseCriteriaContent(CourseCriteriaTestBase):
         set_course_cohorted(self.course.id, True)
 
         chapter = BlockFactory.create(parent_location=self.course.location, category="chapter")
-        released = self.add_subsection_with_criterion(
+        self.released = self.add_subsection_with_criterion(
             self.course, "Released", {"start": datetime.now(UTC) - timedelta(days=30)}, chapter
         )
         self.unreleased = self.add_subsection_with_criterion(
             self.course, "Unreleased", {"start": datetime.now(UTC) + timedelta(days=30)}, chapter
         )
-        hidden = self.add_subsection_with_criterion(self.course, "Hidden", {"visible_to_staff_only": True}, chapter)
-        restricted = self.add_subsection_with_criterion(
+        self.hidden = self.add_subsection_with_criterion(
+            self.course, "Hidden", {"visible_to_staff_only": True}, chapter
+        )
+        self.restricted = self.add_subsection_with_criterion(
             self.course, "Restricted", {"group_access": {self.PARTITION_ID: [1]}}, chapter
         )
         # A criterion whose subsection is no longer in the course outline. Its criterion is created after the delete
@@ -275,7 +279,7 @@ class TestCourseCriteriaContent(CourseCriteriaTestBase):
             ),
         ]
         self.store.update_item(course, ModuleStoreEnum.UserID.test)
-        self.usage_keys = {released, self.unreleased, hidden, restricted, deleted}
+        self.usage_keys = {self.released, self.unreleased, self.hidden, self.restricted, deleted}
 
     def _enroll_in_content_group(self, group_id):
         """
@@ -289,12 +293,20 @@ class TestCourseCriteriaContent(CourseCriteriaTestBase):
 
     def test_learners_in_different_content_groups_and_staff_receive_identical_content(self):
         learner = self._enroll_in_content_group(1)
-        unreleased_block = self.store.get_item(UsageKey.from_string(self.unreleased))
-        assert not has_access(learner, "load", unreleased_block, self.course.id)
+        other_learner = self._enroll_in_content_group(2)
+        for user, usage_key, can_load in (
+            (learner, self.released, True),
+            (learner, self.unreleased, False),
+            (learner, self.hidden, False),
+            (learner, self.restricted, True),
+            (other_learner, self.restricted, False),
+        ):
+            block = self.store.get_item(UsageKey.from_string(usage_key))
+            assert bool(has_access(user, "load", block, self.course.id)) == can_load, usage_key
 
         responses = [
             self.get(learner),
-            self.get(self._enroll_in_content_group(2)),
+            self.get(other_learner),
             self.get(self.make_staff()),
         ]
 
