@@ -1352,6 +1352,7 @@ SPECTACULAR_SETTINGS = {
         'ContentTypeEnum': ['video/mp4', 'video/webm', 'video/ogg'],
         'VideoUploadContentTypeEnum':
             'cms.djangoapps.contentstore.rest_api.v1.serializers.video_uploads.SUPPORTED_UPLOAD_CONTENT_TYPES',
+        'CourseTeamRoleEnum': 'cms.djangoapps.contentstore.rest_api.v2.serializers.team_members.TEAM_ROLES',
     },
     # Serve the Swagger UI and ReDoc assets from drf-spectacular-sidecar rather
     # than drf-spectacular's default unpinned jsdelivr CDN URLs.
