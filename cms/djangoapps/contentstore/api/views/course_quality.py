@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring
 import logging
+import statistics
 import time
 
 import numpy as np
@@ -7,7 +8,6 @@ from edxval.api import get_course_videos_qset
 from openedx_authz.authz import COURSES_VIEW_COURSE
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from scipy import stats
 
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import authz_permission_required
@@ -278,5 +278,6 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
                 max=max(data),
                 mean=np.around(np.mean(data)),
                 median=np.around(np.median(data)),
-                mode=stats.mode(data, axis=None)[0],
+                # On a tie, report the smallest of the most common values.
+                mode=min(statistics.multimode(data)),
             )
