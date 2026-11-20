@@ -440,6 +440,55 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
         self.assertEqual(learning_assistant_enabled, setting_enabled)  # noqa: PT009
 
 
+@skip_unless_lms
+@override_settings(COURSE_ABOUT_VISIBILITY_PERMISSION='see_about_page')
+class CourseApiCatalogVisibilityNoneTests(MasqueradeMixin, SharedModuleStoreTestCase):
+    """
+    The courseware API on a course whose about page is hidden (catalog_visibility='none')
+    must answer with JSON, never with a redirect to the dashboard.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = ToyCourseFactory.create(catalog_visibility='none', emit_signals=True)
+        cls.url = f'/api/courseware/course/{cls.course.id}'
+
+    def setUp(self):
+        super().setUp()
+        self.learner = UserFactory(password='foo')
+        CourseEnrollment.enroll(self.learner, self.course.id, CourseMode.AUDIT)
+        self.instructor = UserFactory(password='foo')
+        CourseInstructorRole(self.course.id).add_users(self.instructor)
+
+    def assert_catalog_visibility_403(self, response):
+        assert response.status_code == 403
+        assert 'not currently accessible' in response.json()['detail']
+
+    def test_enrolled_learner_gets_403(self):
+        self.client.login(username=self.learner.username, password='foo')
+        # DRF marks the test's wrapping transaction for rollback on the 403, which breaks
+        # the session save in middleware. The view itself runs non-atomic in production.
+        with mock.patch('rest_framework.views.set_rollback'):
+            response = self.client.get(self.url)
+        self.assert_catalog_visibility_403(response)
+
+    def test_anonymous_user_gets_403(self):
+        self.assert_catalog_visibility_403(self.client.get(self.url))
+
+    def test_course_staff_gets_200(self):
+        self.client.login(username=self.instructor.username, password='foo')
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.json()['show_courseware_link'] is True
+
+    def test_course_staff_masquerading_as_learner_gets_200(self):
+        self.client.login(username=self.instructor.username, password='foo')
+        self.update_masquerade(course=self.course, role='student')
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert response.json()['show_courseware_link'] is False
+
+
 @ddt.ddt
 class SequenceApiTestViews(MasqueradeMixin, BaseCoursewareTests):
     """
