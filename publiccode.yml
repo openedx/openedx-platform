@@ -1,0 +1,161 @@
+# publiccode.yml for the Open edX platform
+#
+# publiccode.yml is a standard, machine-readable
+# description of an open-source project. Public-sector catalogues read it from
+# the repository root to list the project and show its metadata (license,
+# description, dependencies, contact). This file is what lets Open edX be
+# listed in the EU Open Source Solutions Catalogue.
+#
+# Location: root of https://github.com/openedx/openedx-platform
+# Standard: https://publiccodeyml.github.io/v0/
+# Validate: https://publiccode-editor.developers.italia.it/
+# For listing in the EU Open Source Solutions Catalogue:
+# https://interoperable-europe.ec.europa.eu/eu-oss-catalogue
+# See also: https://elearningindustry.com/directory/elearning-software/open-edx
+
+publiccodeYmlVersion: "0"
+
+name: Open edX
+url: "https://github.com/openedx/openedx-platform.git"
+landingURL: "https://openedx.org"
+
+softwareVersion: "verawood.2"
+releaseDate: "2026-10-29"
+logo: "https://openedx.org/wp-content/uploads/2025/08/openedx-logo-2026.svg"
+
+platforms:
+  - web
+
+categories:
+  - learning-management-system
+  - educational-content
+  - content-management
+
+developmentStatus: stable
+softwareType: "standalone/web"
+
+organisation:
+  uri: "https://www.axim.org"
+  name: Axim Collaborative
+
+intendedAudience:
+  scope:
+    - education
+    - research
+
+description:
+  en:
+    localisedName: Open edX
+    shortDescription: >-
+      Open-source learning platform to create, deliver and manage online
+      courses at any scale.
+    longDescription: >-
+      Open edX is a free, open-source teaching and learning platform stewarded
+      by Axim Collaborative, a nonprofit founded by Harvard and MIT. It is
+      developed together with a global community of contributors and service
+      providers.
+
+
+      The platform has two main parts: **Studio**, where course teams create
+      and manage learning content, and the **LMS**, where learners take
+      courses. It supports self-paced and instructor-led courses, many problem
+      and assessment types, certificates, cohorts, teams and learner reports.
+      It can be extended with XBlocks and plugins, and connects to other
+      systems through LTI and single sign-on.
+
+
+      Universities, governments, NGOs and companies use Open edX to run
+      training and education programmes. Organisations can host it on their
+      own infrastructure, for example with Tutor, the community-supported
+      Docker-based distribution, which helps them keep control of their data.
+    documentation: "https://docs.openedx.org"
+    apiDocumentation: "https://docs.openedx.org/projects/edx-platform/en/latest/references/lms_apis.html"
+    features:
+      - Course authoring in Studio
+      - Shared content libraries
+      - Self-paced and instructor-led courses
+      - Video, problems and open response assessments
+      - Prerequisite courses and subsections
+      - Course certificates
+      - Course content search
+      - Cohorts and teams
+      - LTI Advantage certified
+      - Single sign-on with third-party authentication
+      - Grade and learner reports
+      - Multi-language user interface
+    screenshots:
+      - "https://openedx.org/wp-content/uploads/2025/12/A-Powerful-Learning-Management-System-LMS-min.jpg"
+      - "https://openedx.org/wp-content/uploads/2025/12/Easily-Create-Courses-with-Our-Authoring-Studio-min.jpg"
+      - "https://openedx.org/wp-content/uploads/2025/12/Empower-Learning-with-the-Open-edX-Platform-min.jpg"
+
+legal:
+  license: AGPL-3.0-only
+
+maintenance:
+  type: community
+  contacts:
+    - name: Stefania Trabucchi
+      email: "stefania.trabucchi@abstract-technology.de"
+      affiliation: Abstract Technology GmbH
+
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
+    - af-ZA
+    - ar
+    - az
+    - bo
+    - da
+    - de-DE
+    - el
+    - es-419
+    - es-ES
+    - fa
+    - fr
+    - fr-CA
+    - he
+    - hi
+    - hu
+    - id
+    - it-IT
+    - ja
+    - lv
+    - pl
+    - pt-BR
+    - pt-PT
+    - ro
+    - ru
+    - sq
+    - sv
+    - sw
+    - th
+    - tr-TR
+    - uk
+    - uz
+    - vi
+    - zh-HK
+
+# Python and Node.js versions are kept in sync automatically from
+# pyproject.toml and .nvmrc by the
+# "Update publiccode.yml" workflow. softwareVersion and releaseDate follow the
+# latest release/* git tag. The services below are the defaults installed by
+# Tutor (https://github.com/overhangio/tutor) and are maintained by hand.
+dependsOn:
+  open:
+    - name: Python
+      version: "3.12"
+    - name: Node.js
+      version: "24"
+    - name: MySQL
+      version: "8.4"
+    - name: MongoDB
+      version: "7.0"
+    - name: Redis
+      version: "7.4"
+    - name: Meilisearch
+      version: "1.36"
+    - name: Caddy
+      version: "2.11"
+    - name: Exim (SMTP relay)
+      version: "4.96"
