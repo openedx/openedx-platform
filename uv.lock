@@ -20,6 +20,7 @@ constraints = [
     { name = "edx-enterprise", specifier = "==9.2.2" },
     { name = "elasticsearch", specifier = "==7.9.1" },
     { name = "libsass", specifier = "==0.10.0" },
+    { name = "lti-consumer-xblock", specifier = "==11.5.1" },
     { name = "lxml", specifier = "==5.3.2" },
     { name = "mysqlclient", specifier = "!=2.3.1" },
     { name = "numpy", specifier = "<2.0.0" },
