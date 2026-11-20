@@ -5,7 +5,6 @@ Functionality for problem scores.
 
 from logging import getLogger
 
-from numpy import around
 from xblock.core import XBlock
 
 from openedx.core.lib.cache_utils import process_cached
@@ -151,8 +150,11 @@ def compute_percent(earned, possible):
      Returns the percentage of the given earned and possible values.
      """
     if possible > 0:
-        # Rounds to four decimal places.
-        return around(earned / possible, decimals=4)
+        # Rounds half to even, to four decimal places. This is deliberately not
+        # round(x, 4): scaling, rounding to an integer, and scaling back is how
+        # numpy.around() works, and it produces slightly different results from
+        # round(x, 4) for some values. Changing it could shift persisted grades.
+        return round(earned / possible * 10000) / 10000
     else:
         return 0.0
 
