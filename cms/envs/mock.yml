@@ -167,28 +167,6 @@ CLOSEST_CLIENT_IP_FROM_HEADERS:
 - index: 0
   name: CF-Connecting-IP
 CMS_BASE: studio.localhost
-CODE_JAIL:
-  limit_overrides:
-    codejail_expanded_limits:
-      CPU: 10
-      FSIZE: 2097152
-      PROXY: 1
-      REALTIME: 60
-      VMEM: 1073741824
-    course-v1:Org+Course+Run:
-      CPU: 5
-      FSIZE: 5
-      PROXY: 5
-      REALTIME: 5
-      VMEM: 5
-  limits:
-    CPU: 2
-    FSIZE: 1048576
-    PROXY: 1
-    REALTIME: 6
-    VMEM: 536870912
-  python_bin: /edx/app/edxapp/venvs/edxapp-sandbox/bin/python
-  user: sandbox
 COMMENTS_SERVICE_KEY: test_COMMENTS_SERVICE_KEY
 COMMENTS_SERVICE_URL: https://forum.localhost
 COMPLETION_VIDEO_COMPLETE_PERCENTAGE: 0.9
