@@ -23,7 +23,6 @@ from lms.djangoapps.courseware.block_render import (
     handle_xblock_callback,
     handle_xblock_callback_noauth,
     xblock_view,
-    xqueue_callback,
 )
 from lms.djangoapps.courseware.masquerade import MasqueradeView
 from lms.djangoapps.courseware.views import views as courseware_views
@@ -353,22 +352,6 @@ urlpatterns += [
     # New XBlock REST API, based on the openedx_content API
     path('', include(('openedx.core.djangoapps.xblock.rest_api.urls', 'openedx.core.djangoapps.xblock'),
                      namespace='xblock_api')),
-
-    re_path(
-        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(  # noqa: UP032
-            settings.COURSE_ID_PATTERN,
-        ),
-        xqueue_callback,
-        name='xqueue_callback',
-    ),
-
-    re_path(
-        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(  # noqa: UP032
-            settings.COURSE_ID_PATTERN,
-        ),
-        xqueue_callback,
-        name='callback_submission',
-    ),
 
     # TODO: These views need to be updated before they work
     path('calculate', util_views.calculate),

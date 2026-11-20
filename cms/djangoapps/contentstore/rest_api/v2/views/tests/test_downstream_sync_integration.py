@@ -168,7 +168,6 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
     # OLX attributes that will appear on capa problems when saved/exported. Excludes "markdown"
     standard_capa_attributes = """
         markdown_edited="false"
-        matlab_api_key="null"
         name="null"
         rerandomize="never"
         source_code="null"

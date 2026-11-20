@@ -1218,14 +1218,6 @@ XBLOCK_SETTINGS:
   ScormXBlock:
     S3_BUCKET_NAME: scorm
     STORAGE_FUNC: openedxscorm.storage.s3
-XQUEUE_INTERFACE:
-  basic_auth:
-  - user
-  - pass
-  django_auth:
-    password: pass
-    username: user
-  url: http://localhost:18040
 X_FRAME_OPTIONS: DENY
 YOUTUBE_API_KEY: test_youtube_api_key
 ZENDESK_API_KEY: ''

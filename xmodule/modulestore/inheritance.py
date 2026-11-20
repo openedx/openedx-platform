@@ -147,15 +147,6 @@ class InheritanceMixin(XBlockMixin):
         help=_("Enter the maximum number of times a student can try to answer problems. By default, Maximum Attempts is set to null, meaning that students have an unlimited number of attempts for problems. You can override this course-wide setting for individual problems. However, if the course-wide setting is a specific number, you cannot set the Maximum Attempts for individual problems to unlimited."),  # pylint: disable=line-too-long
         values={"min": 0}, scope=Scope.settings
     )
-    matlab_api_key = String(
-        display_name=_("Matlab API key"),
-        help=_("Enter the API key provided by MathWorks for accessing the MATLAB Hosted Service. "
-               "This key is granted for exclusive use in this course for the specified duration. "
-               "Do not share the API key with other courses. Notify MathWorks immediately "
-               "if you believe the key is exposed or compromised. To obtain a key for your course, "
-               "or to report an issue, please contact moocsupport@mathworks.com"),
-        scope=Scope.settings
-    )
     # This is should be scoped to content, but since it's defined in the policy
     # file, it is currently scoped to settings.
     user_partitions = UserPartitionList(

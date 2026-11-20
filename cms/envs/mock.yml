@@ -792,14 +792,6 @@ XBLOCK_SETTINGS:
   ScormXBlock:
     S3_BUCKET_NAME: scorm
     STORAGE_FUNC: storage.s3
-XQUEUE_INTERFACE:
-  basic_auth:
-  - user
-  - pass
-  django_auth:
-    password: pass
-    username: user
-  url: https://xqueue.localhost
 YOUTUBE_API_KEY: test_youtube
 ZENDESK_API_KEY: test_zendesk
 ZENDESK_CUSTOM_FIELDS:
