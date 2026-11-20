@@ -20,14 +20,18 @@ archives generated when a course is published, an ``offline_download`` field in 
 JavaScript bridge through which a page hands offline submissions to the application. The mobile applications
 implement their side of it and fix the wire contract the platform must honour: ``offline_download {file_url,
 last_modified, file_size}`` on ``/api/mobile/v4/course_info/blocks/``, a ZIP containing ``index.html`` and
-``assets/``, the bridge objects and function named in decision 7, and
-``GET /api/mobile/v1/download_courses/{username}`` for the application-level downloads page.
+``assets/``, and ``GET /api/mobile/v1/download_courses/{username}`` for the application-level downloads page.
+The bridge the applications ship today is not part of that contract; decision 7 replaces it.
 
 The platform side remains to be built: generation on the CMS, ``offline_view`` implementations, offline access to
 internal files and uploads, the downloads page, and the course content that is not an XBlock. This ADR proposes
-the architecture for that work. Its scope is the views for HTML, problems (read-only), survey (interactive) and
-drag and drop (read-only), and the course handouts and updates; poll and word cloud are outside it, and
+the architecture for that work. Its scope is the views for HTML, problems (read-only), survey and poll
+(interactive) and drag and drop (read-only), and the course handouts and updates; word cloud is outside it, and
 interactive problems are the next scope's (decision 11).
+
+Two proposals accompany this ADR and hold the detail of decisions 3, 7 and 8: `offline_view for xblock-poll`_,
+which also defines the runtime interface every ``offline_view`` uses, and `Read-only offline_view for
+problem`_.
 
 Decision
 --------
@@ -41,8 +45,8 @@ connected in both services, like the platform's other receivers of these signals
 tasks, renderer, collector, packager, storage writes and management command run on the CMS workers. The LMS
 serves: it reads the manifest through one read-only module. One application keeps one migration history and
 one settings namespace. The generation path depends on the LMS courseware only for the field-data binding that
-Studio's preview also uses; it builds LMS handler and course URLs from the LMS root of the course's site,
-following the LMS URL patterns, which it must track.
+Studio's preview also uses; it builds LMS course URLs from the LMS root of the course's site, following the
+LMS URL patterns, which it must track. It builds no handler URLs (decision 3).
 
 2. Trigger: the CMS publish signal, gated by a course flag
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,22 +82,28 @@ to the LMS through a queue or an HTTP call.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``offline_view`` is a named XBlock view that a block class opts into, implemented in the block's own package:
-``xblocks-contrib`` for the extracted HTML and problem blocks, ``xblock-poll`` for the survey,
+``xblocks-contrib`` for the extracted HTML and problem blocks, ``xblock-poll`` for the survey and poll,
 ``xblock-drag-and-drop-v2`` for drag and drop, and ``openedx-platform`` itself for the course handouts and
 updates (decision 10); ``openedx-platform`` picks the others up through its requirement pins.
 
-The CMS renders it with no user and no request, in the course language, through a runtime prepared like
-Studio's preview runtime minus everything that comes from a request: the user service in anonymous mode,
-throw-away user state, no session, no Studio wrappers, no asides. There is no ``student_view`` fallback: a
-block without ``offline_view`` is recorded as unsupported and never announced in the API.
+``offline_view`` is the one rendering of a block's content, not a second frontend beside ``student_view``. It
+renders content and settings only; the learner's state is fetched by the block's JavaScript after load, and
+interactions go through the ``runtime`` object the JavaScript is given (decision 7). A block builds its
+``student_view`` on it, and its ``public_view`` when its author judges the content fit for visitors who are not
+enrolled. `offline_view for xblock-poll`_ sets out this split and the runtime changes it needs.
 
-The block instance decides **invariance**. It declines by raising ``NotImplementedError(reason)``, which needs
-no import from ``openedx-platform``, when its content differs per learner or needs a live handler to display:
-randomization other than "Never"; learner substitutions such as ``%%USER_ID%%`` and ``%%USER_EMAIL%%``;
-scripts that read the learner's identity; inputs that render only through JavaScript. Any
-``NotImplementedError`` raised while rendering records the block ``unsupported`` with its message; the
-ambiguity with a defect that raises the same exception is accepted so that blocks import nothing from
-``openedx-platform``.
+The CMS renders it with no user and no request, in the course language, through a runtime prepared like
+Studio's preview runtime minus everything that comes from a request: no user, no session, no Studio wrappers,
+no asides. During the render, reading a user-scoped field raises and ``handler_url`` raises, so a view that
+depends on the learner or on a handler URL fails when it is generated and not silently. There is no
+``student_view`` fallback: a block without ``offline_view`` is recorded as unsupported and never announced in
+the API.
+
+The block instance decides **invariance**. It declines, by raising a dedicated exception that blocks can
+import without depending on ``openedx-platform``, when its content differs per learner or needs a live handler
+to display: for example randomization other than "Never", or learner substitutions such as ``%%USER_ID%%`` and
+``%%USER_EMAIL%%``. The block is recorded ``unsupported`` with the exception's message; any other exception is
+a failure. Each block's conditions are in its proposal.
 
 The platform decides **audience**, before it renders. A leaf that is staff-only or carries group access (both
 inherited from its containers), or sits in a timed or proctored subsection, is ``unsupported`` with that reason.
@@ -105,9 +115,12 @@ The archive is assembled from the ``Fragment`` (body and resources) and a DOM pa
 
 *Platform files.* The page scripts (jQuery, the XBlock JavaScript core and runtime, the archive runtime) and
 MathJax are read through the staticfiles finders, never from paths on disk; if one is missing, the row fails.
+The page also supplies the LMS page globals that block scripts expect; the list is kept with the archive
+runtime and tested.
 
-*Block resources.* Blocks put their offline JavaScript and CSS into the fragment as text, read from files their
-package ships; a URL resource is collected only when it is a platform static URL. ``url()`` references inside
+*Block resources.* Blocks declare the same JavaScript and CSS in the fragment as for their other views. A
+resource given as text is packaged as it is; a URL resource is collected when it is a platform static URL or a
+``runtime.local_resource_url`` resource, which is read from the block's package. ``url()`` references inside
 collected CSS are rewritten like ``src`` and ``href`` attributes.
 
 *Course assets.* Assets referenced as ``/static/``, ``/asset-v1:`` or ``/c4x/`` are read from the contentstore
@@ -182,32 +195,42 @@ course as a whole, not per learner, and without video. It makes one manifest que
 for the courses that have archives. The applications present ``total_size`` as the size of the whole download;
 the video they download themselves is theirs to add.
 
-7. The bridge contract is the one the applications ship, completed
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+7. Blocks talk to the runtime; the bridge is internal to the archive runtime
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The page posts offline submissions to ``window.AndroidBridge.postMessage(json)`` and
-``window.webkit.messageHandlers.IOSBridge.postMessage(json)``, and exposes a global
-``markProblemCompleted(json)`` that the applications call when a stored submission is replayed into the page.
-This name supersedes ``markCompleted`` in ADR-001. The payload is ``{url, type, data, content_type}``: the
-handler URL, the HTTP method, the request body as a string, and its content type
-(``application/x-www-form-urlencoded`` when absent, ``application/json`` for a block's ``json_handler``).
-Nothing else, in particular no header of the learner's, is sent to the device. The applications replay a
-submission by sending ``data`` verbatim to ``url`` with method ``type`` and that content type, authenticate it
-themselves, surface a rejected replay to the learner, and quote the stored JSON when they call
-``markProblemCompleted``. Replaying the generic payload is the applications' part of this scope; the interactive
-survey of decision 8 ships with it.
+A block's JavaScript reaches its state and its handlers only through the ``runtime`` object: it loads the
+learner's state, calls a handler by name, and asks whether handlers are live, queued or unavailable. The LMS
+runtime, the Studio preview runtime, the newer runtime's iframe and the archive runtime each implement these
+methods; `offline_view for xblock-poll`_ and `Read-only offline_view for problem`_ define them. The same
+script therefore runs online and in an archive.
 
-8. Problems and drag and drop are read-only; the survey is interactive
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In an archive, the archive runtime implements them over the bridge to the application
+(``window.AndroidBridge`` and ``window.webkit.messageHandlers.IOSBridge``): it obtains the state the
+application downloaded and the calls not yet synchronised, and hands each new call to the application to
+store. Blocks never use the bridge, and nothing in a block names it. This replaces ``markCompleted`` in
+ADR-001 and the ``markProblemCompleted`` global and ``{url, type, data, content_type}`` payload the
+applications ship today.
 
-The problem and drag-and-drop views render their block for reading: what a fresh learner sees, with inputs
-disabled, no Submit, no saved answers, hints, solutions or feedback, and a note that answers are accepted
-online. Offline submission for problems is the next scope's (decision 11).
+A stored call is a record ``{usage key, handler name, body, sequence, id}``. No URL and no header of the
+learner's is sent to the device. When the device is back online the application sends its records to a batch
+replay endpoint, authenticating as the learner. The endpoint runs them in order through the handler dispatch of
+the LMS's XBlock handler route, so every block's own rules apply, and answers per record with the handler's
+result and the fresh state; a record id table makes retries idempotent. The applications surface a rejected
+replay to the learner. The runtime methods, the bridge and the replay endpoint are this scope's; the
+interactive survey of decision 8 ships with them.
 
-The survey (``xblock-poll``) is this scope's interactive pilot: the page shows the questions, enables Submit
-once every question is answered, posts ``{url, type, data, content_type}`` for the block's ``vote`` handler
-through the bridge, and restores the submitted state from ``markProblemCompleted``. It lands together with the
-application releases that replay the generic payload (decision 7).
+8. Problems and drag and drop are read-only; the survey and poll are interactive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The problem view renders the block for reading with the templates and the script of its ``student_view``:
+what a fresh learner sees, with no saved answers, hints, solutions or feedback. The script makes the page
+read-only, with a note that answers are accepted online, when the runtime reports that handlers are not live.
+`Read-only offline_view for problem`_ describes it. Drag and drop is read-only on the same principle. Offline
+submission for problems is the next scope's (decision 11) and changes the script, not the rendering.
+
+The survey and poll (``xblock-poll``) are this scope's interactive pilot, described in `offline_view for
+xblock-poll`_: the vote is a handler call through the runtime, shown as pending until it is replayed. They
+land together with the application releases that implement the bridge and the replay of decision 7.
 
 9. The flag gates generation and announcement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -242,27 +265,27 @@ details stay online, as the proposal says; static tabs and the about page are no
 11. Interactive blocks: the next scope builds on these decisions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This scope ships problems and drag and drop for reading and the survey interactive; the next one brings every
-block that can interact offline, with its interactions synchronised when the device is back online. That scope
-adds to this design and changes nothing in it, because the archive is content and interaction is state:
+This scope ships problems and drag and drop for reading and the survey and poll interactive; the next one
+brings every block that can interact offline, with its interactions synchronised when the device is back
+online. That scope adds to this design and changes nothing in it, because the archive is content and
+interaction is state:
 
 *Content stays learner-free.* The archive is rendered as decided here, with no user, once per block version.
 A render with the user would carry the learner's state as it was at generation, which is stale by the time the
 block is opened, so the application would fetch the current state anyway; a user-bound render adds a stale copy
 at the cost of one archive per learner and generation on request.
 
-*State is the learner's and travels beside the archive.* A block declares the user-scoped state its offline
-JavaScript needs (``offline_state``: a field list, or a method when the fields need shaping), the LMS serves it
-per course with the user bound, with the learner's substitutions for ``%%USER_ID%%`` and ``%%USER_EMAIL%%``;
-the application stores it, refreshes it when online, and the archive runtime hands it to the block at load
-(``OfflineRuntime.state``). The page becomes the learner's at load time, not at render time.
+*State is the learner's and travels beside the archive.* A block returns the user-scoped state its JavaScript
+needs through its state handler (decision 7), the LMS serves it per course with the user bound, with the
+learner's substitutions for ``%%USER_ID%%`` and ``%%USER_EMAIL%%``; the application stores it, refreshes it
+when online, and the archive runtime hands it to the block when the block loads its state. The page becomes
+the learner's at load time, not at render time.
 
-*Interactions are recorded and replayed as the learner.* The bridge payload of decision 7 stays and gains a
-block id, a sequence number, the state version and a record id, which the applications may ignore. A batch
-replay endpoint runs the records in order through the handler dispatch of the LMS's XBlock handler route, so
-every block's own rules apply, and answers per record with the handler's result and the fresh state; a record
-id table makes retries idempotent. A block that cannot complete an interaction offline (grading, answers,
-hints are server-side) records it and says so; the result arrives with the replay.
+*Interactions are recorded and replayed as the learner.* The runtime methods, the record and the replay
+endpoint are those of decision 7, in place since this scope. A block's script learns to show a queued
+interaction as pending. A block that cannot complete an interaction offline (grading, answers, hints are
+server-side) records it and says so; the result arrives with the replay. For problems, `Read-only
+offline_view for problem`_ lists what remains.
 
 *Content that depends on the learner is the bounded exception.* Per-student randomisation and per-learner
 selections cannot share an archive; the next scope decides, with data, between selection through state and a
@@ -280,9 +303,14 @@ Consequences
 * A block supports offline content by implementing one view; the generator does not change when a block is
   added. Blocks without the view are simply not available offline, and the applications say so.
   ``USE_EXTRACTED_*_BLOCK = False`` switches to the built-in blocks, which have no ``offline_view``.
-* Interactivity is the next scope's and needs no change to generation: a state contract and a replay protocol
-  beside the archive, and offline JavaScript per block; the bridge payload grows by fields the applications may
-  ignore (decision 11).
+* A block has one rendering and one script for its online and offline forms; ``student_view`` and
+  ``public_view`` are built on ``offline_view`` as blocks adopt it.
+* The JavaScript runtime gains methods for loading state, calling a handler and reporting whether handlers are
+  live. They are implemented in the LMS runtime, the Studio preview runtime, the newer runtime's iframe and the
+  archive runtime; a block that must run on older platforms falls back to ``handlerUrl`` when they are missing.
+* Interactivity for further blocks is the next scope's and needs no change to generation, to the runtime
+  methods or to the replay endpoint: each block's script learns to show a queued interaction as pending
+  (decision 11).
 * Every request makes one manifest query; ``download_courses`` adds one flag lookup per course that has
   archives; every announced URL costs one ``storage.url()`` call, which on S3 without a custom domain is a
   presign.
@@ -302,8 +330,9 @@ Consequences
 * The handouts and updates archives reach learners once the applications read the two course-level fields; until
   then they are generated and counted in ``total_size`` (the page scripts, tens of kilobytes, plus linked files)
   but never downloaded.
-* Before the interactive survey, the applications must replay ``{url, type, data, content_type}`` verbatim,
-  quote the stored JSON, surface replay rejections, and count video in ``total_size``.
+* Before the interactive survey, the applications must implement the bridge and the replay of decision 7 in
+  place of the ``{url, type, data, content_type}`` payload they ship today, surface replay rejections, and
+  count video in ``total_size``.
 
 Rejected Alternatives
 ---------------------
@@ -315,15 +344,20 @@ Rejected Alternatives
 * **``student_view`` as the default ``offline_view``.** ``student_view`` is the learner's live page and
   assumes the LMS behind it: it links the LMS handler URLs, leaves ``%%USER_ID%%`` in the text, calls handlers
   when the page loads, and fails for blocks that read the user. Making it work offline means changing every
-  block's view, and that is ``offline_view`` without the opt-in and the decline. ``public_view`` is the
-  precedent: a separate named view, declining by default.
+  block's view, and that is ``offline_view`` without the opt-in and the decline. The dependency runs the other
+  way: ``student_view`` is built on ``offline_view`` (decision 3).
+* **A separate offline rendering and script per block.** Two frontends per block, which drift; a read-only
+  template for problems would be a third rendering, discarded when problems become interactive.
+* **Blocks posting to the mobile bridge, and replaying stored HTTP requests.** A script that names the bridge
+  runs only in the applications. A stored ``{url, type, data, content_type}`` makes every handler's URL and
+  request body a format kept on devices for months; a record of handler name and body, replayed through the
+  handler dispatch, does not.
 * **Studio's preview rendering as it is.** It needs a request, a session and a user; the runtime is prepared
   the same way without them.
 * **The platform's newer XBlock runtime (``openedx.core.djangoapps.xblock``).** It loads Learning Core content
   through learning contexts, of which only content libraries are registered, so it cannot load a course usage
-  key; it refuses every view but ``public_view`` when it has no user; its handler URLs are per-user and expire
-  within days, where a shared archive needs the LMS's session-authenticated handler routes. Decision 3 does not
-  depend on it: when courses move to Learning Core, the binding changes and ``offline_view`` does not.
+  key; it refuses every view but ``public_view`` when it has no user. Decision 3 does not depend on it: when
+  courses move to Learning Core, the binding changes and ``offline_view`` does not.
 * **Rewriting rendered HTML with regular expressions.** Fragile against markup changes, blind to CSS
   ``url()`` and to resources the fragment declares; the fragment and the DOM are the sources of truth.
 * **The rendered content hash as the change detector.** It costs a render of every block on every publish;
@@ -356,11 +390,15 @@ References
 ----------
 
 * `ADR-001`_ and `ADR-002`_ in this directory
+* `offline_view for xblock-poll`_ and `Read-only offline_view for problem`_, the proposals for decisions 3, 7
+  and 8
 * `wg-mobile#55`_, the mobile working group's offline mode roadmap
 * `OEP-17`_ feature toggles, `OEP-19`_ developer documentation
 
 .. _ADR-001: 001-mobile-offline-content-support.rst
 .. _ADR-002: 002-mobile-offline-content-support.rst
+.. _offline_view for xblock-poll: 003-offline-content-support/offline-view-for-xblock-poll.rst
+.. _Read-only offline_view for problem: 003-offline-content-support/read-only-offline-view-for-problem.rst
 .. _wg-mobile#55: https://github.com/openedx/wg-mobile/issues/55
 .. _OEP-17: https://open-edx-proposals.readthedocs.io/en/latest/best-practices/oep-0017-bp-feature-toggles.html
 .. _OEP-19: https://open-edx-proposals.readthedocs.io/en/latest/best-practices/oep-0019-bp-developer-documentation.html
