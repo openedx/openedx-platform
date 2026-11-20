@@ -12,9 +12,9 @@ to apply the FC-0118 ADRs:
   * ADR 0029 – standardized error envelope, opted in via
     :class:`StandardizedErrorMixin` (v3-scoped — does not change the
     project-wide DRF ``EXCEPTION_HANDLER`` setting)
-  * ADR 0036 – field selection via ``?fields=`` (e.g. ``?fields=courses``).
-    The ``list`` action returns a wide ``StudioHomeSerializer`` payload with
-    ~25 top-level keys; clients that only need a subset can request it
+  * ADR 0036 – field selection via ``?fields=`` (e.g. ``?fields=studio_name``).
+    The ``list`` action returns a wide ``StudioHomeContextSerializer`` payload
+    with ~20 top-level keys; clients that only need a subset can request it
     explicitly. The flat-list ``courses`` and ``libraries`` actions are
     out of scope (single-key dict around a list) and do not honour
     ``?fields=``.
@@ -40,11 +40,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    CourseHomeTabSerializer,
-    LibraryTabSerializer,
-    StudioHomeSerializer,
-)
+from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseHomeTabSerializer, LibraryTabSerializer
+from cms.djangoapps.contentstore.rest_api.v3.serializers import StudioHomeContextSerializer
 from cms.djangoapps.contentstore.utils import get_course_context, get_home_context, get_library_context
 from cms.lib.spectacular import CmsAutoSchema
 
@@ -72,7 +69,7 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     schema = _HomeAutoSchema()
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated,)
-    serializer_class = StudioHomeSerializer
+    serializer_class = StudioHomeContextSerializer
 
     def get_serializer_class(self):
         """Return the appropriate serializer class for the current action."""
@@ -80,16 +77,15 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
             return CourseHomeTabSerializer
         if self.action == 'libraries':
             return LibraryTabSerializer
-        return StudioHomeSerializer
+        return StudioHomeContextSerializer
 
     def get_serializer(self, *args, **kwargs):
         """Return a serializer instance using the action-appropriate class."""
         return self.get_serializer_class()(*args, **kwargs)
 
     @extend_schema(
-        responses={(200, "application/json"): StudioHomeSerializer},
+        responses={(200, "application/json"): StudioHomeContextSerializer},
         parameters=[
-            OpenApiParameter("org", str, OpenApiParameter.QUERY, description="Filter by course org"),
             OpenApiParameter(
                 "fields",
                 str,
@@ -97,7 +93,7 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
                 description=(
                     "ADR 0036 explicit field selection. Comma-separated list "
                     "of top-level keys to include in the response (e.g. "
-                    "``courses,libraries,studio_name``). Omit for the full "
+                    "``studio_name,platform_name``). Omit for the full "
                     "response. Unknown keys are silently skipped."
                 ),
             ),
@@ -105,12 +101,15 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
     )
     def list(self, request: Request):
         """
-        Get an object containing all courses and libraries on home page.
+        Get the Studio home page settings for the requesting user.
+
+        The course and library lists are not included; use
+        ``/api/authoring/v4/courses/`` for the courses.
 
         **Example Request**
 
             GET /api/contentstore/v3/home/
-            GET /api/contentstore/v3/home/?fields=courses,libraries  (ADR 0036)
+            GET /api/contentstore/v3/home/?fields=studio_name,platform_name  (ADR 0036)
         """
         home_context = get_home_context(request, True)
         home_context.update({
@@ -144,6 +143,8 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
             401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
+    # Replaced by /api/authoring/v4/courses/, so it stays out of the public schema.
+    @extend_schema(exclude=True)
     @action(detail=False, methods=['get'], url_path='courses', url_name='courses')
     def courses(self, request: Request):
         """
@@ -186,6 +187,8 @@ class HomeViewSet(StandardizedErrorMixin, viewsets.ViewSet):
             401: OpenApiResponse(description="The requester is not authenticated."),
         },
     )
+    # The legacy library list, which is being removed, so it stays out of the public schema.
+    @extend_schema(exclude=True)
     @action(detail=False, methods=['get'], url_path='libraries', url_name='libraries')
     def libraries(self, request: Request):
         """

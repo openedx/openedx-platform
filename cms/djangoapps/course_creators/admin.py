@@ -81,6 +81,13 @@ class CourseCreatorAdmin(admin.ModelAdmin):
             'fields': ['username', 'state', 'state_changed', 'note', 'all_organizations', 'organizations']
         }),
     )
+    # The user is chosen by id on the add form, and read-only once added.
+    add_fieldsets = (
+        (None, {
+            'fields': ['user', 'state', 'note', 'all_organizations', 'organizations']
+        }),
+    )
+    raw_id_fields = ('user',)
     # Fields that filtering support
     list_filter = ['state', 'state_changed']
     # Fields that search supports.
@@ -99,8 +106,13 @@ class CourseCreatorAdmin(admin.ModelAdmin):
 
     username.admin_order_field = 'user__username'
 
+    def get_fieldsets(self, request, obj=None):
+        if obj is None:
+            return self.add_fieldsets
+        return super().get_fieldsets(request, obj)
+
     def has_add_permission(self, request):
-        return False
+        return request.user.is_staff
 
     def has_delete_permission(self, request, obj=None):
         return False
