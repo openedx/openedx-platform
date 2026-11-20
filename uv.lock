@@ -1888,15 +1888,14 @@ wheels = [
 
 [[package]]
 name = "edx-ccx-keys"
-version = "2.1.0"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "edx-opaque-keys" },
-    { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/91/aa/96b4f24b17640e8ceed1e647bce23c4bc2a73dbc6f1521a1cf4fccc5cceb/edx_ccx_keys-2.1.0.tar.gz", hash = "sha256:61573bb21a63331a51c1ad8ea231c6a4ebf434147d4f83970112054ea716ac3b", size = 62212, upload-time = "2026-10-05T13:51:46.948Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/94/cc7ce40e509c83f3abee041a438990ea62c12dfa090951efa6eae0452847/edx_ccx_keys-3.0.0.tar.gz", hash = "sha256:8715c43fcef60c9b2dfa09c46d458c5ecf2f36de070cb2015e659320a839aa7b", size = 18160, upload-time = "2026-11-18T16:25:28.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/9e/bb2bd4c7efd0b0a9a76d25d62de9e807a95425b6cbf19005ab0bbf8f1d24/edx_ccx_keys-2.1.0-py3-none-any.whl", hash = "sha256:9e3aacda730ae9aca05f591db23e41a36399d4f1b4271b11175e5d6a440b9299", size = 16388, upload-time = "2026-10-05T13:51:45.729Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/90/d3bb07aafa2543e16ebed5a150eb1d444fee5510b0bdd728a0035c6b5652/edx_ccx_keys-3.0.0-py3-none-any.whl", hash = "sha256:66933ff2fe0a8a3740639fe13fc537d618dcbcc0ac2d4fb7383716bf72b417fa", size = 13888, upload-time = "2026-11-18T16:25:27.065Z" },
 ]
 
 [[package]]
@@ -2154,16 +2153,16 @@ wheels = [
 
 [[package]]
 name = "edx-opaque-keys"
-version = "4.0.1"
+version = "5.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pymongo" },
     { name = "stevedore" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/85/dd6b189ace4cdeae939baca4d42b6c4a99bf58a227269b0aea24f0531866/edx_opaque_keys-4.0.1.tar.gz", hash = "sha256:38f9541534dc67b96a631b34bda5dc4328f64270f642f238a694dee046323424", size = 147491, upload-time = "2026-09-30T15:27:01.541Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/fd/b32719edfa47efff9f6ebbf69e6468ada7b0f69f97eecbef2bb0dcc22710/edx_opaque_keys-5.0.0.tar.gz", hash = "sha256:4a66e4f245398e160c19cb90e31b475742decd3ca24bbbe217d48f1712bee9d5", size = 184979, upload-time = "2026-11-18T16:02:11.752Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/87/c76f99f062b20586015f70575af412cf2636bc0a7ded06160df5c61a0c14/edx_opaque_keys-4.0.1-py3-none-any.whl", hash = "sha256:889323a63ba8106a82b080483a65d9fcecaf4bfae3f36a0eaf9c40185c6acad3", size = 76323, upload-time = "2026-09-30T15:27:00.072Z" },
+    { url = "https://files.pythonhosted.org/packages/13/03/75082cea924f01b3a879f8b22b857ff9e1a0c368ab5521e56cb86bce6f8b/edx_opaque_keys-5.0.0-py3-none-any.whl", hash = "sha256:596e17638d8ba87c5a61e6059ae05ce5ad6c89a1fd1d8ff1df754eb4a7d940a9", size = 79327, upload-time = "2026-11-18T16:02:10.341Z" },
 ]
 
 [[package]]
@@ -4527,7 +4526,6 @@ dependencies = [
     { name = "edx-ace" },
     { name = "edx-auth-backends" },
     { name = "edx-bulk-grades" },
-    { name = "edx-ccx-keys" },
     { name = "edx-celeryutils" },
     { name = "edx-codejail" },
     { name = "edx-completion" },
@@ -4887,7 +4885,6 @@ requires-dist = [
     { name = "edx-ace" },
     { name = "edx-auth-backends" },
     { name = "edx-bulk-grades" },
-    { name = "edx-ccx-keys" },
     { name = "edx-celeryutils" },
     { name = "edx-codejail", specifier = ">=4.0.0" },
     { name = "edx-completion" },
@@ -4899,7 +4896,7 @@ requires-dist = [
     { name = "edx-event-bus-kafka", specifier = ">=5.6.0" },
     { name = "edx-event-bus-redis" },
     { name = "edx-milestones" },
-    { name = "edx-opaque-keys", specifier = ">=2.12.0" },
+    { name = "edx-opaque-keys", specifier = ">=5.0.0" },
     { name = "edx-organizations" },
     { name = "edx-proctoring", specifier = ">=2.0.1" },
     { name = "edx-rest-api-client" },
