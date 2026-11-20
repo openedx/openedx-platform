@@ -81,7 +81,7 @@ def upsert_library_block_index_doc(usage_key_str: str, wait_timeout: float | Non
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def delete_library_block_index_doc(usage_key_str: str) -> None:
+def delete_library_block_index_doc(usage_key_str: str, wait_timeout: float | None = None) -> None:
     """
     Celery task to delete the content index document for a library block
     """
@@ -89,12 +89,14 @@ def delete_library_block_index_doc(usage_key_str: str) -> None:
 
     log.info("Deleting content index document for library block with id: %s", usage_key)
 
-    api.delete_index_doc(usage_key)
+    api.delete_index_doc(usage_key, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def update_content_library_index_docs(library_key_str: str, full_index: bool = False) -> None:
+def update_content_library_index_docs(
+    library_key_str: str, full_index: bool = False, wait_timeout: float | None = None
+) -> None:
     """
     Celery task to update the content index documents for all library blocks in a library
     """
@@ -103,12 +105,12 @@ def update_content_library_index_docs(library_key_str: str, full_index: bool = F
     log.info("Updating content index documents for library with id: %s", library_key)
 
     # If full_index is True, also update collections and containers data
-    api.upsert_content_library_index_docs(library_key, full_index=full_index)
+    api.upsert_content_library_index_docs(library_key, full_index=full_index, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def update_library_collection_index_doc(collection_key_str: str) -> None:
+def update_library_collection_index_doc(collection_key_str: str, wait_timeout: float | None = None) -> None:
     """
     Celery task to update the content index document for a library collection
     """
@@ -117,7 +119,7 @@ def update_library_collection_index_doc(collection_key_str: str) -> None:
 
     log.info("Updating content index documents for collection %s in library%s", collection_key, library_key)
 
-    api.upsert_library_collection_index_doc(collection_key)
+    api.upsert_library_collection_index_doc(collection_key, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
@@ -150,7 +152,7 @@ def update_library_containers_collections(collection_key_str: str) -> None:
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def update_library_container_index_doc(container_key_str: str) -> None:
+def update_library_container_index_doc(container_key_str: str, wait_timeout: float | None = None) -> None:
     """
     Celery task to update the content index document for a library container
     """
@@ -159,12 +161,12 @@ def update_library_container_index_doc(container_key_str: str) -> None:
 
     log.info("Updating content index documents for container %s in library%s", container_key, library_key)
 
-    api.upsert_library_container_index_doc(container_key)
+    api.upsert_library_container_index_doc(container_key, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
 @set_code_owner_attribute
-def delete_library_container_index_doc(container_key_str: str) -> None:
+def delete_library_container_index_doc(container_key_str: str, wait_timeout: float | None = None) -> None:
     """
     Celery task to delete the content index document for a library block
     """
@@ -172,7 +174,7 @@ def delete_library_container_index_doc(container_key_str: str) -> None:
 
     log.info("Deleting content index document for library block with id: %s", container_key)
 
-    api.delete_index_doc(container_key)
+    api.delete_index_doc(container_key, wait_timeout=wait_timeout)
 
 
 @shared_task(base=LoggedTask, autoretry_for=(MeilisearchError, ConnectionError))
