@@ -766,6 +766,15 @@ class SAMLProviderConfig(ProviderConfig):
             "are skipped, their values are inferred as False (opted out)."
         ),
     )
+    marketing_emails_opt_in_optional = models.BooleanField(
+        default=True,
+        help_text=_(
+            "If enabled, the marketing emails opt-in checkbox will be optional (not required) "
+            "and will default to unchecked (False) during registration for users authenticating "
+            "via this provider. This gives users explicit control over marketing email preferences "
+            "without forcing them to opt-in."
+        ),
+    )
     other_settings = models.TextField(
         verbose_name="Advanced settings", blank=True,
         help_text=(
