@@ -15,10 +15,11 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_GET
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
-from openedx_authz.authz import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_EDIT_COURSE_CONTENT, COURSES_VIEW_COURSE
 from xblock.core import XBlock
 from xblock.django.request import django_to_webob_request, webob_to_django_response
 from xblock.exceptions import NoSuchHandlerError
+from xblock.fields import Scope
 from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
@@ -26,7 +27,6 @@ from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, xblock
 from cms.djangoapps.contentstore.toggles import libraries_v2_enabled
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
-from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.xblock_django.api import authorable_xblocks, disabled_xblocks
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
@@ -491,7 +491,7 @@ def _get_item_in_course(request, usage_key):
     (container_handler, container_embed_handler, xblock_edit_view, and the REST API v1
     ContainerHandlerView) are read-only, so this only requires view access, not write
     access — actual mutations are gated separately (e.g. component_handler's own
-    has_course_author_access check before persisting).
+    edit permission check before persisting).
     """
 
     from ..utils import get_lms_link_for_item
@@ -536,6 +536,13 @@ def component_handler(request, usage_key_string, handler, suffix=''):
     # Let the block handle the AJAX
     req = django_to_webob_request(request)
 
+    can_edit = user_has_course_permission(
+        request.user,
+        COURSES_EDIT_COURSE_CONTENT.identifier,
+        usage_key.course_key,
+        LegacyAuthoringPermission.WRITE,
+    )
+
     try:
         if is_xblock_aside(usage_key):
             # Get the block being wrapped by the aside (not the aside itself)
@@ -546,21 +553,22 @@ def component_handler(request, usage_key_string, handler, suffix=''):
             block = modulestore().get_item(usage_key)
             handler_block = block
             asides = []
+        if not can_edit:
+            fields_before = _persistable_fields([block, *asides])
         load_services_for_studio(handler_block.runtime, request.user)
         resp = handler_block.handle(handler, req, suffix)
     except NoSuchHandlerError:
         log.info("XBlock %s attempted to access missing handler %r", handler_block, handler, exc_info=True)
         raise Http404  # pylint: disable=raise-missing-from  # noqa: B904
 
-    # unintentional update to handle any side effects of handle call
-    # could potentially be updating actual course data or simply caching its values
-    # Addendum:
-    # TNL 101-62 studio write permission is also checked for editing content.
-
-    if has_course_author_access(request.user, usage_key.course_key):
+    # Persist whatever the handler changed on the block (or its asides).
+    if can_edit:
         modulestore().update_item(block, request.user.id, asides=asides)
+    elif _persistable_fields([block, *asides]) != fields_before:
+        # Read-only handlers keep working for users without edit permission, but a handler
+        # that changed fields must not report success when nothing is going to be saved.
+        raise PermissionDenied()
     else:
-        #fail quietly if user is not course author.
         log.warning(
             "%s does not have have studio write permissions on course: %s. write operations not performed on %r",
             request.user.id,
@@ -569,6 +577,15 @@ def component_handler(request, usage_key_string, handler, suffix=''):
         )
 
     return webob_to_django_response(resp)
+
+
+def _persistable_fields(blocks):
+    """
+    Return a JSON snapshot of the fields ``update_item`` would persist for each block,
+    so callers can tell whether an XBlock handler changed any of them.
+    """
+    scopes = (Scope.content, Scope.settings, Scope.children)
+    return [{scope: block.get_explicitly_set_fields_by_scope(scope) for scope in scopes} for block in blocks]
 
 
 def get_unit_tags(usage_key):
