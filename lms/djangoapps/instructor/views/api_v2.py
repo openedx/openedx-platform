@@ -51,6 +51,7 @@ from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.authz import COURSES_MANAGE_COURSE_TEAM, COURSES_VIEW_COURSE_TEAM
 from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied
@@ -105,7 +106,7 @@ from lms.djangoapps.instructor.access import (
 )
 from lms.djangoapps.instructor.authz import constants as authz_constants
 from lms.djangoapps.instructor.authz import legacy as authz_legacy
-from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission, user_has_instructor_permission
 from lms.djangoapps.instructor.authz.permissions import InstructorAuthzPermission
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
@@ -3231,6 +3232,22 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
         return Response(response_serializer.data)
 
 
+def _can_manage_course_roles(user, course_key):
+    """
+    Return whether the user can grant or revoke course (non-forum) roles, such as ``staff`` or ``instructor``.
+
+    With ``authz.enable_course_authoring`` enabled for the course, ``courses.manage_course_team`` covers
+    every role, as in the openedx-authz role-assignment API. With it disabled, the course roles keep
+    requiring instructor access, while Discussion Admins can only change the forum roles.
+    """
+    return user_has_instructor_permission(
+        user,
+        COURSES_MANAGE_COURSE_TEAM.identifier,
+        course_key,
+        authz_legacy.has_instructor_access,
+    )
+
+
 class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
     """
     List the available course team roles for a specific course.
@@ -3269,7 +3286,10 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         * 401: User is not authenticated
         * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COURSE_TEAM.identifier,),
+    }
 
     def get(self, request, course_id):
         """Return the list of available course team roles for this course."""
@@ -3284,7 +3304,7 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         if not ccx_enabled:
             roles.discard('ccx_coach')
 
-        if editable and not has_access(request.user, 'instructor', course):
+        if editable and not _can_manage_course_roles(request.user, course_key):
             roles = set(FORUM_ROLES)
 
         role_order = {role: i for i, role in enumerate(INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER)}
@@ -3407,7 +3427,11 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course not found
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "GET": (COURSES_VIEW_COURSE_TEAM.identifier,),
+        "POST": (COURSES_MANAGE_COURSE_TEAM.identifier,),
+    }
 
     def get(self, request, course_id):
         """
@@ -3492,7 +3516,7 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
-        if not is_forum_role(rolename) and not has_access(request.user, 'instructor', course):
+        if not is_forum_role(rolename) and not _can_manage_course_roles(request.user, course_key):
             return Response(
                 {'error': _('You do not have permissions to change this role.')},
                 status=status.HTTP_403_FORBIDDEN,
@@ -3581,7 +3605,10 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         * 404: Course or user not found
         * 409: Cannot remove own instructor access
     """
-    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
+    permission_classes = (IsAuthenticated, InstructorAuthzPermission)
+    authz_permissions = {
+        "DELETE": (COURSES_MANAGE_COURSE_TEAM.identifier,),
+    }
 
     def delete(self, request, course_id, email_or_username):
         """Revoke one or more course roles from a user."""
@@ -3594,7 +3621,7 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
 
         roles = revoke_serializer.validated_data['roles']
 
-        if not has_access(request.user, 'instructor', course):
+        if not _can_manage_course_roles(request.user, course_key):
             non_forum_roles = [r for r in roles if not is_forum_role(r)]
             if non_forum_roles:
                 return Response(
