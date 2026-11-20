@@ -15,7 +15,7 @@ from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from xblock.core import XBlock
 
-from common.djangoapps.student.models import CourseAccessRole
+from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment
 from common.djangoapps.student.roles import CourseRole, OrgRole, strict_role_checking
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.enrollments.api import is_enrollment_valid_for_proctoring
@@ -40,6 +40,29 @@ def is_track_ok_for_exam(user, exam):
 # proctored experience
 can_take_proctored_exam = is_track_ok_for_exam
 rules.set_perm('edx_proctoring.can_take_proctored_exam', is_track_ok_for_exam)
+
+
+@rules.predicate
+def can_view_course_competency_criteria(user, course_key):
+    """
+    Return True if the user may read the competency criteria of the given course run.
+
+    Allowed: users with an active enrollment in the course run, and users with staff access to it as
+    ``has_access(user, 'staff', course_key)`` grants it. The answer does not depend on the course's start
+    date, on subsection visibility, or on content groups, and the endpoint never sets up masquerade, so
+    the signed-in user is judged and every permitted caller gets the same result.
+    """
+    if not isinstance(course_key, CourseKey):
+        return False
+    return bool(CourseEnrollment.is_enrolled(user, course_key) or has_access(user, 'staff', course_key))
+
+
+# openedx-core's course criteria endpoint checks this permission by name. This app loads before openedx_learning,
+# so this registers first, and openedx-core registers its default (any signed-in user) only when the name is free.
+rules.set_perm(
+    'openedx_learning.view_course_competency_criteria',
+    rules.is_authenticated & can_view_course_competency_criteria,
+)
 
 
 class HasAccessRule(Rule):

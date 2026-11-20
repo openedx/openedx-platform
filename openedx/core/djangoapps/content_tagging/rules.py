@@ -5,11 +5,6 @@ from __future__ import annotations
 from typing import Union
 
 import django.contrib.auth.models
-
-# content_tagging precedes openedx_learning in INSTALLED_APPS, and django-rules' add_perm raises KeyError for a name
-# that is already registered. Importing openedx_learning's rules here makes openedx-core register its permissions
-# first, so the set_perm override below replaces the default instead of crashing openedx-core's add_perm.
-import openedx_learning.rules  # pylint: disable=unused-import  # noqa: F401
 import openedx_tagging.rules as oel_tagging
 import rules
 from opaque_keys import InvalidKeyError
@@ -20,7 +15,6 @@ from openedx_authz.constants import permissions as authz_permissions
 from organizations.models import Organization
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
-from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.role_helpers import get_course_roles, get_role_cache
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
@@ -31,7 +25,6 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     enable_authz_course_authoring,
 )
-from lms.djangoapps.courseware.access import has_access
 from openedx.core.djangoapps.authz.scopes import get_authz_course_org_names
 
 from .auth import should_use_course_authz_for_object
@@ -415,29 +408,6 @@ def can_change_taxonomy_tag(user: UserType, tag: oel_tagging.Tag | None = None) 
         return False
     return oel_tagging.is_taxonomy_admin(user)
 
-
-@rules.predicate
-def can_view_course_competency_criteria(user: UserType, course_key: CourseKey | None) -> bool:
-    """
-    Return True if the user may read the competency criteria of the given course run.
-
-    Allowed: users with an active enrollment in the course run, in any mode and whether or not the course has
-    started, and users with staff access to it (global staff, course staff and instructors, and org staff and
-    instructors, as granted by ``has_access(user, "staff", course_key)``).
-
-    The check needs no course run or catalog row, so a well-formed key that matches no course is refused to
-    learners and allowed only to staff. Course visibility and start dates are enforced by the pages that call
-    the endpoint, not here.
-
-    Masquerade is deliberately not applied: the real signed-in user is judged, so staff who view the course as a
-    learner are still judged as staff and every permitted caller gets the same result.
-    """
-    if not isinstance(course_key, CourseKey):
-        return False
-
-    return bool(CourseEnrollment.is_enrolled(user, course_key) or has_access(user, "staff", course_key))
-
-
 # Taxonomy
 rules.set_perm("oel_tagging.add_taxonomy", can_create_taxonomy)
 rules.set_perm("oel_tagging.change_taxonomy", can_change_taxonomy)
@@ -464,11 +434,3 @@ rules.set_perm("oel_tagging.view_objecttag_objectid", can_view_object_tag_object
 rules.set_perm("oel_tagging.change_objecttag_taxonomy", can_view_object_tag_taxonomy)
 rules.set_perm("oel_tagging.change_objecttag_objectid", can_change_object_tag_objectid)
 rules.set_perm("oel_tagging.remove_objecttag_objectid", can_remove_object_tag_objectid)
-
-# Competency criteria of a course run. The permission name is a contract with openedx-core, which registers it with
-# rules.add_perm and checks it by name in its course criteria endpoint; renaming it there silently turns this
-# override into a rule that nothing checks.
-rules.set_perm(
-    "openedx_learning.view_course_competency_criteria",
-    rules.is_authenticated & can_view_course_competency_criteria,
-)
