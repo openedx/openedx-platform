@@ -29,7 +29,7 @@ from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
 from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from openedx.core.djangoapps.content.services import StudioPermissionsService
+from openedx.core.djangoapps.content.services import FileService, StudioPermissionsService
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.lib.cache_utils import CacheService
@@ -210,6 +210,7 @@ def _prepare_runtime_for_preview(request, block):
     # This comment is left here as a note for future devs investigating similar bugs.
     services = {
         "studio_user_permissions": StudioPermissionsService(request.user),
+        "files": FileService(request.user),
         "i18n": XBlockI18nService,
         'mako': mako_service,
         "settings": SettingsService(),

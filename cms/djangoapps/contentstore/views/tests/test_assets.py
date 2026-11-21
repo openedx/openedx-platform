@@ -370,7 +370,7 @@ class UploadTestCase(AssetsTestCase):
         (MAX_FILE_SIZE, "justequals.file.test", 200),
         (MAX_FILE_SIZE + 90, "large.file.test", 413),
     )
-    @mock.patch('cms.djangoapps.contentstore.asset_storage_handlers.get_file_size')
+    @mock.patch('openedx.core.djangoapps.content.file_utilities.get_file_size')
     def test_file_size(self, case, get_file_size):
         max_file_size, name, status_code = case
 

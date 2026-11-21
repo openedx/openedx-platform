@@ -12,8 +12,8 @@ from opaque_keys.edx.keys import AssetKey
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.util.db import MYSQL_MAX_INT, generate_int_id
+from openedx.core.djangoapps.content.file_utilities import AssetNotFoundException
 
-from ..exceptions import AssetNotFoundException
 from .assets import delete_asset
 
 CERTIFICATE_SCHEMA_VERSION = 1

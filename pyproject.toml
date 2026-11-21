@@ -880,4 +880,9 @@ ignore_imports = [
     # These imports will become OK once we worked on the following issue:
     # https://github.com/openedx/edx-platform/issues/33428
     "openedx.core.djangoapps.video_config.services -> openedx.core.djangoapps.content_libraries.api",
+    # FIXME: the exceptions below are new issues introduced transitively to larger refactors in flight.
+    # Outstanding architectural issue: course file handling does not have a consistent API.
+    # https://github.com/openedx/openedx-core/issues/890
+    # https://github.com/openedx/openedx-core/pull/880
+    "openedx.core.djangoapps.content.services -> openedx.core.djangoapps.content_libraries.api",
 ]
