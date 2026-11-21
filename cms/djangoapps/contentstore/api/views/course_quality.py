@@ -3,7 +3,6 @@ import logging
 import statistics
 import time
 
-import numpy as np
 from edxval.api import get_course_videos_qset
 from openedx_authz.authz import COURSES_VIEW_COURSE
 from rest_framework.generics import GenericAPIView
@@ -276,8 +275,10 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
             return dict(
                 min=min(data),
                 max=max(data),
-                mean=np.around(np.mean(data)),
-                median=np.around(np.median(data)),
+                # round() rounds half to even, as np.around() did. float()
+                # keeps the serialized values the same as before (2.0, not 2).
+                mean=float(round(statistics.fmean(data))),
+                median=float(round(statistics.median(data))),
                 # On a tie, report the smallest of the most common values.
                 mode=min(statistics.multimode(data)),
             )
