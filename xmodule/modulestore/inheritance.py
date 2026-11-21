@@ -10,6 +10,11 @@ from xblock.core import XBlockMixin
 from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String, Timedelta
 from xblock.runtime import KeyValueStore, KvsFieldData
 
+from xmodule.course_settings_field_options import (
+    RERANDOMIZE_FIELD_OPTIONS,
+    SHOW_CORRECTNESS_FIELD_OPTIONS,
+    SHOWANSWER_FIELD_OPTIONS,
+)
 from xmodule.error_block import ErrorBlock
 from xmodule.partitions.partitions import UserPartition
 
@@ -97,6 +102,7 @@ class InheritanceMixin(XBlockMixin):
         ),
         scope=Scope.settings,
         default="finished",
+        values=SHOWANSWER_FIELD_OPTIONS,
     )
 
     show_correctness = String(
@@ -109,6 +115,7 @@ class InheritanceMixin(XBlockMixin):
         ),
         scope=Scope.settings,
         default="always",
+        values=SHOW_CORRECTNESS_FIELD_OPTIONS,
     )
 
     rerandomize = String(
@@ -123,6 +130,7 @@ class InheritanceMixin(XBlockMixin):
         ),
         scope=Scope.settings,
         default="never",
+        values=RERANDOMIZE_FIELD_OPTIONS,
     )
     days_early_for_beta = Float(
         display_name=_("Days Early for Beta Users"),
