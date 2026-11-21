@@ -362,6 +362,12 @@ class XBlockRuntime(RuntimeShim, Runtime):
                     "Cannot access studio permissions service when there is no user bound to the XBlock."
                 )
             return StudioPermissionsService(self.user)
+        elif service_name == 'files':
+            from openedx.core.djangoapps.content.services import FileService
+            if self.user is None:
+                raise RuntimeError(
+                    "Cannot access studio permissions service when there is no user bound to the XBlock."
+                )
 
         # Otherwise, fall back to the base implementation which loads services
         # defined in the constructor:

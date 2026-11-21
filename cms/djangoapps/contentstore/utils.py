@@ -70,7 +70,7 @@ from common.djangoapps.xblock_django.api import deprecated_xblocks
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.content.services import StudioPermissionsService
+from openedx.core.djangoapps.content.services import FileService, StudioPermissionsService
 from openedx.core.djangoapps.content_libraries.api import get_container
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.credit.api import get_credit_requirements, is_credit_course
@@ -1273,6 +1273,7 @@ def load_services_for_studio(runtime, user):
     services = {
         "user": DjangoXBlockUserService(user),
         "studio_user_permissions": StudioPermissionsService(user),
+        "files": FileService(user),
         "mako": MakoService(),
         "settings": SettingsService(),
         "lti-configuration": ConfigurationService(CourseAllowPIISharingInLTIFlag),
