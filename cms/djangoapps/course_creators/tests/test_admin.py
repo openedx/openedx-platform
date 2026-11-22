@@ -56,7 +56,6 @@ class CourseCreatorAdminTest(TestCase):
             'user_name': 'test_user',
             'user_email': 'test_user+courses@edx.org',
         }
-        self.enable_creator_group_patch = {'ENABLE_CREATOR_GROUP': True}
 
     @override_settings(ENABLE_CREATOR_GROUP=True, STUDIO_REQUEST_EMAIL='mark@marky.mark')
     @mock.patch('django.contrib.auth.models.User.email_user')
@@ -179,9 +178,7 @@ class CourseCreatorAdminTest(TestCase):
 
         def test_and_assert_case(squelch_pii, states):
             mock_log.reset_mock()
-            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
-                'django.conf.settings.FEATURES', self.enable_creator_group_patch
-            ):
+            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii, ENABLE_CREATOR_GROUP=True):
                 for state in states:
                     self._change_state(state)
                 expected_identifier = str(self.user.id) if squelch_pii else self.user.email
@@ -205,9 +202,7 @@ class CourseCreatorAdminTest(TestCase):
 
         def test_and_assert_case(squelch_pii, states):
             mock_log.reset_mock()
-            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii), mock.patch.dict(
-                'django.conf.settings.FEATURES', self.enable_creator_group_patch
-            ):
+            with self.settings(SQUELCH_PII_IN_LOGS=squelch_pii, ENABLE_CREATOR_GROUP=True):
                 for state in states:
                     self._change_state(state)
                 expected_identifier = str(self.user.id) if squelch_pii else self.user.email
