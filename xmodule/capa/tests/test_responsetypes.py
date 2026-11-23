@@ -307,6 +307,7 @@ class ImageResponseTest(ResponseTest):  # pylint: disable=missing-class-docstrin
         self.assert_answer_format(problem)
 
 
+@use_unsafe_codejail()
 class SymbolicResponseTest(ResponseTest):  # pylint: disable=missing-class-docstring
     xml_factory_class = SymbolicResponseXMLFactory
 
@@ -351,6 +352,36 @@ class SymbolicResponseTest(ResponseTest):  # pylint: disable=missing-class-docst
         # only one "expect" value
         with pytest.raises(Exception):
             self.build_problem(math_display=True, expect="2*x+3*y", num_inputs=3)
+
+    def test_check_runs_in_sandbox(self):
+        """The learner's answer and the author's expect reach symmath only inside safe_exec."""
+        problem = self.build_problem(expect="0")
+        payload = "__import__('os').getpid()+0"
+
+        def fake_safe_exec(_code, globals_dict, **_kwargs):
+            globals_dict['cfn_return'] = {'ok': False, 'msg': '<p>graded in the sandbox</p>'}
+
+        with mock.patch(
+            'xmodule.capa.responsetypes.safe_exec.safe_exec', side_effect=fake_safe_exec
+        ) as mock_exec:
+            correct_map = problem.grade_answers({'1_2_1': payload, '1_2_1_dynamath': ''})
+
+        mock_exec.assert_called_once()
+        code, globals_dict = mock_exec.call_args.args
+        assert 'symmath_check(expect, ans' in code
+        assert globals_dict['ans'] == payload
+        assert globals_dict['expect'] == '0'
+        assert mock_exec.call_args.kwargs['slug'] == '1_1'
+        assert correct_map.get_correctness('1_2_1') == 'incorrect'
+        assert 'graded in the sandbox' in correct_map.get_msg('1_2_1')
+
+    def test_sandbox_failure_is_a_response_error(self):
+        """A sandbox failure surfaces as a ResponseError, like CustomResponse, not a bare Exception."""
+        problem = self.build_problem(expect="0")
+
+        with mock.patch('xmodule.capa.responsetypes.safe_exec.safe_exec', side_effect=RuntimeError('no sandbox')):
+            with pytest.raises(ResponseError, match='no sandbox'):
+                problem.grade_answers({'1_2_1': 'x', '1_2_1_dynamath': ''})
 
     def _assert_symbolic_grade(
         self, problem, student_input, dynamath_input, expected_correctness,

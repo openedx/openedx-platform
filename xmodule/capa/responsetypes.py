@@ -2542,27 +2542,42 @@ class SymbolicResponse(CustomResponse):
         super(SymbolicResponse, self).setup_response()  # lint-amnesty, pylint: disable=super-with-arguments
 
     def execute_check_function(self, idset, submission):
-        from symmath import symmath_check
-        try:
-            # Since we have limited max_inputfields to 1,
-            # we can assume that there is only one submission
-            answer_given = submission[0]
+        # Since we have limited max_inputfields to 1,
+        # we can assume that there is only one submission
+        answer_given = submission[0]
 
-            ret = symmath_check(
-                self.expect, answer_given,
-                dynamath=self.context.get('dynamath'),
-                options=self.context.get('options'),
-                debug=self.context.get('debug'),
+        # symmath_check() passes the learner's answer, the dynamath MathML and
+        # the author's "expect" to sympy's sympify(), which evaluates them as
+        # Python. Run it in the sandbox, the way CustomResponse runs author
+        # check functions, so nothing learner-controlled is evaluated in this
+        # process and the sandbox's time and memory limits apply.
+        code = textwrap.dedent("""\
+            from symmath import symmath_check
+            cfn_return = symmath_check(expect, ans, dynamath=dynamath, options=options, debug=debug)
+        """)
+        globals_dict = {
+            'expect': self.expect,
+            'ans': answer_given,
+            'dynamath': self.context.get('dynamath'),
+            'options': self.context.get('options'),
+            'debug': self.context.get('debug'),
+        }
+        try:
+            safe_exec.safe_exec(
+                code,
+                globals_dict,
+                python_path=self.context['python_path'],
+                extra_files=self.context['extra_files'],
+                limit_overrides_context=get_course_id_from_capa_block(
+                    self.capa_block
+                ),
+                slug=self.id,
+                random_seed=self.context['seed'],
+                unsafely=self.capa_system.can_execute_unsafe_code(),
             )
-        except Exception as err:
-            log.error("oops in SymbolicResponse (cfn) error %s", err)
-            log.error(traceback.format_exc())
-            _ = self.capa_system.i18n.gettext
-            # Translators: 'SymbolicResponse' is a problem type and should not be translated.
-            msg = _("An error occurred with SymbolicResponse. The error was: {error_msg}").format(
-                error_msg=err,
-            )
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            ret = globals_dict['cfn_return']
+        except Exception as err:  # pylint: disable=broad-except
+            self._handle_exec_exception(err)
         self.context['messages'][0] = self.clean_message_html(ret['msg'])
         self.context['correct'] = ['correct' if ret['ok'] else 'incorrect'] * len(idset)
 
