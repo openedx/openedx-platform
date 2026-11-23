@@ -13,6 +13,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_DELETED,
     XBLOCK_DUPLICATED,
 )
+from openedx_tagging.models import ObjectTag
 
 from xmodule.modulestore.django import SignalHandler, modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -66,7 +67,8 @@ def delete_descendant_tags(**kwargs):
     """
     usage_key = kwargs.get("usage_key")
     if not usage_key or usage_key.block_type == "course":
-        # Course deletion is handled by ``delete_tag_xblock`` through the course key.
+        # Deleting a whole course goes through ``delete_course``, which emits ``course_deleted``;
+        # the ``delete_course_tags`` receiver handles it.
         return
 
     usage_key = usage_key.for_branch(None)
@@ -88,6 +90,40 @@ def delete_descendant_tags(**kwargs):
     # A failure cleaning up tags must never block the deletion itself, whatever raised it.
     except Exception:  # pylint: disable=broad-except
         log.warning("Unable to delete descendant tags of %s", usage_key, exc_info=True)
+
+
+@receiver(SignalHandler.course_deleted)
+def delete_course_tags(sender, course_key, **kwargs):
+    """
+    Delete the tags of a deleted course, of the course key itself and of every block in the course.
+
+    ``delete_course`` sends only ``SignalHandler.course_deleted``, never ``XBLOCK_DELETED``, and sends it
+    after the course structure is gone. The blocks can no longer be listed, and the tagging API has no lookup
+    by course, so the tagged object ids are found by matching the ObjectTag table with
+    ``api.course_object_id_clause``. An object whose tags other data protects is logged and skipped. Any
+    other failure is logged and ends the cleanup. Neither blocks the deletion.
+    """
+    try:
+        object_ids = list(
+            ObjectTag.objects.filter(api.course_object_id_clause(course_key))
+            .values_list("object_id", flat=True)
+            .distinct()
+        )
+        deleted_count = 0
+        for object_id in object_ids:
+            try:
+                # The savepoint keeps a failed delete from poisoning the surrounding transaction.
+                with transaction.atomic():
+                    api.delete_object_tags(object_id)
+                deleted_count += 1
+            except ProtectedError:
+                log.warning("Unable to delete the tags of %s, other data protects them", object_id)
+        log.info(
+            "Deleted the tags of %d of %d objects of deleted course %s", deleted_count, len(object_ids), course_key
+        )
+    # A failure cleaning up tags must never block the deletion itself, whatever raised it.
+    except Exception:  # pylint: disable=broad-except
+        log.warning("Unable to delete tags of deleted course %s", course_key, exc_info=True)
 
 
 @receiver(XBLOCK_DUPLICATED)

@@ -146,6 +146,19 @@ def get_unassigned_taxonomies(enabled=True) -> QuerySet:
     )
 
 
+def course_object_id_clause(course_key: CourseKey) -> Q:
+    """
+    Returns a filter on ``ObjectTag.object_id`` that matches the course key itself and, for a ``course-v1:`` key,
+    every block of the course.
+    """
+    clause = Q(object_id=str(course_key))
+    if str(course_key).startswith("course-v1:"):
+        # The "+type@" delimiter keeps the prefix from matching a sibling run such as "run2".
+        block_prefix = str(course_key).replace("course-v1:", "block-v1:", 1) + "+type@"
+        clause |= Q(object_id__startswith=block_prefix)
+    return clause
+
+
 def get_all_object_tags(
     content_key: ContentKey,
     prefetch_orgs: bool = False,
