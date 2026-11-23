@@ -2385,6 +2385,19 @@ wheels = [
 ]
 
 [[package]]
+name = "enmerkar"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "babel" },
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/6e/3930a6a285fbb350bdaf648569febeaf96ddb5813aa76c608000f73bc636/enmerkar-0.7.1.tar.gz", hash = "sha256:a4a6c859b4ed293deee40ff61d6695b3ff7bc153770a1799f2be872181282e00", size = 25059, upload-time = "2019-12-02T15:16:23.744Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/e4/89a23164cf125d336d932b1bccca185e0563ac972027e86ed87360a1f78e/enmerkar-0.7.1-py3-none-any.whl", hash = "sha256:ba5a79e022963580c994ce8f4fe8477d574159adbe86e5271b1a3d4127b8794d", size = 12520, upload-time = "2019-12-02T15:16:22.372Z" },
+]
+
+[[package]]
 name = "enmerkar-underscore"
 version = "2.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -4546,6 +4559,7 @@ dependencies = [
     { name = "edx-toggles" },
     { name = "edx-when" },
     { name = "edxval" },
+    { name = "enmerkar" },
     { name = "enmerkar-underscore" },
     { name = "event-tracking" },
     { name = "fs" },
@@ -4905,6 +4919,7 @@ requires-dist = [
     { name = "edx-toggles" },
     { name = "edx-when" },
     { name = "edxval" },
+    { name = "enmerkar" },
     { name = "enmerkar-underscore" },
     { name = "event-tracking" },
     { name = "fs" },

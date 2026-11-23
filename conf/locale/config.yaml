@@ -15,6 +15,9 @@ ignore_dirs:
     - '*/envs'
     # Directories that are not our code.
     - node_modules
+    # Vendored JS. None of it has user-facing strings of ours, and xgettext's JavaScript parser
+    # fails on the pdf.js wasm fallbacks ("too many open XML elements").
+    - common/static/js/vendor
     # Directories containing files that can't have strings in them.
     - conf
     - docs

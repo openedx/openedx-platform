@@ -56,6 +56,7 @@ attrs==26.1.0
     #   referencing
 babel==2.18.0
     # via
+    #   enmerkar
     #   enmerkar-underscore
     #   openedx-platform
     #   pydata-sphinx-theme
@@ -279,6 +280,7 @@ django==5.2.19
     #   edx-toggles
     #   edx-when
     #   edxval
+    #   enmerkar
     #   enmerkar-underscore
     #   enterprise-integrated-channels
     #   event-tracking
@@ -632,6 +634,8 @@ elasticsearch==7.9.1
     #   openedx-forum
 encutils==1.0.0
     # via cssutils
+enmerkar==0.7.1
+    # via openedx-platform
 enmerkar-underscore==2.4.2
     # via openedx-platform
 enterprise-integrated-channels==0.3.0
