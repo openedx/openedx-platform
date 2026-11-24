@@ -1224,8 +1224,10 @@ class _ModuleSystemShim:
     @property
     def can_execute_unsafe_code(self):
         """
-        Returns a function which returns a boolean, indicating whether or not to allow the execution of unsafe,
-        unsandboxed code.
+        Returns a function that always returns False.
+
+        Course code always runs in the codejail sandbox now, so there is no unsafe execution to allow.
+        Kept so that XBlocks that still read it don't break.
 
         Deprecated in favor of the sandbox service.
         """
@@ -1234,10 +1236,6 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        sandbox_service = self._services.get("sandbox")  # pylint: disable=no-member
-        if sandbox_service:
-            return sandbox_service.can_execute_unsafe_code
-        # Default to saying "no unsafe code".
         return lambda: False
 
     @property
