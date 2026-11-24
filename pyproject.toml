@@ -120,6 +120,7 @@ dependencies = [
     "pytz", # Time zone information database
     "PyYAML", # Used to parse XModule resource templates
     "redis", # celery task broker
+    "regex", # Used by sanitize_body in lms/djangoapps/discussion/django_comment_client/utils.py
     "requests-oauthlib", # Simplifies use of OAuth via the requests library, used for CCX and LTI
     "random2",
     "rules", # Django extension for rules-based authorization checks
