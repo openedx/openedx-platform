@@ -1248,6 +1248,8 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
+regex==2026.11.23
+    # via openedx-platform
 requests==2.34.2
     # via
     #   analytics-python
