@@ -15,7 +15,7 @@ from ..helpers import GRADER_TYPES, remove_entrance_exam_graders
 from .xblock_helpers import usage_key_with_run
 
 
-def create_xblock(parent_locator, user, category, display_name, boilerplate=None, is_entrance_exam=False):
+def create_xblock(parent_locator, user, category, display_name, boilerplate=None, is_entrance_exam=False, extra_metadata=None):
     """
     Performs the actual grunt work of creating items/xblocks -- knows nothing about requests, views, etc.
     """
@@ -40,6 +40,11 @@ def create_xblock(parent_locator, user, category, display_name, boilerplate=None
 
         if display_name is not None:
             metadata['display_name'] = display_name
+
+        # Settings supplied by the caller (for example use_mfe_theming on new
+        # Text blocks), applied after the template and display name so they win.
+        if isinstance(extra_metadata, dict):
+            metadata.update(extra_metadata)
 
         # We should use the 'fields' kwarg for newer block settings/values (vs. metadata or data)
         fields = {}
