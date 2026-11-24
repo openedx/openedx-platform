@@ -2,7 +2,6 @@
 Progress Tab Views
 """
 
-from django.contrib.auth import get_user_model
 from django.http.response import Http404
 from edx_django_utils import monitoring as monitoring_utils
 from edx_django_utils.plugins import pluggable_override
@@ -15,16 +14,14 @@ from rest_framework.response import Response
 from xblock.scorable import ShowCorrectness
 
 from common.djangoapps.student.models import CourseEnrollment
-from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.course_blocks.transformers import start_date
 from lms.djangoapps.course_home_api.progress.api import aggregate_assignment_type_grade_summary
 from lms.djangoapps.course_home_api.progress.serializers import ProgressTabSerializer
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
-from lms.djangoapps.course_home_api.utils import get_course_or_403
-from lms.djangoapps.courseware.access import has_access, has_ccx_coach_role
+from lms.djangoapps.course_home_api.utils import get_course_or_403, get_student_user
+from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_course_blocks_completion_summary, get_studio_url
-from lms.djangoapps.courseware.masquerade import setup_masquerade
 from lms.djangoapps.courseware.views.views import credit_course_requirements, get_cert_data
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.verify_student.services import IDVerificationService
@@ -35,8 +32,6 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.features.content_type_gating.block_transformers import ContentTypeGateTransformer
 from openedx.features.course_duration_limits.access import get_access_expiration_data
 from xmodule.modulestore.django import modulestore
-
-User = get_user_model()
 
 
 @pluggable_override('OVERRIDE_COURSE_HOME_PROGRESS_USERNAME')
@@ -153,40 +148,6 @@ class ProgressTabView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = ProgressTabSerializer
 
-    def _get_student_user(self, request, course_key, student_id, is_staff):
-        """Gets the student User object, either from coaching, masquerading, or normal actual request"""
-        if student_id:
-            try:
-                student_id = int(student_id)
-            except ValueError as e:
-                raise Http404 from e
-
-        if student_id is None or student_id == request.user.id:
-            _, student = setup_masquerade(
-                request,
-                course_key,
-                staff_access=is_staff,
-                reset_masquerade_data=True
-            )
-            return student
-
-        # When a student_id is passed in, we display the progress page for the user
-        # with the provided user id, rather than the requesting user
-        try:
-            coach_access = has_ccx_coach_role(request.user, course_key)
-        except CCXLocatorValidationException:
-            coach_access = False
-
-        has_access_on_students_profiles = is_staff or coach_access
-        # Requesting access to a different student's profile
-        if not has_access_on_students_profiles:
-            raise Http404
-
-        try:
-            return User.objects.get(id=student_id)
-        except User.DoesNotExist as exc:
-            raise Http404 from exc
-
     def _visible_section_scores(self, course_grade):
         """Return only those chapter/section scores that are visible to the learner."""
         visible_chapters = []
@@ -213,7 +174,7 @@ class ProgressTabView(RetrieveAPIView):
         monitoring_utils.set_custom_attribute('is_staff', request.user.is_staff)
         requester_has_staff_access = bool(has_access(request.user, 'staff', course_key))
 
-        student = self._get_student_user(request, course_key, student_id, requester_has_staff_access)
+        student = get_student_user(request, course_key, student_id, requester_has_staff_access)
         learner_has_staff_access = bool(has_access(student, 'staff', course_key))
         username = obfuscated_username(request, student) or student.username
 
