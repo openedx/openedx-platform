@@ -19,6 +19,7 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from oauth2_provider.models import Application
+from web_fragments.fragment import Fragment
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, SuperuserFactory, UserFactory
@@ -38,12 +39,12 @@ from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-impor
     CourseFactory,
 )
 from xmodule.tabs import CourseTab  # pylint: disable=wrong-import-order
-from xmodule.tests.helpers import StubUserService  # pylint: disable=wrong-import-order
+from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW  # pylint: disable=wrong-import-order
 
 from . import helpers
-from .decorators import edxnotes
 from .exceptions import EdxNotesParseError, EdxNotesServiceUnavailable
 from .plugins import EdxNotesTab
+from .wrappers import wrap_with_edxnotes
 
 NOTES_API_EMPTY_RESPONSE = {
     "total": 0,
@@ -74,70 +75,57 @@ def enable_edxnotes_for_the_course(course, user_id):
     modulestore().update_item(course, user_id)
 
 
-@edxnotes
-class TestProblem:
-    """
-    Test class (fake problem) decorated by edxnotes decorator.
-
-    The purpose of this class is to imitate any problem.
-    """
-    def __init__(self, course, user=None):
-        self.scope_ids = MagicMock(usage_id=course.id.make_usage_key('test_problem', 'test_usage_id'))
-        user = user or UserFactory()
-        user_service = StubUserService(user)
-        self.runtime = MagicMock(service=lambda _a, _b: user_service, is_author_mode=False)
-        self.block = MagicMock()
-        self.block.runtime.modulestore.get_course.return_value = course
-
-    def get_html(self):
-        """
-        Imitate get_html in block.
-        """
-        return "original_get_html"
-
-
+@ddt.ddt
 @skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
-class EdxNotesDecoratorTest(ModuleStoreTestCase):
+class EdxNotesWrapperTest(ModuleStoreTestCase):
     """
-    Tests for edxnotes decorator.
+    Tests for the edxnotes XBlock wrapper.
     """
+
+    ORIGINAL_CONTENT = "original_content"
 
     def setUp(self):
         super().setUp()
 
         ApplicationFactory(name="edx-notes")
         self.course = CourseFactory(edxnotes=True, default_store=ModuleStoreEnum.Type.split)
-        self.user = UserFactory()
-        self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
-        self.problem = TestProblem(self.course, self.user)
+        self.user = CourseEnrollmentFactory(course_id=self.course.id).user
+        enable_edxnotes_for_the_course(self.course, self.user.id)
+        self.html_block = BlockFactory.create(parent=self.course, category="html")
+        self.problem_block = BlockFactory.create(parent=self.course, category="problem")
 
+    def wrap(self, block=None, user=None, course=None, view=STUDENT_VIEW):
+        """
+        Run the wrapper on a fragment holding ORIGINAL_CONTENT, and return the resulting content.
+        """
+        frag = Fragment(self.ORIGINAL_CONTENT)
+        result = wrap_with_edxnotes(user or self.user, course, block or self.html_block, view, frag, {})
+        return result.content
+
+    @ddt.data(True, False)
     @override_settings(ENABLE_EDXNOTES=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_public_endpoint", autospec=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_token_url", autospec=True)
     @patch("lms.djangoapps.edxnotes.helpers.get_edxnotes_id_token", autospec=True)
     @patch("lms.djangoapps.edxnotes.helpers.generate_uid", autospec=True)
-    def test_edxnotes_enabled(self, mock_generate_uid, mock_get_id_token, mock_get_token_url, mock_get_endpoint):
+    def test_edxnotes_enabled(
+        self, pass_course, mock_generate_uid, mock_get_id_token, mock_get_token_url, mock_get_endpoint
+    ):
         """
-        Tests if get_html is wrapped when feature flag is on and edxnotes are
-        enabled for the course.
+        Tests that the content is wrapped when the feature flag is on and edxnotes are enabled for the
+        course, whether or not the caller supplies the course.
         """
-        course = CourseFactory(edxnotes=True)
-        enrollment = CourseEnrollmentFactory(course_id=course.id)
-        user = enrollment.user
-        problem = TestProblem(course, user)
-
         mock_generate_uid.return_value = "uid"
         mock_get_id_token.return_value = "token"
         mock_get_token_url.return_value = "/tokenUrl"
         mock_get_endpoint.return_value = "/endpoint"
-        enable_edxnotes_for_the_course(course, user.id)
         expected_context = {
-            "content": "original_get_html",
+            "content": self.ORIGINAL_CONTENT,
             "uid": "uid",
             "edxnotes_visibility": "true",
             "params": {
-                "usageId": problem.scope_ids.usage_id,
-                "courseId": course.id,
+                "usageId": self.html_block.scope_ids.usage_id,
+                "courseId": self.course.id,
                 "token": "token",
                 "tokenUrl": "/tokenUrl",
                 "endpoint": "/endpoint",
@@ -145,52 +133,62 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
                 "eventStringLimit": settings.TRACK_MAX_EVENT / 6,
             },
         }
-        assert problem.get_html() == render_to_string('edxnotes_wrapper.html', expected_context)
+        course = self.course if pass_course else None
+        assert self.wrap(course=course) == render_to_string("edxnotes_wrapper.html", expected_context)
 
     @override_settings(ENABLE_EDXNOTES=True)
     def test_edxnotes_disabled_if_edxnotes_flag_is_false(self):
         """
-        Tests that get_html is wrapped when feature flag is on, but edxnotes are
-        disabled for the course.
+        Tests that the content is not wrapped when the feature flag is on, but edxnotes are disabled
+        for the course.
         """
         self.course.edxnotes = False
-        assert 'original_get_html' == self.problem.get_html()
+        assert self.wrap(course=self.course) == self.ORIGINAL_CONTENT
 
     @override_settings(ENABLE_EDXNOTES=False)
     def test_edxnotes_disabled(self):
         """
-        Tests that get_html is not wrapped when feature flag is off.
+        Tests that the content is not wrapped when the feature flag is off.
         """
-        assert 'original_get_html' == self.problem.get_html()
+        assert self.wrap() == self.ORIGINAL_CONTENT
 
-    def test_edxnotes_studio(self):
+    @override_settings(ENABLE_EDXNOTES=True)
+    def test_other_block_types_not_wrapped(self):
         """
-        Tests that get_html is not wrapped when problem is rendered in Studio.
+        Tests that only HTML blocks are wrapped.
         """
-        self.problem.runtime.is_author_mode = True
-        assert 'original_get_html' == self.problem.get_html()
+        assert self.wrap(block=self.problem_block) == self.ORIGINAL_CONTENT
 
-    def test_edxnotes_openedx_content_runtime(self):
+    @override_settings(ENABLE_EDXNOTES=True)
+    def test_other_views_not_wrapped(self):
         """
-        Tests that get_html is not wrapped when problem is rendered by the openedx_content runtime.
+        Tests that only the student view is wrapped.
         """
-        del self.problem.block.runtime.modulestore
-        assert 'original_get_html' == self.problem.get_html()
-
-    def test_edxnotes_harvard_notes_enabled(self):
-        """
-        Tests that get_html is not wrapped when Harvard Annotation Tool is enabled.
-        """
-        self.course.advanced_modules = ["videoannotation", "imageannotation", "textannotation"]
-        enable_edxnotes_for_the_course(self.course, self.user.id)
-        assert 'original_get_html' == self.problem.get_html()
+        assert self.wrap(view=PUBLIC_VIEW) == self.ORIGINAL_CONTENT
 
     @override_settings(ENABLE_EDXNOTES=True)
     def test_anonymous_user(self):
-        user = AnonymousUser()
-        problem = TestProblem(self.course, user)
-        enable_edxnotes_for_the_course(self.course, None)
-        assert problem.get_html() == "original_get_html"
+        """
+        Tests that the content is not wrapped for unauthenticated users.
+        """
+        assert self.wrap(user=AnonymousUser()) == self.ORIGINAL_CONTENT
+
+    @override_settings(ENABLE_EDXNOTES=True)
+    def test_rendered_through_lms_runtime(self):
+        """
+        Tests that an HTML block rendered by the LMS is wrapped, with the wrapper inside the XBlock's div.
+        """
+        html_block = BlockFactory.create(parent=self.course, category="html", data="<p>annotate me</p>")
+        request = RequestFactory().get("/")
+        request.user = self.user
+        request.session = {}
+        field_data_cache = FieldDataCache([self.course, html_block], self.course.id, self.user)
+        block = get_block_for_descriptor(
+            self.user, request, html_block, field_data_cache, self.course.id, course=self.course
+        )
+        content = block.render(STUDENT_VIEW).content
+        assert content.index('class="xblock') < content.index('class="edx-notes-wrapper"')
+        assert content.index('class="edx-notes-wrapper-content"') < content.index("<p>annotate me</p>")
 
 
 @skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
