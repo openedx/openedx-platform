@@ -407,10 +407,11 @@ class CourseMetadataViewCourseInfoAuthzTest(InstructorAuthzTestMixin, SharedModu
             assert response.data[field] is not None, field
 
     def _assert_course_info_hidden(self, response):
-        """Assert a ``200`` with the Course Info fields ``null`` and the shared fields returned."""
+        """Assert a ``200`` with the Course Info fields ``null``, no Course Info tab, and the shared fields returned."""
         assert response.status_code == status.HTTP_200_OK
         for field in self.COURSE_INFO_FIELDS:
             assert response.data[field] is None, field
+        assert "course_info" not in {tab["tab_id"] for tab in response.data["tabs"]}
         for field in self.SHARED_FIELDS:
             assert field in response.data, field
         assert response.data["course_id"] == str(self.course_key)
@@ -481,6 +482,20 @@ class CourseMetadataViewCourseInfoAuthzTest(InstructorAuthzTestMixin, SharedModu
             self._assert_course_info_shown(self._get(user))
 
         assert check.call_count == 1
+
+    @ddt.data(StaffFactory, InstructorFactory)
+    def test_authz_legacy_role_without_authz_role_is_denied(self, user_factory):
+        """With the flag on, legacy staff and instructors without an AuthZ role get the standard ``403``."""
+        # With the flag on, adding a legacy role assigns its AuthZ equivalent instead,
+        # so the legacy-only user is created with the flag off.
+        self.set_authz_enabled(False)
+        user = user_factory(course_key=self.course_key)
+        self.set_authz_enabled(True)
+
+        response = self._get(user)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.data["error_code"] == "permission_denied"
 
     @ddt.data(StaffFactory, InstructorFactory)
     def test_legacy_role_sees_course_info(self, user_factory):
