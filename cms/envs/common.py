@@ -806,6 +806,9 @@ INSTALLED_APPS = [
     'openedx.core.djangoapps.credit.apps.CreditConfig',
 
     'common.djangoapps.xblock_django',
+    # XBlock's Django integration: provides {% load xblock_i18n %} for blocks whose templates
+    # are rendered by Django's engine and translated with the block's own catalog.
+    'xblock.django',
 
     # Agreements
     'openedx.core.djangoapps.agreements',
