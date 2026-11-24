@@ -119,11 +119,13 @@ Language Packages:
 Codejail Setup
 --------------
 
-As a part of the baremetal setup, you will need to configure your system to
-work properly with codejail.  See the `codejail installation steps`_ for more
-details.
+While not strictly required, some components of the platform require sandboxing
+capabilites. Such sandboxing is achieved through the use of a remote REST
+service `codejail-service`_.
 
-.. _codejail installation steps: https://github.com/openedx/codejail?tab=readme-ov-file#installation
+Instructions on how to deploy such service can be found in https://github.com/openedx/codejail-service/blob/main/docs/deployment.rst
+
+.. _codejail-service: https://github.com/openedx/codejail-service/blob/main/docs/deployment.rst
 
 Build Steps
 -----------
