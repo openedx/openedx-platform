@@ -430,6 +430,17 @@ class EnrollmentsTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
         ):
             self._assert_access(user, self.ALL_ENDPOINTS)
 
+    @ddt.data(StaffFactory, InstructorFactory)
+    def test_authz_legacy_role_without_authz_role_is_denied(self, user_factory):
+        """With the flag on, legacy staff and instructors without an AuthZ role get ``403`` on every endpoint."""
+        # With the flag on, adding a legacy role assigns its AuthZ equivalent instead,
+        # so the legacy-only user is created with the flag off.
+        self.set_authz_enabled(False)
+        user = user_factory(course_key=self.course_key)
+        self.set_authz_enabled(True)
+
+        self._assert_access(user, set())
+
     def test_authz_denied_overrides_legacy_instructor(self):
         """With the flag on, AuthZ denying a legacy instructor means no access."""
         instructor = InstructorFactory(course_key=self.course_key)
