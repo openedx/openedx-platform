@@ -7,9 +7,7 @@ The main application's Python dependencies are declared in the root
 and ``[tool.edx_lint].uv_constraints`` for repo-specific version pins) and
 locked in the root ``uv.lock``, managed with `uv`_.
 
-This ``requirements/`` directory now holds ``edx-sandbox``, its own
-standalone ``uv``-managed project (``pyproject.toml`` + ``uv.lock``) for
-Codejail's isolated sandbox environment, plus ``requirements/edx/*.txt`` --
+This ``requirements/`` directory now holds ``requirements/edx/*.txt`` --
 generated compatibility exports of the main app's dependencies (regenerated
 by ``make compile-requirements``, not hand-edited) for external tools like
 Tutor/Devstack that still do ``pip install -r requirements/edx/base.txt``

@@ -40,9 +40,8 @@ jobs:
 
           # The ^"? is because git may quote weird file paths
           #
-          # This still watches requirements/ because requirements/edx-sandbox
-          # (its own uv project) and the requirements/edx/*.txt compatibility
-          # exports still live there. A planned follow-up will remove the
+          # This still watches requirements/ because the requirements/edx/*.txt
+          # compatibility exports still live there. A planned follow-up will remove the
           # requirements/ folder entirely (see public-engineering#543), at
           # which point this pattern will need updating again.
           if git diff --name-only "$BASE_SHA" | grep -P '^"?((requirements/)|(scripts/.*?/requirements/)|(scripts/[^/]+/pyproject\.toml)|(scripts/[^/]+/uv\.lock)|(pyproject\.toml)|(uv\.lock))'; then
