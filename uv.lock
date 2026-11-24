@@ -8621,7 +8621,7 @@ wheels = [
 [[package]]
 name = "xblocks-contrib"
 version = "0.0"
-source = { git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme#4bf4883cb2268f197d7d5db768681a32573e6762" }
+source = { git = "https://github.com/open-craft/xblocks-core.git?rev=rpenido%2Ftext-xblock-include-theme#29fdf84e0d8070341f0b3a21991bba06856ad4c7" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "chem" },
