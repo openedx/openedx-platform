@@ -3,39 +3,55 @@ XBlock wrappers related to edXNotes.
 """
 
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
+from web_fragments.fragment import Fragment
+from xblock.core import XBlock
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from xmodule.modulestore.django import modulestore
 from xmodule.x_module import STUDENT_VIEW
 
-ANNOTATABLE_BLOCK_TYPES = {"html"}
+if TYPE_CHECKING:
+    from xmodule.course_block import CourseBlock
 
 
-def wrap_with_edxnotes(user, course, block, view, frag, context):  # pylint: disable=unused-argument
+def wrap_with_edxnotes(  # pylint: disable=unused-argument
+    user: User | AnonymousUser,
+    course: CourseBlock | None,
+    block: XBlock,
+    view: str,
+    frag: Fragment,
+    context: dict | None,
+) -> Fragment:
     """
     Make the student view of an HTML block annotatable by wrapping it in the edXNotes frontend.
 
     WARNING: This is a temporary hack. Do not use it as a pattern for new features.
 
-    The LMS should not special-case particular block types when rendering, nor should it inject
-    feature-specific templates and JavaScript into a block's output. This wrapper does both. It
+    The LMS should not special-case particular block types when rendering, nor should we be building
+    frontend features on openedx-platform django templates. This wrapper does both. It
     exists only to keep edXNotes working until edXNotes is either replaced or deprecated:
     https://github.com/openedx/edx-notes-api/issues/633
 
     Arguments:
-        user (User): the user who is viewing the block.
-        course (CourseBlock | None): the block's course, if the caller has already loaded it.
+        user: the user who is viewing the block.
+        course: the block's course, if the caller has already loaded it.
         block, view, frag, context: the standard XBlock wrapper arguments.
     """
     # Import is placed here to avoid model import at project startup.
     from .helpers import generate_uid, get_edxnotes_id_token, get_public_endpoint, get_token_url, is_feature_enabled
 
+    annotatable_block_types = {"html"}
+
     if not settings.ENABLE_EDXNOTES:
         return frag
-    if view != STUDENT_VIEW or block.scope_ids.block_type not in ANNOTATABLE_BLOCK_TYPES:
+    if view != STUDENT_VIEW or block.scope_ids.block_type not in annotatable_block_types:
         return frag
 
     course = course or modulestore().get_course(block.scope_ids.usage_id.context_key)

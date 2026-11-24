@@ -561,8 +561,7 @@ def prepare_runtime_for_user(
     if settings.LICENSING:
         block_wrappers.append(partial(wrap_with_license, mako_service=mako_service))
 
-    # TEMPORARY HACK, not a pattern to follow: the LMS should not wrap particular block types with
-    # feature-specific frontend code. See the docstring of wrap_with_edxnotes.
+    # TEMPORARY HACK to keep edXNotes working. See the docstring of wrap_with_edxnotes.
     # This goes before wrap_xblock so that the edXNotes wrapper ends up inside of the XBlock's div.
     if settings.ENABLE_EDXNOTES:
         block_wrappers.append(partial(wrap_with_edxnotes, user, course))
