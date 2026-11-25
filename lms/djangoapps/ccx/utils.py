@@ -652,8 +652,11 @@ def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statem
 
         for unit in data:
             block = blocks[unit['location']]
+            # A CCX override would take precedence over the master course and
+            # expose blocks that are visible to staff only there.
+            hidden = unit['hidden'] or is_staff_only_in_master_course(block)
             override_field_for_ccx(
-                ccx, block, 'visible_to_staff_only', unit['hidden'])
+                ccx, block, 'visible_to_staff_only', hidden)
 
             start = parse_date(unit['start'])
             if start:
@@ -677,7 +680,7 @@ def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statem
                 ccx_ids_to_delete.append(get_override_for_ccx(ccx, block, 'due_id'))
                 clear_ccx_field_info_from_ccx_map(ccx, block, 'due')
 
-            if not unit['hidden'] and block.graded:
+            if not hidden and block.graded:
                 graded[block.format] = graded.get(block.format, 0) + 1
 
             children = unit.get('children', None)
@@ -701,7 +704,32 @@ def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statem
     if earliest:
         override_field_for_ccx(ccx, course, 'start', earliest)
 
-    # Attempt to automatically adjust grading policy
+    policy = adjust_ccx_grading_policy(course, ccx, graded)
+
+    # using CCX object as sender here.
+    responses = SignalHandler.course_published.send(
+        sender=ccx,
+        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
+    )
+    for rec, response in responses:
+        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+
+    return get_ccx_schedule(course, ccx), policy
+
+
+def adjust_ccx_grading_policy(course, ccx, graded):
+    """
+    Lower the ``min_count`` of CCX grading policy sections that have fewer
+    visible graded blocks than they require.
+
+    Arguments:
+        course (CourseBlock): the master course.
+        ccx (CustomCourseForEdX): the CCX being edited.
+        graded (dict): the number of visible graded blocks, keyed by format.
+
+    Returns:
+        dict: the (possibly adjusted) grading policy.
+    """
     changed = False
     policy = get_override_for_ccx(
         ccx, course, 'grading_policy', course.grading_policy
@@ -715,16 +743,7 @@ def save_ccx_schedule(course, ccx, schedule):  # pylint: disable=too-many-statem
             section['min_count'] = count
     if changed:
         override_field_for_ccx(ccx, course, 'grading_policy', policy)
-
-    # using CCX object as sender here.
-    responses = SignalHandler.course_published.send(
-        sender=ccx,
-        course_key=CCXLocator.from_course_locator(course.id, str(ccx.id))
-    )
-    for rec, response in responses:
-        log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
-
-    return get_ccx_schedule(course, ccx), policy
+    return policy
 
 
 def remove_block_from_ccx_schedule(ccx, course, location):
@@ -758,19 +777,11 @@ def remove_block_from_ccx_schedule(ccx, course, location):
                 return found
         return None
 
-    def hide(block):
-        """Hide ``block`` and its descendants and clear their date overrides."""
-        override_field_for_ccx(ccx, block, 'visible_to_staff_only', True)
-        clear_override_for_ccx(ccx, block, 'start')
-        clear_override_for_ccx(ccx, block, 'due')
-        for child in block.get_children():
-            hide(child)
-
     block = find_block(course)
     if block is None:
         raise ValueError(f'Block "{location}" is not part of course "{course.id}"')
 
-    hide(block)
+    _hide_in_ccx(ccx, block)
 
     # using CCX object as sender here.
     responses = SignalHandler.course_published.send(
@@ -781,3 +792,144 @@ def remove_block_from_ccx_schedule(ccx, course, location):
         log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
     return get_ccx_schedule(course, ccx)
+
+
+class StaffOnlyChaptersError(ValueError):
+    """
+    Raised when a CCX is asked to show chapters that are visible to staff only
+    in the master course. A CCX override takes precedence over the master
+    course, so showing them would expose them to learners.
+    """
+    def __init__(self, locations):
+        self.locations = sorted(locations)
+        super().__init__(f'Visible to staff only in the master course: {", ".join(self.locations)}')
+
+
+def is_staff_only_in_master_course(block):
+    """
+    Return whether ``block`` is visible to staff only in the master course,
+    ignoring any CCX override.
+    """
+    with disable_overrides():
+        return block.visible_to_staff_only
+
+
+def get_master_course_chapters(course):
+    """
+    Return the chapters of the master ``course`` keyed by usage key string, in course order.
+    """
+    return {
+        str(chapter.location): chapter
+        for chapter in course.get_children()
+        if chapter.location.block_type == 'chapter'
+    }
+
+
+def get_staff_only_chapters(course, locations):
+    """
+    Return the sorted ``locations`` that are chapters visible to staff only in the master ``course``.
+    """
+    chapters = get_master_course_chapters(course)
+    return sorted(
+        location for location in set(locations)
+        if location in chapters and is_staff_only_in_master_course(chapters[location])
+    )
+
+
+def get_ccx_visible_chapters(course, ccx):
+    """
+    Return the usage key strings of the master course chapters that learners
+    of ``ccx`` can see, in course order.
+
+    This is the CCX REST API v0 ``course_modules`` list, derived from the same
+    ``visible_to_staff_only`` overrides that the coach dashboard edits.
+    """
+    return [
+        location for location, chapter in get_master_course_chapters(course).items()
+        if not is_staff_only_in_master_course(chapter)
+        and not get_override_for_ccx(ccx, chapter, 'visible_to_staff_only', False)
+    ]
+
+
+def set_ccx_chapters_visibility(course, ccx, show=(), hide=()):
+    """
+    Show and hide whole chapters of the master course in ``ccx``.
+
+    Showing a chapter makes it and its sequentials and verticals visible, like
+    adding a section on the coach dashboard; blocks that are visible to staff
+    only in the master course stay hidden. Hiding a chapter hides it and its
+    descendants and clears their CCX dates, like
+    :func:`remove_block_from_ccx_schedule`. The grading policy is then adjusted
+    as in :func:`save_ccx_schedule`. Everything is validated before anything is
+    written. Callers are responsible for sending the ``course_published``
+    signal.
+
+    Arguments:
+        course (CourseBlock): the master course.
+        ccx (CustomCourseForEdX): the CCX being edited.
+        show (iterable): usage key strings of the chapters to show.
+        hide (iterable): usage key strings of the chapters to hide.
+
+    Raises:
+        ValueError: if ``show`` or ``hide`` contain locations that are not
+            chapters of the master course.
+        StaffOnlyChaptersError: if ``show`` contains chapters that are visible
+            to staff only in the master course.
+    """
+    chapters = get_master_course_chapters(course)
+    unknown = (set(show) | set(hide)) - chapters.keys()
+    if unknown:
+        raise ValueError(f'Not chapters of course "{course.id}": {", ".join(sorted(unknown))}')
+    staff_only = get_staff_only_chapters(course, show)
+    if staff_only:
+        raise StaffOnlyChaptersError(staff_only)
+
+    for location in show:
+        _show_in_ccx(ccx, chapters[location])
+    for location in hide:
+        _hide_in_ccx(ccx, chapters[location])
+
+    adjust_ccx_grading_policy(course, ccx, _count_ccx_visible_graded(course, ccx))
+
+
+def _show_in_ccx(ccx, block, depth=1):
+    """
+    Show ``block`` and its schedule descendants (down to verticals), skipping
+    those that are visible to staff only in the master course.
+    """
+    if is_staff_only_in_master_course(block):
+        return
+    override_field_for_ccx(ccx, block, 'visible_to_staff_only', False)
+    if depth < 3:
+        for child in block.get_children():
+            _show_in_ccx(ccx, child, depth + 1)
+
+
+def _hide_in_ccx(ccx, block):
+    """Hide ``block`` and its descendants and clear their date overrides."""
+    override_field_for_ccx(ccx, block, 'visible_to_staff_only', True)
+    clear_override_for_ccx(ccx, block, 'start')
+    clear_override_for_ccx(ccx, block, 'due')
+    for child in block.get_children():
+        _hide_in_ccx(ccx, child)
+
+
+def _count_ccx_visible_graded(course, ccx):
+    """
+    Count the graded schedule blocks learners of ``ccx`` can see, keyed by format.
+    """
+    graded = {}
+
+    def visit(node, depth=1):
+        for child in node.get_children():
+            if is_staff_only_in_master_course(child) or get_override_for_ccx(
+                ccx, child, 'visible_to_staff_only', False
+            ):
+                continue
+            if child.graded:
+                graded[child.format] = graded.get(child.format, 0) + 1
+            if depth < 3:
+                visit(child, depth + 1)
+
+    visit(course)
+    return graded
