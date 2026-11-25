@@ -221,10 +221,12 @@ class CourseDetails:
             if jsondict.get('overview') == '':
                 jsondict['overview'] = '<p>&nbsp;</p>'
 
+            # A date key left out of the body means "unchanged", not "clear it";
+            # an explicit null or "" still clears the date.
             if 'start_date' in jsondict:
                 converted = date.from_json(jsondict['start_date'])
             else:
-                converted = None
+                converted = block.start
             if converted != block.start:
                 dirty = True
                 block.start = converted
@@ -232,7 +234,7 @@ class CourseDetails:
             if 'end_date' in jsondict:
                 converted = date.from_json(jsondict['end_date'])
             else:
-                converted = None
+                converted = block.end
 
             if converted != block.end:
                 dirty = True
@@ -241,7 +243,7 @@ class CourseDetails:
             if 'enrollment_start' in jsondict:
                 converted = date.from_json(jsondict['enrollment_start'])
             else:
-                converted = None
+                converted = block.enrollment_start
 
             if converted != block.enrollment_start:
                 dirty = True
@@ -250,7 +252,7 @@ class CourseDetails:
             if 'enrollment_end' in jsondict:
                 converted = date.from_json(jsondict['enrollment_end'])
             else:
-                converted = None
+                converted = block.enrollment_end
 
             if converted != block.enrollment_end:
                 dirty = True
@@ -259,7 +261,7 @@ class CourseDetails:
             if 'certificate_available_date' in jsondict:
                 converted = date.from_json(jsondict['certificate_available_date'])
             else:
-                converted = None
+                converted = block.certificate_available_date
 
             if converted != block.certificate_available_date:
                 dirty = True
