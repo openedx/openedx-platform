@@ -292,6 +292,8 @@ These steps are non-breaking unless noted.
   downstream development tools (like Tutor and 2U's devstack), as they will
   now either need to maintain local copies of these modules, or "rebase"
   themselves onto (lms,cms)/envs/dev.py.
+  * Deprecate ``ENABLE_COPPA_COMPLIANCE`` setting and replace with ``HIDE_YEAR_OF_BIRTH_ON_REGISTRATION``. This is a BREAKING CHANGE for operators relying on the old setting name.
+
 
 * Propose and, if accepted, implement an update to OEP-45 (Configuring and
   Operating Open edX). `Progress on this update is tracked here`_. As mentioned

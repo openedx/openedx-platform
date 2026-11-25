@@ -67,7 +67,7 @@ class RegistrationFieldsContext(APIView):
 
         ordered_extra_fields = self._get_field_order()
 
-        if settings.ENABLE_COPPA_COMPLIANCE and 'year_of_birth' in ordered_extra_fields:
+        if settings.HIDE_YEAR_OF_BIRTH_ON_REGISTRATION and 'year_of_birth' in ordered_extra_fields:
             ordered_extra_fields.remove('year_of_birth')
 
         self.valid_fields = [

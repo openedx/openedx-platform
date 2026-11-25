@@ -9,7 +9,7 @@ define(['underscore'], function(_) {
     var PASSWORD_RESET_SUPPORT_LINK = 'https://support.edx.org/hc/en-us/articles/206212088-What-if-I-did-not-receive-a-password-reset-message-'; // eslint-disable-line max-len
     var PLATFORM_NAME = 'edX';
     var CONTACT_EMAIL = 'info@example.com';
-    var ENABLE_COPPA_COMPLIANCE = false;
+    var HIDE_YEAR_OF_BIRTH_ON_REGISTRATION = false;
 
     var SYNC_LEARNER_PROFILE_DATA = true;
     var ENTERPRISE_NAME = 'Test Enterprise';
@@ -227,7 +227,7 @@ define(['underscore'], function(_) {
         PASSWORD_RESET_SUPPORT_LINK: PASSWORD_RESET_SUPPORT_LINK,
         PLATFORM_NAME: PLATFORM_NAME,
         CONTACT_EMAIL: CONTACT_EMAIL,
-        ENABLE_COPPA_COMPLIANCE: ENABLE_COPPA_COMPLIANCE,
+        HIDE_YEAR_OF_BIRTH_ON_REGISTRATION: HIDE_YEAR_OF_BIRTH_ON_REGISTRATION,
 
         SYNC_LEARNER_PROFILE_DATA: SYNC_LEARNER_PROFILE_DATA,
         ENTERPRISE_NAME: ENTERPRISE_NAME,

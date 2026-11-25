@@ -438,7 +438,7 @@ class RegistrationFormFactory:
             "marketing_emails_opt_in",
         ]
 
-        if settings.ENABLE_COPPA_COMPLIANCE and 'year_of_birth' in self.EXTRA_FIELDS:
+        if settings.HIDE_YEAR_OF_BIRTH_ON_REGISTRATION and 'year_of_birth' in self.EXTRA_FIELDS:
             self.EXTRA_FIELDS.remove('year_of_birth')
 
         # Backwards compatibility: Honor code is required by default, unless
@@ -774,7 +774,7 @@ class RegistrationFormFactory:
         # pylint: disable=translation-of-non-string
 
         options = [(name, _(label)) for name, label in UserProfile.LEVEL_OF_EDUCATION_CHOICES]
-        if settings.ENABLE_COPPA_COMPLIANCE:
+        if settings.HIDE_YEAR_OF_BIRTH_ON_REGISTRATION:
             options = filter(lambda op: op[0] != 'el', options)
         form_desc.add_field(
             "level_of_education",

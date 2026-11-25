@@ -1426,7 +1426,7 @@ BADGES_ENABLED = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/8550
 ENABLE_CREDIT_ELIGIBILITY = True
 
-# .. toggle_name: ENABLE_COPPA_COMPLIANCE
+# .. toggle_name: HIDE_YEAR_OF_BIRTH_ON_REGISTRATION
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
 # .. toggle_description: When True, enforces COPPA compliance and removes YOB field from registration form and account
@@ -1434,7 +1434,7 @@ ENABLE_CREDIT_ELIGIBILITY = True
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2021-10-27
 # .. toggle_tickets: 'https://openedx.atlassian.net/browse/VAN-622'
-ENABLE_COPPA_COMPLIANCE = False
+HIDE_YEAR_OF_BIRTH_ON_REGISTRATION = False
 
 # .. toggle_name: settings.ENABLE_DISCUSSION_HOME_PANEL
 # .. toggle_implementation: DjangoSetting
