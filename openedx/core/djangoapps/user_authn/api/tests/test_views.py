@@ -249,6 +249,25 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert response.data['registrationFields']['fields'] == {}
 
+    @ddt.data('required', 'optional', 'hidden', None)
+    @override_settings(ENABLE_DYNAMIC_REGISTRATION_FIELDS=True)
+    def test_phone_number_context(self, state):
+        """Verify phone number visibility and description for each registration field setting."""
+        extra_fields = {} if state is None else {'phone_number': state}
+        with override_settings(REGISTRATION_EXTRA_FIELDS=extra_fields):
+            response = self.client.get(self.url, {'is_register_page': True})
+        assert response.status_code == status.HTTP_200_OK
+        required_fields = response.data['registrationFields']['fields']
+        optional_fields = response.data['optionalFields']['fields']
+        assert ('phone_number' in required_fields) == (state == 'required')
+        assert ('phone_number' in optional_fields) == (state == 'optional')
+        if state in ('required', 'optional'):
+            fields = required_fields if state == 'required' else optional_fields
+            assert fields['phone_number'] == {
+                'name': 'phone_number', 'type': 'text', 'label': 'Phone number',
+                'error_message': 'Enter your phone number' if state == 'required' else '',
+            }
+
     @with_site_configuration(
         configuration={
             'extended_profile_fields': ['first_name', 'last_name']
