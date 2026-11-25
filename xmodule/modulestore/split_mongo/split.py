@@ -324,6 +324,26 @@ class SplitBulkWriteMixin(BulkOperationsMixin):
         else:
             self.db_connection.update_course_index(updated_index_entry, course_context=course_key)
 
+    def _get_structure_cache(self):
+        """
+        Return the request-scoped dict of structures read outside of bulk operations, keyed
+        by structure id, or None if this modulestore has no request cache.
+
+        Without this, every get_course(), has_item(), get_parent_location(), etc. call made
+        outside of a bulk operation fetches and unpickles the whole course structure again.
+        Some Studio views make dozens of those calls per request.
+
+        Structures are never modified once they're written: every change to a course creates
+        a new structure with a new id. So a cached structure can't go stale. Callers must not
+        modify the structures they read; code that changes a course does so on a copy made by
+        version_structure(). Reads inside a bulk operation don't use this cache, because bulk
+        operations keep their own copies of the structures they may modify.
+        """
+        request_cache = getattr(self, 'request_cache', None)
+        if request_cache is None:
+            return None
+        return request_cache.data.setdefault('structure_cache', {})
+
     def get_structure(self, course_key, version_guid):  # pylint: disable=missing-function-docstring
         bulk_write_record = self._get_bulk_ops_record(course_key)
         if bulk_write_record.active:
@@ -340,7 +360,16 @@ class SplitBulkWriteMixin(BulkOperationsMixin):
         else:
             # cast string to ObjectId if necessary
             version_guid = course_key.as_object_id(version_guid)
-            return self.db_connection.get_structure(version_guid, course_key)
+            structure_cache = self._get_structure_cache()
+            if structure_cache is None:
+                return self.db_connection.get_structure(version_guid, course_key)
+
+            structure = structure_cache.get(version_guid)
+            if structure is None:
+                structure = self.db_connection.get_structure(version_guid, course_key)
+                if structure is not None:
+                    structure_cache[version_guid] = structure
+            return structure
 
     def update_structure(self, course_key, structure):
         """
@@ -805,8 +834,10 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                 del self.request_cache.data.setdefault('course_cache', {})[course_version_guid]
             except KeyError:
                 pass
+            self.request_cache.data.setdefault('structure_cache', {}).pop(course_version_guid, None)
         else:
             self.request_cache.data['course_cache'] = {}
+            self.request_cache.data['structure_cache'] = {}
 
     def _lookup_course(self, course_key, head_validation=True):
         """
@@ -1889,7 +1920,10 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         else:  # Pointing to an existing course structure
             new_id = versions_dict[master_branch]
             draft_version = CourseLocator(version_guid=new_id)
-            draft_structure = self._lookup_course(draft_version).structure
+            # Work on a copy. Edits to the new course in this bulk operation (including the
+            # update_item() call below) modify this structure in place, and the original may be
+            # shared with other readers through the request cache.
+            draft_structure = copy.deepcopy(self._lookup_course(draft_version).structure)
 
         locator = locator.replace(version_guid=new_id)
         with self.bulk_operations(locator):
