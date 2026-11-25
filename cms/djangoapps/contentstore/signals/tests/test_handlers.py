@@ -5,10 +5,16 @@ Tests for signal handlers in the contentstore.
 from datetime import datetime, timezone
 from unittest.mock import patch
 
+import ddt
+from django.test import TestCase, TransactionTestCase
+from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
-from openedx_events.content_authoring.data import CourseCatalogData, CourseScheduleData
+from openedx_events.content_authoring.data import CourseCatalogData, CourseScheduleData, DuplicatedXBlockData
+from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 
 import cms.djangoapps.contentstore.signals.handlers as sh
+from cms.djangoapps.contentstore.tests.utils import create_taxonomy_with_tag, get_tag_pairs
+from openedx.core.djangoapps.content_tagging import api as tagging_api
 from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.modulestore.django import SignalHandler
 from xmodule.modulestore.edit_info import EditInfoMixin
@@ -75,3 +81,65 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
         """When course key is actually a library, don't send."""
         sh.emit_catalog_info_changed_signal(LibraryLocator(org='SomeOrg', library='stuff'))
         mock_signal.send_event.assert_not_called()
+
+
+def _send_duplicated_event(block_type):
+    """Send XBLOCK_DUPLICATED for a block of the given type; return the source and duplicate keys."""
+    source = UsageKey.from_string(f"block-v1:orgA+c+r+type@{block_type}+block@source")
+    duplicate = UsageKey.from_string(f"block-v1:orgA+c+r+type@{block_type}+block@duplicate")
+    XBLOCK_DUPLICATED.send_event(
+        xblock_info=DuplicatedXBlockData(usage_key=duplicate, block_type=block_type, source_usage_key=source),
+    )
+    return source, duplicate
+
+
+@ddt.ddt
+class TestStripCompetencyTagsOnDuplicate(TestCase):
+    """
+    Tests for the receiver that queues the removal of competency tags from a duplicate.
+    """
+
+    @ddt.data("chapter", "sequential")
+    @patch("cms.djangoapps.contentstore.signals.handlers.strip_competency_tags_from_duplicate")
+    def test_section_or_subsection_queues_the_task_on_commit(self, block_type, mock_task):
+        with self.captureOnCommitCallbacks() as callbacks:
+            _, duplicate = _send_duplicated_event(block_type)
+        mock_task.delay.assert_not_called()
+
+        for callback in callbacks:
+            callback()
+
+        mock_task.delay.assert_called_once_with(str(duplicate))
+
+    @patch("cms.djangoapps.contentstore.signals.handlers.strip_competency_tags_from_duplicate")
+    def test_failure_to_queue_the_task_does_not_fail_the_commit(self, mock_task):
+        mock_task.delay.side_effect = ConnectionError("broker is down")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            _send_duplicated_event("sequential")
+
+        mock_task.delay.assert_called_once()
+
+    @ddt.data("vertical", "html")
+    @patch("cms.djangoapps.contentstore.signals.handlers.strip_competency_tags_from_duplicate")
+    def test_unit_or_component_queues_nothing(self, block_type, mock_task):
+        with self.captureOnCommitCallbacks(execute=True):
+            _send_duplicated_event(block_type)
+
+        mock_task.delay.assert_not_called()
+
+
+class TestStripCompetencyTagsRunsAfterTagCopy(TransactionTestCase):
+    """
+    Tests the order of the duplicate receivers when no transaction is open, as in Studio's duplicate request.
+    """
+
+    def test_duplicate_has_no_competency_tag_without_a_transaction(self):
+        source = UsageKey.from_string("block-v1:orgA+c+r+type@sequential+block@source")
+        for name, competency in (("regular", False), ("comp", True)):
+            taxonomy = create_taxonomy_with_tag(name, competency=competency)
+            tagging_api.tag_object(str(source), taxonomy, [f"{name}-tag"])
+
+        _, duplicate = _send_duplicated_event("sequential")
+
+        assert get_tag_pairs(duplicate) == {("regular", "regular-tag")}

@@ -9,9 +9,11 @@ from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test.client import Client
 from opaque_keys.edx.keys import AssetKey
+from openedx_learning.api import create_competency_taxonomy
 
 from cms.djangoapps.contentstore.utils import reverse_url
 from common.djangoapps.student.models import Registration
+from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.video_config.tests.test_transcripts_utils import YoutubeVideoHTMLResponse
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.inheritance import own_metadata
@@ -26,6 +28,20 @@ TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 def parse_json(response):
     """Parse response, which is assumed to be json"""
     return json.loads(response.content.decode('utf-8'))
+
+
+def create_taxonomy_with_tag(name, competency=False):
+    """Create a taxonomy, enabled for all orgs, with one tag named '<name>-tag'."""
+    create = create_competency_taxonomy if competency else tagging_api.create_taxonomy
+    taxonomy = create(name=name, export_id=name)
+    tagging_api.set_taxonomy_orgs(taxonomy, all_orgs=True)
+    tagging_api.add_tag_to_taxonomy(taxonomy, f"{name}-tag")
+    return taxonomy
+
+
+def get_tag_pairs(usage_key):
+    """Return the (taxonomy export_id, tag value) pairs on the block."""
+    return {(tag.taxonomy.export_id, tag.value) for tag in tagging_api.get_object_tags(str(usage_key))}
 
 
 def user(email):

@@ -23,6 +23,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import SuspiciousOperation
 from django.core.files import File
+from django.db import Error as DbError
+from django.db import transaction
 from django.test import RequestFactory
 from django.utils.text import get_valid_filename
 from edx_django_utils.monitoring import (
@@ -36,6 +38,8 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseData
 from openedx_events.content_authoring.signals import COURSE_RERUN_COMPLETED
+from openedx_learning.api import is_competency_taxonomy, select_competency_taxonomies
+from openedx_tagging.models import Taxonomy
 from organizations.api import add_organization_course, ensure_organization
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -71,7 +75,13 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.util.monitoring import monitor_import_failure
 from openedx.core.djangoapps.content.learning_sequences.api import key_supports_outlines
 from openedx.core.djangoapps.content_libraries import api as v2contentlib_api
-from openedx.core.djangoapps.content_tagging.api import make_copied_tags_editable
+from openedx.core.djangoapps.content_tagging.api import (
+    InvalidOrgException,
+    get_all_object_tags,
+    get_object_tags,
+    make_copied_tags_editable,
+    tag_object,
+)
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
@@ -1559,6 +1569,29 @@ def create_or_update_upstream_links(
     for xblock in xblocks:
         create_or_update_xblock_upstream_link(xblock, created)
     course_status.update_status(LearningContextLinksStatusChoices.COMPLETED)
+
+
+@shared_task
+def strip_competency_tags_from_duplicate(usage_key_string: str) -> None:
+    """
+    Remove from a duplicated block the competency tags that no competency criterion uses; its other tags stay.
+
+    A database error, or a taxonomy no longer enabled for the block's organization, is logged and leaves the tags.
+    """
+    ensure_cms("strip_competency_tags_from_duplicate may only be executed in a CMS context")
+
+    try:
+        with transaction.atomic():
+            _, taxonomies = get_all_object_tags(UsageKey.from_string(usage_key_string))
+            for taxonomy in select_competency_taxonomies(Taxonomy.objects.filter(id__in=taxonomies)):
+                if is_competency_taxonomy(taxonomy):
+                    # Deleting a tag deletes the criteria on it, which an author may have added since the duplicate.
+                    kept_tags = get_object_tags(usage_key_string, taxonomy_id=taxonomy.id).filter(
+                        competency_criteria__isnull=False,
+                    )
+                    tag_object(object_id=usage_key_string, taxonomy=taxonomy, tags=[tag.value for tag in kept_tags])
+    except (DbError, InvalidOrgException):
+        LOGGER.exception("Could not strip competency tags from duplicate %s", usage_key_string)
 
 
 @shared_task
