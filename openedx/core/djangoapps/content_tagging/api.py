@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import csv
 import io
+import logging
 from itertools import groupby
 from typing import Iterator  # noqa: UP035
 
 import openedx_tagging.api as oel_tagging
 from django.core.exceptions import ValidationError
-from django.db.models import Exists, OuterRef, Q, QuerySet
+from django.db import transaction
+from django.db.models import Exists, OuterRef, ProtectedError, Q, QuerySet
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
@@ -24,6 +26,8 @@ from .helpers.objecttag_export_helpers import build_object_tree_with_objecttags,
 from .models import TaxonomyOrg
 from .types import ContentKey, TagValuesByObjectIdDict, TagValuesByTaxonomyIdDict, TaxonomyDict
 from .utils import check_taxonomy_context_key_org, get_content_key_from_string, get_context_key_from_key
+
+log = logging.getLogger(__name__)
 
 
 class InvalidOrgException(ValidationError):
@@ -144,6 +148,19 @@ def get_unassigned_taxonomies(enabled=True) -> QuerySet:
             )
         )
     )
+
+
+def course_object_id_clause(course_key: CourseKey) -> Q:
+    """
+    Returns a filter on ``ObjectTag.object_id`` that matches the course key itself and, for a ``course-v1:`` key,
+    every block of the course.
+    """
+    clause = Q(object_id=str(course_key))
+    if str(course_key).startswith("course-v1:"):
+        # The "+type@" delimiter keeps the prefix from matching a sibling run such as "run2".
+        block_prefix = str(course_key).replace("course-v1:", "block-v1:", 1) + "+type@"
+        clause |= Q(object_id__startswith=block_prefix)
+    return clause
 
 
 def get_all_object_tags(
@@ -291,24 +308,73 @@ def set_exported_object_tags(
     exported_tags: TagValuesByTaxonomyIdDict,
 ) -> None:
     """
-    Sets the tags for the given exported content object.
+    Sets the tags of the given content object to the exported tags, applying only the differences.
+
+    Taxonomies that the export no longer lists are cleared from the object, except free-text taxonomies,
+    which the export cannot represent. A row whose taxonomy was deleted is removed, unless the file lists
+    its export id and no existing taxonomy claims that export id. A row whose tag the file still lists keeps
+    its id.
+
+    Clearing stale taxonomies and removing taxonomy-less rows leave an object tag that
+    other data protects in place, log a warning, and continue. Applying the listed taxonomies' tags still
+    raises ``ProtectedError``.
     """
     content_key_str = str(content_key)
 
-    # Clear all tags related with the content.
-    oel_tagging.delete_object_tags(content_key_str)
+    taxonomies_by_export_id = {
+        str(taxonomy_export_id): oel_tagging.get_taxonomy_by_export_id(str(taxonomy_export_id))
+        for taxonomy_export_id, tags_values in exported_tags.items()
+        if tags_values
+    }
 
-    for taxonomy_export_id, tags_values in exported_tags.items():
-        if not tags_values:
-            continue
+    # Clear what the file no longer lists before applying the listed tags: ``tag_object`` counts the object's
+    # tags in other taxonomies toward the per-object limit, so stale rows could make a valid import fail.
+    # The existing rows are read from the model, not through ``get_object_tags``, which hides the rows of a
+    # disabled taxonomy.
+    existing_object_tags = list(ObjectTag.objects.filter(object_id=content_key_str).select_related("taxonomy"))
+    listed_taxonomy_ids = {taxonomy.pk for taxonomy in taxonomies_by_export_id.values() if taxonomy}
+    # The export omits free-text values, so the absence of a free-text taxonomy from the file says nothing.
+    stale_taxonomies = {
+        object_tag.taxonomy_id: object_tag.taxonomy
+        for object_tag in existing_object_tags
+        if object_tag.taxonomy_id
+        and object_tag.taxonomy_id not in listed_taxonomy_ids
+        and not object_tag.taxonomy.allow_free_text
+    }
+    for taxonomy in stale_taxonomies.values():
+        try:
+            # The savepoint keeps a failed delete from poisoning the surrounding transaction.
+            with transaction.atomic():
+                oel_tagging.tag_object(object_id=content_key_str, taxonomy=taxonomy, tags=[])
+        except ProtectedError:
+            log.warning(
+                "Unable to clear taxonomy %s from %s, other data protects its tags", taxonomy.pk, content_key_str
+            )
 
-        taxonomy = oel_tagging.get_taxonomy_by_export_id(str(taxonomy_export_id))
+    # A row whose taxonomy was deleted keeps only the export id, and a row of a live taxonomy can share that
+    # export id, so ``tag_object``'s export-id lookup could touch the wrong rows. These rows are removed here,
+    # keyed on the missing taxonomy.
+    unresolved_export_ids = {
+        export_id for export_id, taxonomy in taxonomies_by_export_id.items() if taxonomy is None
+    }
+    taxonomy_less_pks = [
+        object_tag.pk
+        for object_tag in existing_object_tags
+        if object_tag.taxonomy_id is None and object_tag.export_id not in unresolved_export_ids
+    ]
+    try:
+        with transaction.atomic():
+            ObjectTag.objects.filter(pk__in=taxonomy_less_pks).delete()
+    except ProtectedError:
+        log.warning("Unable to remove the taxonomy-less tags of %s, other data protects them", content_key_str)
+
+    for taxonomy_export_id, taxonomy in taxonomies_by_export_id.items():
         oel_tagging.tag_object(
             object_id=content_key_str,
             taxonomy=taxonomy,
-            tags=tags_values,
+            tags=exported_tags[taxonomy_export_id],
             create_invalid=True,
-            taxonomy_export_id=str(taxonomy_export_id),
+            taxonomy_export_id=taxonomy_export_id,
         )
 
         # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
@@ -332,7 +398,12 @@ def set_exported_object_tags(
 
 def import_course_tags_from_csv(csv_path, course_id) -> None:
     """
-    Import tags from a csv file generated on export.
+    Imports the tags of a course from a csv file generated on export.
+
+    Each row listed in the file is applied with ``set_exported_object_tags``. Then the tags of the
+    course's objects that the file does not list are removed, because the file holds the full tag state
+    of the course. A file with no data rows changes nothing. The sweep leaves the tags of a protected
+    object in place and logs a warning.
     """
     # Open csv file and extract the tags
     with open(csv_path, 'r') as csv_file:  # noqa: UP015
@@ -350,7 +421,13 @@ def import_course_tags_from_csv(csv_path, course_id) -> None:
             result[key] = value.split(TAGS_CSV_SEPARATOR)
         return result
 
+    if not tags_in_blocks:
+        # A real export always writes at least the course row, so a file without data rows is corrupt input
+        # and must not sweep the tags of the whole course.
+        return
+
     course_key = CourseKey.from_string(str(course_id))
+    imported_object_ids = set()
 
     for block in tags_in_blocks:
         exported_tags = get_exported_tags(block)
@@ -361,10 +438,22 @@ def import_course_tags_from_csv(csv_path, course_id) -> None:
             raise ValueError(f"Invalid format of csv in: '{block}'.")
 
         if block_type == 'course':
-            set_exported_object_tags(course_key, exported_tags)
+            content_key = course_key
         else:
-            block_key = course_key.make_usage_key(block_type, block_id)
-            set_exported_object_tags(block_key, exported_tags)
+            content_key = course_key.make_usage_key(block_type, block_id)
+        set_exported_object_tags(content_key, exported_tags)
+        imported_object_ids.add(str(content_key))
+
+    # Blocks created after the export are not in the file, and the file is the full tag state of the course.
+    tagged_object_ids = (
+        ObjectTag.objects.filter(course_object_id_clause(course_key)).values_list("object_id", flat=True).distinct()
+    )
+    for object_id in set(tagged_object_ids) - imported_object_ids:
+        try:
+            with transaction.atomic():
+                oel_tagging.delete_object_tags(object_id)
+        except ProtectedError:
+            log.warning("Unable to delete the tags of %s, other data protects them", object_id)
 
 
 def copy_object_tags(
