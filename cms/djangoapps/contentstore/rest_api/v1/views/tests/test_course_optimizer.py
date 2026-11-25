@@ -924,8 +924,8 @@ class CourseOptimizerReadTest(ModuleStoreTestCase):
         new = self.read("read_check", **FULL)["output"]
         legacy = self.read("read_check", legacy=True)["LinkCheckOutput"]
         assert new == in_v1_names(legacy)
-        assert list(_reported_blocks(new)) != []
-        assert [name for name in member_names(new) if not re.fullmatch(r"[a-z][a-z0-9_]*", name)] == []
+        assert list(_reported_blocks(new))
+        assert not [name for name in member_names(new) if not re.fullmatch(r"[a-z][a-z0-9_]*", name)]
 
     def test_the_default_view_does_not_build_the_report(self):
         self._course_with_flagged_links()
@@ -1192,7 +1192,7 @@ class CourseOptimizerResponseDifferencesTest(_PatchedTasksMixin, ModuleStoreTest
         return call(client, operation, course_key, legacy=True, **kwargs), call(client, operation, course_key, **kwargs)
 
     def test_every_listed_difference_has_its_test(self):
-        assert [name for *_, name in RESPONSE_DIFFERENCES if not hasattr(self, name)] == []
+        assert not [name for *_, name in RESPONSE_DIFFERENCES if not hasattr(self, name)]
 
     def test_starting_a_run_is_accepted(self):
         for operation in STARTS:
@@ -1524,12 +1524,12 @@ class _ReadsAreSideEffectFreeMixin:
                 assert effects["sql_writes"] in ([], FIRST_LOOKUP_WRITES), read
                 assert effects["signals"] == (FIRST_LOOKUP_SIGNALS if effects["sql_writes"] else []), read
             else:
-                assert effects["sql_writes"] == [], read
-                assert effects["signals"] == [], read
-            assert effects["events"] == [], read
+                assert not effects["sql_writes"], read
+                assert not effects["signals"], read
+            assert not effects["events"], read
             assert effects["mongo_writes"] == 0, read
-            assert effects["update_item"] == [], read
-            assert created == [], read
+            assert not effects["update_item"], read
+            assert not created, read
 
     def test_the_first_v0_read_writes_what_the_first_v1_read_writes(self):
         """
@@ -1898,7 +1898,7 @@ class CourseOptimizerSchemaTest(TestCase):
             assert component.get("description"), name
             properties = component.get("properties", {})
             undescribed = [field for field, spec in properties.items() if not spec.get("description")]
-            assert undescribed == [], name
+            assert not undescribed, name
 
     def test_the_examples_are_valid_bodies(self):
         content = self.schema["paths"][LINK_UPDATE_PATH]["post"]["requestBody"]["content"]["application/json"]
@@ -1934,4 +1934,4 @@ class CourseOptimizerSchemaTest(TestCase):
             (path, method) for path, method in deprecated
             if path not in SUPERSEDED_PATHS and not path.startswith(LEGACY_MIGRATED_PATH_PREFIXES)
         )
-        assert stray == []
+        assert not stray
