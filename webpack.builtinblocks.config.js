@@ -50,13 +50,6 @@ module.exports = {
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/raw/edit/metadata-only.js'
         ],
-        PollBlockDisplay: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/javascript_loader.js',
-            './xmodule/js/src/poll/poll.js',
-            './xmodule/js/src/poll/poll_main.js'
-        ],
-        PollBlockEditor: './xmodule/js/src/xmodule.js',
         ProblemBlockDisplay: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/javascript_loader.js',
