@@ -14,18 +14,23 @@ from celery import Task
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
+from django.test import TestCase
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_catalog import api as catalog_api
+from openedx_learning.api import associate_competency_criterion
+from openedx_learning.models_api import CompetencyCriterion, RuleType
 from organizations.models import OrganizationCourse
 from organizations.tests.factories import OrganizationFactory
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase, create_taxonomy_with_tag, get_tag_pairs
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
@@ -49,6 +54,7 @@ from ..tasks import (
     export_olx,
     extract_content_URLs_from_course,
     rerun_course,
+    strip_competency_tags_from_duplicate,
     sync_discussion_settings,
     update_special_exams_and_publish,
 )
@@ -810,3 +816,75 @@ class SyncDiscussionSettingsTaskTestCase(CourseTestCase):
                     f"Course import {self.course.id}: DiscussionsConfiguration sync failed: {test_error_message}"
                 )
                 assert any(expected_log in log for log in logs.output)
+
+
+class StripCompetencyTagsFromDuplicateTaskTestCase(TestCase):
+    """
+    Tests for the task that removes competency tags from a duplicated block.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.usage_key = UsageKey.from_string("block-v1:orgA+c+r+type@sequential+block@duplicate")
+
+    def _tag_block(self, name, competency=False):
+        """Tag the block with '<name>-tag' from a new taxonomy called name."""
+        taxonomy = create_taxonomy_with_tag(name, competency=competency)
+        tagging_api.tag_object(str(self.usage_key), taxonomy, [f"{name}-tag"])
+        return taxonomy
+
+    def test_strips_competency_tags_without_criteria_and_keeps_regular_tags(self):
+        self._tag_block("regular")
+        self._tag_block("compA", competency=True)
+        self._tag_block("compB", competency=True)
+
+        strip_competency_tags_from_duplicate(str(self.usage_key))
+
+        assert get_tag_pairs(self.usage_key) == {("regular", "regular-tag")}
+
+    def test_block_with_only_regular_tags_is_unchanged(self):
+        self._tag_block("regular")
+
+        strip_competency_tags_from_duplicate(str(self.usage_key))
+
+        assert get_tag_pairs(self.usage_key) == {("regular", "regular-tag")}
+
+    def test_keeps_competency_tag_that_a_criterion_references(self):
+        catalog_api.create_course_run_for_modulestore_course_with(self.usage_key.course_key, title="c")
+        self._tag_block("regular")
+        with_criterion = self._tag_block("compA", competency=True)
+        self._tag_block("compB", competency=True)
+        criterion = associate_competency_criterion(
+            with_criterion.tag_set.get().id,
+            str(self.usage_key),
+            rule_type_override=RuleType.GRADE,
+            rule_payload_override={"op": "gte", "value": 0.75, "scale": "percent"},
+        )
+
+        strip_competency_tags_from_duplicate(str(self.usage_key))
+
+        assert get_tag_pairs(self.usage_key) == {("regular", "regular-tag"), ("compA", "compA-tag")}
+        assert CompetencyCriterion.objects.filter(pk=criterion.pk, object_tag_id=criterion.object_tag_id).exists()
+
+    def test_error_in_a_later_removal_rolls_back_and_is_logged(self):
+        self._tag_block("regular")
+        self._tag_block("compA", competency=True)
+        self._tag_block("compB", competency=True)
+        calls = []
+
+        def fail_on_second_call(**kwargs):
+            calls.append(kwargs)
+            if len(calls) > 1:
+                raise tagging_api.InvalidOrgException("boom")
+            tagging_api.tag_object(**kwargs)
+
+        with patch(
+            "cms.djangoapps.contentstore.tasks.tag_object", side_effect=fail_on_second_call
+        ), self.assertLogs("cms.djangoapps.contentstore.tasks", level="ERROR") as logs:
+            strip_competency_tags_from_duplicate(str(self.usage_key))
+
+        assert len(calls) == 2
+        assert get_tag_pairs(self.usage_key) == {
+            ("regular", "regular-tag"), ("compA", "compA-tag"), ("compB", "compB-tag"),
+        }
+        assert str(self.usage_key) in "\n".join(logs.output)

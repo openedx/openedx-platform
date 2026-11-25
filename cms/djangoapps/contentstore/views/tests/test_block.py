@@ -9,6 +9,7 @@ from unittest.mock import Mock, PropertyMock, patch
 import ddt
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.db import DatabaseError
 from django.http import Http404
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -28,9 +29,12 @@ from openedx_authz.authz import (
     COURSES_MANAGE_TAGS,
     COURSES_VIEW_COURSE,
 )
+from openedx_catalog import api as catalog_api
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.testing import OpenEdxEventsTestMixin
+from openedx_learning.api import associate_competency_criterion
+from openedx_learning.models_api import CompetencyCriteriaGroup, CompetencyCriterion, RuleType
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
@@ -41,7 +45,7 @@ from xblock.runtime import DictKeyValueStore, KvsFieldData
 from xblock.test.tools import TestRuntime
 from xblock.validation import ValidationMessage
 
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase, create_taxonomy_with_tag, get_tag_pairs
 from cms.djangoapps.contentstore.utils import duplicate_block, reverse_course_url, reverse_usage_url, update_from_source
 from cms.djangoapps.contentstore.xblock_storage_handlers import view_handlers as item_module
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
@@ -54,6 +58,7 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     create_xblock_info,
     get_block_info,
 )
+from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from common.djangoapps.xblock_django.models import (
     XBlockConfiguration,
@@ -1568,6 +1573,104 @@ class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
         ]
         dupe_block_tags = [str(object_tag) for object_tag in tagging_api.get_object_tags(str(dupe_block.location))]
         assert dupe_block_tags == expected_block_tags
+
+    def _tag_regular_and_competency(self, *usage_keys):
+        """Tag each block with 'regular-tag' and the competency tag 'comp-tag'."""
+        regular = create_taxonomy_with_tag("regular")
+        comp = create_taxonomy_with_tag("comp", competency=True)
+        for usage_key in usage_keys:
+            tagging_api.tag_object(str(usage_key), regular, ["regular-tag"])
+            tagging_api.tag_object(str(usage_key), comp, ["comp-tag"])
+
+    def _duplicate_and_run_queued_tasks(self, parent_usage_key, source_usage_key):
+        """Duplicate the block and run the tasks its receivers queued for the end of the transaction."""
+        # The test holds a transaction open, and Studio's duplicate request has none and queues the task at once.
+        with self.captureOnCommitCallbacks(execute=True):
+            return duplicate_block(
+                parent_usage_key=parent_usage_key,
+                duplicate_source_usage_key=source_usage_key,
+                user=UserFactory.create(),
+            )
+
+    def test_duplicate_subsection_strips_competency_tags_and_keeps_regular_tags(self):
+        course = CourseFactory()
+        chapter = BlockFactory(parent=course, category="chapter")
+        sequential = BlockFactory(parent=chapter, category="sequential")
+        self._tag_regular_and_competency(sequential.location)
+
+        dupe_location = self._duplicate_and_run_queued_tasks(chapter.location, sequential.location)
+
+        assert get_tag_pairs(dupe_location) == {("regular", "regular-tag")}
+        assert get_tag_pairs(sequential.location) == {("regular", "regular-tag"), ("comp", "comp-tag")}
+
+    def test_duplicate_section_strips_competency_tags_from_section_and_child_subsections(self):
+        course = CourseFactory()
+        chapter = BlockFactory(parent=course, category="chapter")
+        sequential = BlockFactory(parent=chapter, category="sequential")
+        self._tag_regular_and_competency(chapter.location, sequential.location)
+
+        dupe_location = self._duplicate_and_run_queued_tasks(course.location, chapter.location)
+
+        dupe_children = self.store.get_item(dupe_location).get_children()
+        assert len(dupe_children) == 1
+        assert get_tag_pairs(dupe_location) == {("regular", "regular-tag")}
+        assert get_tag_pairs(dupe_children[0].location) == {("regular", "regular-tag")}
+
+    def test_duplicate_has_no_competency_tag_and_leaves_criteria_unchanged(self):
+        course = CourseFactory()
+        chapter = BlockFactory(parent=course, category="chapter")
+        sequential = BlockFactory(parent=chapter, category="sequential")
+        catalog_api.create_course_run_for_modulestore_course_with(course.id, title=course.display_name)
+        comp = create_taxonomy_with_tag("comp", competency=True)
+        associate_competency_criterion(
+            comp.tag_set.get().id,
+            str(sequential.location),
+            rule_type_override=RuleType.GRADE,
+            rule_payload_override={"op": "gte", "value": 0.75, "scale": "percent"},
+        )
+        criteria = list(CompetencyCriterion.objects.values())
+        groups = list(CompetencyCriteriaGroup.objects.values())
+        assert criteria
+        assert groups
+
+        dupe_location = self._duplicate_and_run_queued_tasks(chapter.location, sequential.location)
+
+        assert get_tag_pairs(dupe_location) == set()
+        assert list(CompetencyCriterion.objects.values()) == criteria
+        assert list(CompetencyCriteriaGroup.objects.values()) == groups
+
+    def test_duplicate_is_kept_with_all_tags_when_stripping_fails(self):
+        course = CourseFactory()
+        chapter = BlockFactory(parent=course, category="chapter")
+        sequential = BlockFactory(parent=chapter, category="sequential")
+        self._tag_regular_and_competency(sequential.location)
+
+        with patch(
+            "cms.djangoapps.contentstore.tasks.tag_object",
+            side_effect=DatabaseError("boom"),
+        ), self.assertLogs("cms.djangoapps.contentstore.tasks", level="ERROR"):
+            dupe_location = self._duplicate_and_run_queued_tasks(chapter.location, sequential.location)
+
+        assert get_tag_pairs(dupe_location) == {("regular", "regular-tag"), ("comp", "comp-tag")}
+
+    def test_duplicate_as_course_author_strips_competency_tags(self):
+        chapter = BlockFactory(parent=self.course, category="chapter")
+        sequential = BlockFactory(parent=chapter, category="sequential")
+        self._tag_regular_and_competency(sequential.location)
+        client, author = self.create_non_staff_authed_user_client()
+        CourseStaffRole(self.course.id).add_users(author)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = client.ajax_post(
+                reverse("xblock_handler"),
+                json.dumps({
+                    "parent_locator": str(chapter.location),
+                    "duplicate_source_locator": str(sequential.location),
+                }),
+            )
+
+        assert resp.status_code == 200
+        assert get_tag_pairs(self.response_usage_key(resp)) == {("regular", "regular-tag")}
 
 
 @ddt.ddt
