@@ -29,6 +29,7 @@ from openedx.core.djangoapps.content.block_structure.api import update_course_in
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.learning_sequences.api import replace_course_outline
 from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData, CourseVisibility
+from openedx.core.djangoapps.content.learning_sequences.api import get_user_course_outline
 from openedx.core.djangoapps.course_date_signals.utils import MIN_DURATION
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
@@ -958,3 +959,34 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         assert response.status_code == 200
         sequential_data = response.data['blocks'][str(self.sequential.location)]
         assert str(self.vertical.location) not in sequential_data['children']
+
+    def test_navigation_handles_missing_learning_sequences_outline(self):
+        """
+        Test that the navigation API handles the case where the learning sequences
+        outline doesn't exist yet (e.g., right after a publish before the CMS worker
+        writes the outline). It should return the blocks without filtering instead
+        of raising a 500 error.
+        """
+        self.add_blocks_to_course()
+        CourseEnrollment.enroll(self.user, self.course.id, CourseMode.VERIFIED)
+
+        # First verify normal behavior works
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        blocks = response.data['blocks']
+        seq_block_id = next(
+            block_id for block_id, block in blocks.items()
+            if block['type'] in ('sequential', 'lock')
+        )
+
+        # Now simulate the state where the learning sequences outline doesn't exist
+        # by deleting the LearningContext
+        from openedx.core.djangoapps.content.learning_sequences.models import LearningContext
+        LearningContext.objects.filter(context_key=self.course.id).delete()
+
+        # The request should not 500 - it should return the blocks (unfiltered)
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        # The blocks should still be returned (possibly unfiltered)
+        blocks = response.data['blocks']
+        assert blocks is not None
