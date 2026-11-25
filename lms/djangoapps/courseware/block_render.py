@@ -62,6 +62,7 @@ from lms.djangoapps.courseware.masquerade import (
 )
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from lms.djangoapps.courseware.services import UserStateService
+from lms.djangoapps.edxnotes.wrappers import wrap_with_edxnotes
 from lms.djangoapps.grades.api import GradesUtilService
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from lms.djangoapps.lms_xblock.runtime import UserTagsService, lms_applicable_aside_types, lms_wrappers_aside
@@ -559,6 +560,11 @@ def prepare_runtime_for_user(
     mako_service = MakoService()
     if settings.LICENSING:
         block_wrappers.append(partial(wrap_with_license, mako_service=mako_service))
+
+    # TEMPORARY HACK to keep edXNotes working. See the docstring of wrap_with_edxnotes.
+    # This goes before wrap_xblock so that the edXNotes wrapper ends up inside of the XBlock's div.
+    if settings.ENABLE_EDXNOTES:
+        block_wrappers.append(partial(wrap_with_edxnotes, user, course))
 
     # Wrap the output display in a single div to allow for the XBlock
     # javascript to be bound correctly
