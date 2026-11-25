@@ -168,9 +168,9 @@ def _get_block_parent_children(xblock):
     return response
 
 
-def _get_xblock_authz_permission(request, usage_key, category=None):
+def _get_xblock_authz_permissions(request, usage_key, category=None):
     """
-    Determine the required authz permission for an xblock operation.
+    Determine the authz permissions an xblock operation requires.
 
     Args:
         request: The HTTP request
@@ -178,8 +178,8 @@ def _get_xblock_authz_permission(request, usage_key, category=None):
         category: Optional category for block creation (when usage_key is the parent)
 
     Returns:
-        str: The openedx-authz permission identifier (e.g., 'courses.view_course'),
-             or None if the operation is not covered by openedx-authz.
+        list[str]: The openedx-authz permission identifiers (e.g., 'courses.view_course'),
+            all of which the user must have, or None if the operation is not covered by openedx-authz.
     """
     # Libraries v1 use LibraryUsageLocator keys, which we filter out here. They will
     # authorize with the legacy role-based checks (has_studio_{read/write}_access).
@@ -197,40 +197,59 @@ def _get_xblock_authz_permission(request, usage_key, category=None):
     # Determine permission based on HTTP method and block type
     if request.method == "GET":
         if block_type == "course_info":
-            return COURSES_VIEW_COURSE_UPDATES.identifier
-        return COURSES_VIEW_COURSE.identifier
+            return [COURSES_VIEW_COURSE_UPDATES.identifier]
+        return [COURSES_VIEW_COURSE.identifier]
 
     elif request.method == "DELETE":
         if block_type == "static_tab":
-            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
-        return COURSES_EDIT_COURSE_CONTENT.identifier
+            return [COURSES_MANAGE_PAGES_AND_RESOURCES.identifier]
+        return [COURSES_EDIT_COURSE_CONTENT.identifier]
 
     elif request.method in ("POST", "PUT", "PATCH"):
         if block_type == "course_info":
-            return COURSES_MANAGE_COURSE_UPDATES.identifier
+            return [COURSES_MANAGE_COURSE_UPDATES.identifier]
 
         if block_type == "static_tab":
-            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+            return [COURSES_MANAGE_PAGES_AND_RESOURCES.identifier]
 
         # Check for publish action in request body
         request_data = getattr(request, 'json', {}) or {}
         publish_action = request_data.get("publish")
+        has_content_changes = any(field in request_data for field in _CONTENT_FIELDS)
 
-        # A pure publish action (no content changes) requires publish permission;
-        # everything else (edits, edits+republish, unknown actions) requires edit permission.
-        if publish_action:
-            has_content_changes = any(field in request_data for field in _CONTENT_FIELDS)
-            is_pure_publish = (
-                publish_action == "discard_changes"
-                or (publish_action in ("make_public", "republish") and not has_content_changes)
-            )
-            if is_pure_publish:
-                return COURSES_PUBLISH_COURSE_CONTENT.identifier
+        # A pure publish action (no content changes) requires publish permission only.
+        # discard_changes ignores any content in the request, so it is always a pure publish.
+        if publish_action == "discard_changes" or (
+            publish_action in ("make_public", "republish") and not has_content_changes
+        ):
+            return [COURSES_PUBLISH_COURSE_CONTENT.identifier]
 
-        return COURSES_EDIT_COURSE_CONTENT.identifier
+        # Edits require edit permission, plus publish permission when the save also publishes.
+        permissions = [COURSES_EDIT_COURSE_CONTENT.identifier]
+        if _save_publishes(publish_action, usage_key, block_type):
+            permissions.append(COURSES_PUBLISH_COURSE_CONTENT.identifier)
+        return permissions
 
     # Fallback
-    return COURSES_VIEW_COURSE.identifier
+    return [COURSES_VIEW_COURSE.identifier]
+
+
+def _save_publishes(publish_action, usage_key, block_type):
+    """
+    Return whether ``_save_xblock`` will publish the block for this publish action.
+
+    Mirrors the publish logic at the end of ``_save_xblock``: ``make_public`` always
+    publishes, and ``republish`` publishes blocks outside DIRECT_ONLY_CATEGORIES that
+    already have a published version.
+    """
+    if publish_action == "make_public":
+        return True
+    if publish_action != "republish" or block_type in DIRECT_ONLY_CATEGORIES:
+        return False
+    try:
+        return modulestore().has_published_version(modulestore().get_item(usage_key))
+    except ItemNotFoundError:
+        return False
 
 
 def _check_xblock_permission(request, usage_key, category=None):
@@ -238,12 +257,13 @@ def _check_xblock_permission(request, usage_key, category=None):
     Check authz or legacy permission for an xblock operation. Raises PermissionDenied if denied.
 
     Returns:
-        str or None: The resolved permission identifier, or None if legacy checks were used.
+        list[str] or None: The resolved permission identifiers, or None if legacy checks were used.
     """
-    permission = _get_xblock_authz_permission(request, usage_key, category=category)
+    permissions = _get_xblock_authz_permissions(request, usage_key, category=category)
 
-    if permission is not None:
-        if not authz_api.is_user_allowed(request.user.username, permission, str(usage_key.course_key)):
+    if permissions is not None:
+        scope = str(usage_key.course_key)
+        if not all(authz_api.is_user_allowed(request.user.username, perm, scope) for perm in permissions):
             raise PermissionDenied()
     else:
         access_check = (
@@ -254,7 +274,7 @@ def _check_xblock_permission(request, usage_key, category=None):
         if not access_check(request.user, usage_key.course_key):
             raise PermissionDenied()
 
-    return permission
+    return permissions
 
 
 def handle_xblock(request, usage_key_string=None):
