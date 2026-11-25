@@ -484,6 +484,10 @@ class APIPermissions(GenericAPIView):
 
 class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
     """
+    Deprecated: use ``GET /api/cohorts/v2/courses/{course_key}/cohort_settings/`` and
+    ``PUT /api/cohorts/v2/courses/{course_key}/cohort_settings/``.
+    See https://github.com/openedx/openedx-platform/issues/39128#issuecomment-6769149285.
+
     **Use Cases**
 
         Get the cohort setting for a course.
@@ -524,6 +528,12 @@ class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
 
 class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
     """
+    Deprecated: use ``GET /api/cohorts/v2/courses/{course_key}/cohorts/`` and
+    ``POST /api/cohorts/v2/courses/{course_key}/cohorts/`` for the list and creation, and
+    ``GET /api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/`` and
+    ``PATCH /api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/`` for one cohort.
+    See https://github.com/openedx/openedx-platform/issues/39128#issuecomment-6769149285.
+
     **Use Cases**
 
         Get the current cohorts in a course.
@@ -674,6 +684,11 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
 
 class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
     """
+    Deprecated: use ``GET /api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/`` to list learners,
+    ``POST /api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/`` to add one or more, and
+    ``DELETE /api/cohorts/v2/courses/{course_key}/cohorts/{cohort_id}/users/{username}/`` to remove one.
+    See https://github.com/openedx/openedx-platform/issues/39128#issuecomment-6769149285.
+
     **Use Cases**
         List users in a cohort
         Removes an user from a cohort.

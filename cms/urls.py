@@ -309,13 +309,14 @@ if settings.DEBUG:
         document_root=settings.VIDEO_TRANSCRIPTS_SETTINGS['STORAGE_KWARGS']['location']
     )
 
+    # UX reference templates: development only. The view renders any template with
+    # request.GET as its context, so it must never be routed in production.
+    urlpatterns.append(path('template/<path:template>', openedx.core.djangoapps.debug.views.show_reference_template,
+                            name='openedx.core.djangoapps.debug.views.show_reference_template'))
+
 if 'debug_toolbar' in settings.INSTALLED_APPS:
     import debug_toolbar
     urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))
-
-# UX reference templates
-urlpatterns.append(path('template/<path:template>', openedx.core.djangoapps.debug.views.show_reference_template,
-                        name='openedx.core.djangoapps.debug.views.show_reference_template'))
 
 urlpatterns.append(
     path('api/learning_sequences/', include(
@@ -414,11 +415,18 @@ urlpatterns += [
 urlpatterns += [
     path('api/authoring/v1/', include('cms.djangoapps.contentstore.rest_api.v1.authoring_urls')),
     path('api/authoring/v2/', include('cms.djangoapps.contentstore.rest_api.v2.authoring_urls')),
+    path('api/authoring/v3/', include('cms.djangoapps.contentstore.rest_api.v3.authoring_urls')),
+    path('api/authoring/v4/', include('cms.djangoapps.contentstore.rest_api.v4.authoring_urls')),
 ]
 
 # Content tagging
 urlpatterns += [
     path('api/content_tagging/', include(('openedx.core.djangoapps.content_tagging.urls', 'content_tagging'))),
+]
+
+# openedx-core: competency-based education (CBE)
+urlpatterns += [
+    path('api/', include('openedx_learning.urls')),
 ]
 
 # Authoring-api specific API docs (using drf-spectacular and openapi-v3).

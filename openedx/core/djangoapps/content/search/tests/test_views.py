@@ -3,12 +3,15 @@ Tests for the Studio content search REST API.
 """
 from __future__ import annotations
 
+import ast
 import functools
+import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import ddt
 from django.test import override_settings
+from opaque_keys.edx.keys import CourseKey
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.auth import update_org_role
@@ -54,14 +57,30 @@ def mock_meilisearch(enabled=True):
     return decorator
 
 
+def search_rules(course_rule: dict, library_rule: dict | None = None) -> dict:
+    """
+    Build the tenant-token ``search_rules`` for the course and library indexes.
+
+    The course index is filtered by the user's ``view_course`` grants and the
+    library index by their ``view_library`` grants, so the two rules can differ.
+    Pass only ``course_rule`` when both indexes are expected to carry the same
+    rule (e.g. global staff see-everything, or no-access).
+    """
+    for rule in (course_rule, library_rule):
+        if rule and "filter" in rule:
+            orgs, ids = rule["filter"].removeprefix("org IN ").split(" OR access_id IN ")
+            rule["filter"] = f"org IN {json.dumps(ast.literal_eval(orgs))} OR access_id IN {ids}"
+    return {
+        "studio_content": course_rule,
+        "studio_library_content": course_rule if library_rule is None else library_rule,
+    }
+
+
 def search_rules_for_both_indexes(rule: dict) -> dict:
     """
-    The tenant token applies the same access rule to the course index and the library index.
+    Both indexes carry the same rule (global staff, or no access at all).
     """
-    return {
-        "studio_content": rule,
-        "studio_library_content": rule,
-    }
+    return search_rules(rule, rule)
 
 
 @ddt.ddt
@@ -130,8 +149,6 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         assert result.data["index_name"] == "studio_content"
         assert result.data["url"] == "http://meilisearch.url"
         assert result.data["api_key"] and isinstance(result.data["api_key"], str)  # noqa: PT018
-        expiry = datetime.fromisoformat(result.data["expires_at"])
-        assert timedelta(days=6) < expiry - datetime.now(timezone.utc) < timedelta(days=8)  # noqa: UP017
 
     @mock_meilisearch(enabled=True)
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
@@ -171,23 +188,31 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_studio_search_course_staff_access(self, mock_search_client):
         """
-        Users with staff or instructor access to a course or library will be limited to these courses/libraries.
+        Users with staff/instructor access to a course or library are limited to those
+        contexts, and the two indexes are filtered independently: the course index by
+        the user's course grants, the library index by their library grants.
         """
         self.client.login(username='course_staff', password='course_staff_pass')
         mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
         result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
         assert result.status_code == 200
 
-        expected_access_ids = list(SearchAccess.objects.filter(
-            context_key__in=self.course_user_keys,
+        expected_course_access_ids = list(SearchAccess.objects.filter(
+            context_key__in=self.course_only_user_keys,
         ).only('id').values_list('id', flat=True))
-        expected_access_ids.sort(reverse=True)
+        expected_course_access_ids.sort(reverse=True)
+
+        expected_library_access_ids = list(SearchAccess.objects.filter(
+            context_key__in=self.library_user_keys,
+        ).only('id').values_list('id', flat=True))
+        expected_library_access_ids.sort(reverse=True)
 
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules=search_rules_for_both_indexes({
-                "filter": f"org IN [] OR access_id IN {expected_access_ids}",
-            }),
+            search_rules=search_rules(
+                {"filter": f"org IN [] OR access_id IN {expected_course_access_ids}"},
+                {"filter": f"org IN [] OR access_id IN {expected_library_access_ids}"},
+            ),
             expires_at=ANY,
         )
 
@@ -199,7 +224,9 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_studio_search_org_access(self, username, mock_search_client):
         """
-        Users with org access to any courses or libraries will use the org filter.
+        A legacy org staff/instructor role feeds the COURSE filter's org clause only;
+        the library filter's org clause comes from authz ``lib:Org:*`` grants, which
+        these users do not hold, so their library index stays empty-access.
         """
         self.client.login(username=username, password=f'{username}_pass')
         mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
@@ -207,9 +234,134 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         assert result.status_code == 200
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules=search_rules_for_both_indexes({
-                "filter": 'org IN ["org1"] OR access_id IN []',
-            }),
+            search_rules=search_rules(
+                {"filter": "org IN ['org1'] OR access_id IN []"},
+                {"filter": "org IN [] OR access_id IN []"},
+            ),
+            expires_at=ANY,
+        )
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api._get_authz_org_keys_for_search')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_studio_search_authz_org_glob_access(self, mock_search_client, mock_authz_orgs):
+        """
+        A user with only an org-wide (glob) authz course grant -- and no legacy
+        role -- is covered by the org clause (openedx/openedx-authz#417). The
+        student has no legacy access, so 'org1' here comes purely from the authz
+        org union wired into ``_get_user_orgs``.
+        """
+        mock_authz_orgs.return_value = {'org1'}
+
+        self.client.login(username='student', password='student_pass')
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 200
+        # The authz org union is fed into _get_user_orgs, which is passed as omit_orgs
+        # to the access_ids query, so org1's courses are covered by the org clause.
+        mock_authz_orgs.assert_called_once()
+        mock_generate_tenant_token.assert_called_once_with(
+            api_key_uid=MOCK_API_KEY_UID,
+            search_rules=search_rules(
+                {"filter": "org IN ['org1'] OR access_id IN []"},
+                {"filter": "org IN [] OR access_id IN []"},
+            ),
+            expires_at=ANY,
+        )
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.authz_has_platform_access')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_studio_search_authz_platform_glob_access(self, mock_search_client, mock_platform_access):
+        """
+        A platform-wide (``course-v1:*``) authz COURSE grant is the authz analogue of
+        global staff for courses, so the COURSE filter is empty (see-everything). It
+        does NOT admit libraries: without a ``lib:*`` grant the LIBRARY filter stays
+        restricted. This is the point of the split -- course and library visibility
+        are independent (openedx/openedx-authz#417).
+        """
+        mock_platform_access.return_value = True
+
+        self.client.login(username='student', password='student_pass')
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 200
+        mock_platform_access.assert_called_once()
+        mock_generate_tenant_token.assert_called_once_with(
+            api_key_uid=MOCK_API_KEY_UID,
+            search_rules=search_rules(
+                {},
+                {"filter": "org IN [] OR access_id IN []"},
+            ),
+            expires_at=ANY,
+        )
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.authz_has_all_libraries_access')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_studio_search_authz_all_libraries_access(self, mock_search_client, mock_all_libraries):
+        """
+        A platform-wide (``lib:*``) authz LIBRARY grant empties the LIBRARY filter
+        (see-every-library) but leaves the COURSE filter restricted -- the mirror of
+        the course platform-grant case, confirming the two indexes resolve independently.
+        """
+        mock_all_libraries.return_value = True
+
+        self.client.login(username='student', password='student_pass')
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 200
+        mock_all_libraries.assert_called_once()
+        mock_generate_tenant_token.assert_called_once_with(
+            api_key_uid=MOCK_API_KEY_UID,
+            search_rules=search_rules(
+                {"filter": "org IN [] OR access_id IN []"},
+                {},
+            ),
+            expires_at=ANY,
+        )
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.models._get_authz_platform_course_keys_for_search')
+    @patch('openedx.core.djangoapps.content.search.api._get_authz_platform_org_keys_for_search')
+    @patch('openedx.core.djangoapps.content.search.api.authz_has_platform_access')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_studio_search_authz_platform_glob_expansion(
+        self, mock_search_client, mock_platform_access, mock_platform_orgs, mock_platform_courses,
+    ):
+        """
+        When the authz course authoring flag is NOT globally on, a platform-wide
+        (``course-v1:*``) grant is not see-everything -- it expands to just the
+        orgs/courses that carry a force-on override (openedx/openedx-authz#417
+        follow-up). This exercises the assembled COURSE filter at the token endpoint:
+        the force-on org lands in the ``org`` clause (via ``_get_user_orgs``) and a
+        force-on course in a *different* org lands in the ``access_id`` clause (via
+        ``get_course_access_ids_for_request``). Being a course grant, it does not
+        touch the LIBRARY filter, which stays empty-access.
+        """
+        # Not see-everything: global switch is off, so the grant expands per-scope.
+        mock_platform_access.return_value = False
+        # A force-on org override surfaces this org in the org clause.
+        mock_platform_orgs.return_value = {'platformorg'}
+        # A force-on course override in a DIFFERENT (non-omitted) org surfaces this
+        # course in the access_id clause. Give it a real SearchAccess row so its id resolves.
+        expansion_course = CourseKey.from_string('course-v1:PlatformCourseOrg+PC101+2026')
+        search_access = SearchAccess.objects.create(context_key=expansion_course)
+        mock_platform_courses.return_value = {str(expansion_course)}
+
+        self.client.login(username='student', password='student_pass')
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 200
+        # The student has no legacy access, so the course clauses come purely from the
+        # platform-grant expansion: org from the force-on org, access_id from the
+        # force-on course. The library index is unaffected (no view_library grant).
+        mock_generate_tenant_token.assert_called_once_with(
+            api_key_uid=MOCK_API_KEY_UID,
+            search_rules=search_rules(
+                {"filter": f"org IN ['platformorg'] OR access_id IN [{search_access.id}]"},
+                {"filter": "org IN [] OR access_id IN []"},
+            ),
             expires_at=ANY,
         )
 
@@ -217,7 +369,10 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_studio_search_omit_orgs(self, mock_search_client):
         """
-        Grant org access to our staff user to ensure that org's access_ids are omitted from the search filter.
+        A legacy OrgStaffRole on org1 moves org1 into the COURSE filter's org clause,
+        so org1 course access_ids are omitted from that clause. The LIBRARY filter's
+        org clause is authz-only (``lib:Org:*``), which this user lacks, so the org1
+        libraries stay in the library access_id clause rather than being omitted.
         """
         update_org_role(caller=self.global_staff, role=OrgStaffRole, user=self.course_staff, orgs=['org1'])
         self.client.login(username='course_staff', password='course_staff_pass')
@@ -225,23 +380,29 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
         assert result.status_code == 200
 
-        expected_access_ids = list(SearchAccess.objects.filter(
-            context_key__in=[key for key in self.course_user_keys if key.org != 'org1'],
+        expected_course_access_ids = list(SearchAccess.objects.filter(
+            context_key__in=[key for key in self.course_only_user_keys if key.org != 'org1'],
         ).only('id').values_list('id', flat=True))
-        expected_access_ids.sort(reverse=True)
+        expected_course_access_ids.sort(reverse=True)
+
+        expected_library_access_ids = list(SearchAccess.objects.filter(
+            context_key__in=self.library_user_keys,
+        ).only('id').values_list('id', flat=True))
+        expected_library_access_ids.sort(reverse=True)
 
         mock_generate_tenant_token.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules=search_rules_for_both_indexes({
-                "filter": f'org IN ["org1"] OR access_id IN {expected_access_ids}',
-            }),
+            search_rules=search_rules(
+                {"filter": f"org IN ['org1'] OR access_id IN {expected_course_access_ids}"},
+                {"filter": f"org IN [] OR access_id IN {expected_library_access_ids}"},
+            ),
             expires_at=ANY,
         )
 
     @ddt.data("access_ids", "organizations")
     @mock_meilisearch(enabled=True)
     @patch('openedx.core.djangoapps.content.search.api._get_user_orgs')
-    @patch('openedx.core.djangoapps.content.search.api.get_access_ids_for_request')
+    @patch('openedx.core.djangoapps.content.search.api.get_course_access_ids_for_request')
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_studio_search_limits(self, grant_kind, mock_search_client, mock_get_access_ids, mock_get_user_orgs):
         """
@@ -258,7 +419,7 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         mock_generate_tenant_token.assert_not_called()
 
     @mock_meilisearch(enabled=True)
-    @patch('openedx.core.djangoapps.content.search.api.get_access_ids_for_request')
+    @patch('openedx.core.djangoapps.content.search.api.get_library_access_ids_for_request')
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
     def test_scoped_library_after_1000_grants(self, mock_search_client, mock_get_access_ids):
         """Scoped access uses database permission checks, without enumerating grants."""

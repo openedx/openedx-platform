@@ -6,7 +6,6 @@ from unittest import mock, skipIf, skipUnless
 from zoneinfo import ZoneInfo
 
 import ddt
-import httpretty
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
@@ -666,7 +665,7 @@ class RegistrationViewTestV1(
             }
         )
 
-    @override_settings(REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
+    @override_settings(PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
     def test_extension_form_fields(self):
         no_extra_fields_setting = {}
 
@@ -1193,7 +1192,7 @@ class RegistrationViewTestV1(
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_field_order(self):
         response = self.client.get(self.url)
@@ -1280,7 +1279,7 @@ class RegistrationViewTestV1(
             "honor_code": "required",
             "confirm_email": "required",
         },
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
         REGISTRATION_FIELD_ORDER=[
             "name",
             "confirm_email",
@@ -1387,7 +1386,7 @@ class RegistrationViewTestV1(
         assert account_settings["goals"] == self.GOALS
         assert account_settings["country"] == self.COUNTRY
 
-    @override_settings(REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
+    @override_settings(PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm')
     @mock.patch('openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm.DUMMY_STORAGE', new_callable=dict)
     @mock.patch(
         'openedx.core.djangoapps.user_api.tests.test_helpers.DummyRegistrationExtensionModel',
@@ -1987,7 +1986,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "honor_code": "required",
             "confirm_email": "required",
         },
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
         REGISTRATION_FIELD_ORDER=[
             "name",
             "confirm_email",
@@ -2095,7 +2094,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_field_order(self):
         response = self.client.get(self.url)
@@ -2137,7 +2136,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "confirm_email": "required",
         },
         REGISTRATION_FIELD_ORDER=None,
-        REGISTRATION_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
+        PROFILE_EXTENSION_FORM='openedx.core.djangoapps.user_api.tests.test_helpers.TestCaseForm',
     )
     def test_year_of_birth_field_with_feature_flag(self):
         """
@@ -2392,7 +2391,6 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
         self.assertEqual(response.status_code, 200)  # noqa: PT009
 
 
-@httpretty.activate
 @ddt.ddt
 class ThirdPartyRegistrationTestMixin(
     OpenEdxEventsTestMixin, ThirdPartyOAuthTestMixin, CacheIsolationTestCase

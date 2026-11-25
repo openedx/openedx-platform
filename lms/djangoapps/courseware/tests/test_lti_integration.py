@@ -149,14 +149,16 @@ class _TestLTIBase(BaseTestXmodule):
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     def test_lti_preview_handler(self, mock_render_django_template):
-        generated_content = self.block.preview_handler(None, None).body
+        generated_content = self.block.preview_handler(None, None).body.decode('utf-8')
 
         if settings.USE_EXTRACTED_LTI_BLOCK:
+            # Remove i18n service from the extracted LTI Block's rendered `preview_handler` content
+            generated_content = re.sub(r"\{.*?}", "{}", generated_content)
             expected_content = self.runtime.render_template('templates/lti_form.html', self.expected_context)
             mock_render_django_template.assert_called_once()
         else:
             expected_content = self.runtime.render_template('lti_form.html', self.expected_context)
-        assert generated_content.decode('utf-8') == expected_content
+        assert generated_content == expected_content
 
 
 class _TestLTIBlockListingBase(SharedModuleStoreTestCase):

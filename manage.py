@@ -23,6 +23,9 @@ defuse_xml_libs()
 import os
 import sys
 from argparse import ArgumentParser
+from contextlib import nullcontext
+
+from openedx_filters.management.filters import ManagementCommandContextmanagerRequested
 
 
 def parse_args():
@@ -73,6 +76,26 @@ def parse_args():
     return known_args, remaining_args
 
 
+# Django options that take a separate value (e.g. `--verbosity 2`), so the value is not mistaken for the command name.
+OPTIONS_WITH_VALUE = {'-v', '--verbosity', '--pythonpath', '--settings'}
+
+
+def get_command_name(django_args):
+    """
+    Return the Django command name (e.g. 'migrate', 'runserver') from the arguments left after edX parsing.
+
+    This is the first argument that is not an option, skipping options such as `--verbosity 2`, `-v2` or
+    `--traceback`. Returns 'no-argument' if there is no such argument.
+    """
+    args = iter(django_args)
+    for arg in args:
+        if arg in OPTIONS_WITH_VALUE:
+            next(args, None)  # skip the option's value
+        elif not arg.startswith('-'):
+            return arg
+    return 'no-argument'
+
+
 if __name__ == "__main__":
     edx_args, django_args = parse_args()
 
@@ -90,4 +113,20 @@ if __name__ == "__main__":
         django_args.append('--help')
 
     from django.core.management import execute_from_command_line
-    execute_from_command_line([sys.argv[0]] + django_args)
+
+    command_name = get_command_name(django_args)
+    service_variant = edx_args.settings_base.split('/', maxsplit=1)[0]
+
+    # NOTE: This filter runs before django.setup() (inside execute_from_command_line), so the app registry is not
+    # ready. Pipeline steps are imported at this point and must not import models or other app-registry dependent code
+    # at module level.
+    # .. filter_implemented_name: ManagementCommandContextmanagerRequested
+    # .. filter_type: org.openedx.management.command.contextmanager.requested.v1
+    command_contextmanager, _, _ = ManagementCommandContextmanagerRequested.run_filter(
+        command_contextmanager=nullcontext(),
+        command_name=command_name,
+        service_variant=service_variant,
+    )
+
+    with command_contextmanager:
+        execute_from_command_line([sys.argv[0]] + django_args)

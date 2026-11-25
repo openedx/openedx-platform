@@ -7,7 +7,7 @@ from typing import cast
 from xml.etree import ElementTree
 
 import ddt
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory

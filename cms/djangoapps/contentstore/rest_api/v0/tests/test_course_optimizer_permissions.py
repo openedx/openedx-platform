@@ -4,7 +4,7 @@ Integration tests verifying authz permissions for v0 course optimizer REST API v
 from unittest.mock import patch
 
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
