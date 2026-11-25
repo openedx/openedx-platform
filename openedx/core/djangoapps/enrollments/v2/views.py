@@ -168,6 +168,27 @@ def _maybe_set_legacy_param_deprecation_header(request, response, alias_pairs):
     return response
 
 
+def _course_key(course_id, invalid_detail):
+    """
+    Return the CourseKey for a ``course_id`` URL argument.
+
+    The conforming routes pass a parsed CourseKey, used as is. The legacy routes
+    pass the raw string, parsed here; ``invalid_detail`` is the 400 detail when
+    it does not parse. A key that names only a version has no course run behind
+    it, and looking one up raises InvalidKeyError, so it is a 404.
+    """
+    if isinstance(course_id, CourseKey):
+        course_key = course_id
+    else:
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError as exc:
+            raise ValidationError(invalid_detail) from exc
+    if course_key.org is None:
+        raise NotFound(f"No course found for course ID '{course_id}'")
+    return course_key
+
+
 # ---------------------------------------------------------------------------
 # ADR 0036 — minimal enrollment view helper
 # ---------------------------------------------------------------------------
@@ -497,10 +518,7 @@ class EnrollmentRetrieveView(StandardizedErrorMixin, _EnrollmentMinimalViewMixin
             # Hide existence of other users' enrollments.
             raise NotFound()
 
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except InvalidKeyError as exc:
-            raise ValidationError(f"No course '{course_id}' found for enrollment") from exc
+        course_key = _course_key(course_id, f"No course '{course_id}' found for enrollment")
 
         try:
             enrollment = CourseEnrollment.objects.get(user__username=username, course_id=course_key)
@@ -625,10 +643,7 @@ class CourseEnrollmentDetailView(StandardizedErrorMixin, APIView):
         course schedule and supported enrollment modes; pass
         ``?include_expired=1`` to include expired enrollment modes.
         """
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except InvalidKeyError as exc:
-            raise ValidationError(f"No course found for course ID '{course_id}'") from exc
+        course_key = _course_key(course_id, f"No course found for course ID '{course_id}'")
         try:
             course_overview = CourseOverview.get_from_id(course_key)
         except CourseOverview.DoesNotExist as exc:

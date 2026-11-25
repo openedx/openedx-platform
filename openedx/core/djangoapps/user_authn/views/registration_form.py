@@ -320,36 +320,25 @@ class AccountCreationForm(forms.Form):
         return self.cleaned_data.get("country")
 
 
-def get_registration_extension_form(*args, **kwargs) -> forms.Form | None:
+def get_profile_extension_form(*args, **kwargs) -> forms.Form | None:
     """
-    Convenience function for getting the custom form set in settings.PROFILE_EXTENSION_FORM
-    or settings.REGISTRATION_EXTENSION_FORM (deprecated).
+    Get an instance of the custom profile extension form.
 
-    Returns an instance of the configured profile extension form.
+    This form is configured via the `PROFILE_EXTENSION_FORM` Django setting
 
-    The function first checks for PROFILE_EXTENSION_FORM (recommended), then falls back to
-    REGISTRATION_EXTENSION_FORM for backwards compatibility. When REGISTRATION_EXTENSION_FORM
-    is used, a deprecation warning is logged.
-
-    An example form app for this can be found at http://github.com/open-craft/custom-form-app
+    Args:
+        *args: Variable length argument list passed to the form's __init__ method.
+        **kwargs: Arbitrary keyword arguments passed to the form's __init__ method.
 
     Returns:
-        Form instance or None if no form is configured
-    """
-    # Check for the new setting first
-    setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
-    setting_name = "PROFILE_EXTENSION_FORM"
+        forms.Form | None: An initialized form instance, or None if the setting
+        is not configured or the form fails to load.
 
-    # Fall back to the deprecated setting
-    if not setting_value:
-        setting_value = getattr(settings, "REGISTRATION_EXTENSION_FORM", None)
-        if setting_value:
-            setting_name = "REGISTRATION_EXTENSION_FORM"
-            log.warning(
-                "REGISTRATION_EXTENSION_FORM is deprecated and will be removed in a future release. "
-                "Please use PROFILE_EXTENSION_FORM instead. Current value: %s",
-                setting_value,
-            )
+    References:
+        An example form app for this can be found at:
+        http://github.com/open-craft/custom-form-app
+    """
+    setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
 
     if not setting_value:
         return None
@@ -359,44 +348,25 @@ def get_registration_extension_form(*args, **kwargs) -> forms.Form | None:
         module = import_module(module)
         return getattr(module, klass)(*args, **kwargs)
     except (ValueError, ImportError, AttributeError) as e:
-        log.error("Could not load form from %s='%s': %s", setting_name, setting_value, str(e))
+        log.error("Could not load form from PROFILE_EXTENSION_FORM='%s': %s", setting_value, str(e))
         return None
 
 
-def get_extended_profile_model() -> type[Model] | None:
+def get_profile_extension_model() -> type[Model] | None:
     """
-    Get the model class for the extended profile form.
+    Get the model class associated with the custom profile extension form.
 
-    Returns the Django model class associated with the form specified in
-    the `PROFILE_EXTENSION_FORM` setting.
-
-    IMPORTANT: This function only works with PROFILE_EXTENSION_FORM. If you're using
-    the deprecated REGISTRATION_EXTENSION_FORM, this will return None to maintain
-    backward compatibility. The new profile extension capabilities (loading/saving
-    to a custom model) are only available when using PROFILE_EXTENSION_FORM.
-
-    Migration path:
-    - Old behavior (REGISTRATION_EXTENSION_FORM): Custom fields only for registration,
-      data stored in UserProfile.meta field
-    - New behavior (PROFILE_EXTENSION_FORM): Custom fields for registration and profile,
-      data stored in dedicated model with ability to load/update via account settings API
+    This extracts the model from the Meta class of the form specified in
+    the `PROFILE_EXTENSION_FORM` Django setting.
 
     Returns:
-        type[Model] | None: The model class if PROFILE_EXTENSION_FORM is configured
-            and valid, None otherwise (including when using the deprecated
-            REGISTRATION_EXTENSION_FORM).
+        type[Model] | None: The Django model class if the setting is configured
+        and valid, None otherwise.
 
     Examples:
-        # New setting with model support:
-        # In settings.py: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtendedProfileForm'
-        model_class = get_extended_profile_model()  # Returns the model
-
-        # Deprecated setting - maintains old behavior:
-        # In settings.py: REGISTRATION_EXTENSION_FORM = 'myapp.forms.ExtendedForm'
-        model_class = get_extended_profile_model()  # Returns None (no model support)
+        # In settings.py: PROFILE_EXTENSION_FORM = 'myapp.forms.ExtensionForm'
+        model_class = get_profile_extension_model()
     """
-    # Only check for the new setting - do NOT fall back to REGISTRATION_EXTENSION_FORM
-    # This ensures backward compatibility: users of the old setting keep the old behavior
     setting_value = getattr(settings, "PROFILE_EXTENSION_FORM", None)
 
     if not setting_value:
@@ -494,7 +464,7 @@ class RegistrationFormFactory:
             handler = getattr(self, f"_add_{field_name}_field")
             self.field_handlers[field_name] = handler
 
-        custom_form = get_registration_extension_form()
+        custom_form = get_profile_extension_form()
         if custom_form:
             custom_form_field_names = [field_name for field_name, field in custom_form.fields.items()]
             valid_fields.extend(custom_form_field_names)
@@ -601,8 +571,7 @@ class RegistrationFormFactory:
         )
 
         # Custom form fields can be added via the form set in settings.PROFILE_EXTENSION_FORM
-        # (or deprecated settings.REGISTRATION_EXTENSION_FORM)
-        custom_form = get_registration_extension_form()
+        custom_form = get_profile_extension_form()
         if custom_form:
             custom_form_field_names = [field_name for field_name, field in custom_form.fields.items()]
         else:

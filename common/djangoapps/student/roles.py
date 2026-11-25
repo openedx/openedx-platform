@@ -21,7 +21,7 @@ from openedx_authz.api.data import (
     PlatformCourseOverviewGlobData,
     RoleAssignmentData,
 )
-from openedx_authz.constants import roles as authz_roles
+from openedx_authz.authz import LEGACY_COURSE_ROLE_EQUIVALENCES
 from organizations.api import get_organizations
 
 from common.djangoapps.student.models import CourseAccessRole
@@ -42,11 +42,11 @@ ROLE_CACHE_UNGROUPED_ROLES__KEY = 'ungrouped'
 
 
 def get_authz_role_from_legacy_role(legacy_role: str) -> str:
-    return authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.get(legacy_role, None)
+    return LEGACY_COURSE_ROLE_EQUIVALENCES.get(legacy_role, None)
 
 
 def get_legacy_role_from_authz_role(authz_role: str) -> str:
-    return next((k for k, v in authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
+    return next((k for k, v in LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
 
 
 def enable_authz_course_authoring(course_key: CourseKey | None = None, role: str | None = None) -> bool:
@@ -329,7 +329,7 @@ class BulkRoleCache:  # pylint: disable=missing-class-docstring
             for role in compat_roles:
                 course_id = get_role_cache_key_for_course(role.course_id)
                 user_roles_set_for_course = roles_by_user[user.id][course_id]
-                user_roles_set_for_course.add(compat_role)
+                user_roles_set_for_course.add(role)
 
         users_without_roles = [u for u in users if u.id not in roles_by_user]
         for user in users_without_roles:

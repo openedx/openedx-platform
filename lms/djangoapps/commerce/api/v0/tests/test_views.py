@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import ddt
 import pytz
+import responses
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse, reverse_lazy
@@ -290,6 +291,7 @@ class BasketOrderViewTests(UserMixin, TestCase):
         super().setUp()
         self._login()
 
+    @responses.activate
     def test_order_found(self):
         """ If the order is located, the view should pass the data from the API. """
 
@@ -300,6 +302,7 @@ class BasketOrderViewTests(UserMixin, TestCase):
         actual = json.loads(response.content.decode('utf-8'))
         assert actual == self.MOCK_ORDER
 
+    @responses.activate
     def test_order_not_found(self):
         """ If the order is not found, the view should return a 404. """
         with mock_basket_order(basket_id=1, status=404):

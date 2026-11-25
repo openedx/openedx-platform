@@ -158,10 +158,15 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
 
     def get_use_new_unit_page(self, obj):
         """
-        Method to get the use_new_unit_page switch
+        Method to get the use_new_unit_page switch.
+
+        Always returns True.  The legacy unit editor has been removed and the
+        Authoring MFE never read this key; it goes when the other hard-coded
+        fields in this serializer are dropped.
+
+        See https://github.com/openedx/openedx-platform/issues/37497
         """
-        course_key = self.get_course_key()
-        return toggles.use_new_unit_page(course_key)
+        return True
 
     def get_use_new_course_team_page(self, obj):
         """

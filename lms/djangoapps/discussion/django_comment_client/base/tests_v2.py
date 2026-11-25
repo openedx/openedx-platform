@@ -132,7 +132,11 @@ class ThreadActionGroupIdTestCase(
     ):
         """Call a view with the given parameters."""
         thread_response = make_minimal_cs_thread(
-            {"user_id": str(self.student.id), "group_id": self.student_cohort.id}
+            {
+                "user_id": str(self.student.id),
+                "group_id": self.student_cohort.id,
+                "course_id": str(self.course.id),
+            }
         )
 
         self.set_mock_return_value("get_course_id_by_thread", str(self.course.id))
@@ -1156,6 +1160,149 @@ class ViewPermissionsTestCase(
         assert response.status_code == 200
 
 
+@ddt.ddt
+@override_settings(ENABLE_DISCUSSION_SERVICE=True)
+class CrossCourseViewPermissionsTestCase(
+    UrlResetMixin,
+    SharedModuleStoreTestCase,
+    MockForumApiMixin,
+):
+    """A role in the course named by the URL must not grant access to content that belongs to another course."""
+
+    WRITE_CALLS = (
+        "delete_thread",
+        "pin_thread",
+        "unpin_thread",
+        "update_thread",
+        "update_thread_votes",
+        "create_parent_comment",
+        "create_child_comment",
+        "delete_comment",
+        "update_comment",
+        "update_comment_votes",
+    )
+
+    @classmethod
+    def setUpClass(cls):  # pylint: disable=super-method-not-called
+        """Set up class and forum mock."""
+        super().setUpClassAndForumMock()
+
+        with super().setUpClassAndTestData():
+            cls.course_a = CourseFactory.create(org="A", course="a", run="1")
+            cls.course_b = CourseFactory.create(org="B", course="b", run="1")
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop patches after tests complete."""
+        super().tearDownClass()
+        super().disposeForumMocks()
+
+    @classmethod
+    def setUpTestData(cls):
+        """Set up test data."""
+        super().setUpTestData()
+
+        seed_permissions_roles(cls.course_a.id)
+        seed_permissions_roles(cls.course_b.id)
+
+        cls.password = "test password"
+        cls.learner_a = UserFactory.create(password=cls.password)
+        cls.moderator_a = UserFactory.create(password=cls.password)
+        cls.moderator_b = UserFactory.create(password=cls.password)
+
+        CourseEnrollmentFactory(user=cls.learner_a, course_id=cls.course_a.id)
+        CourseEnrollmentFactory(user=cls.moderator_a, course_id=cls.course_a.id)
+        CourseEnrollmentFactory(user=cls.moderator_b, course_id=cls.course_b.id)
+
+        cls.moderator_a.roles.add(Role.objects.get(name="Moderator", course_id=cls.course_a.id))
+        cls.moderator_b.roles.add(Role.objects.get(name="Moderator", course_id=cls.course_b.id))
+
+    def setUp(self):
+        """Mock a thread and a comment that live in course B."""
+        super().setUp()
+        self._mock_content(self.course_b)
+
+    def _mock_content(self, course):
+        """Make the forum return a thread and a comment that belong to `course`."""
+        thread = {
+            "type": "thread",
+            "id": "thread_1",
+            "thread_type": "discussion",
+            "closed": False,
+            "commentable_id": "course",
+            "course_id": str(course.id),
+            "user_id": str(self.moderator_b.id),
+            "votes": {"up_count": 0, "down_count": 0, "count": 0, "point": 0},
+        }
+        comment = {
+            "type": "comment",
+            "id": "comment_1",
+            "thread_id": "thread_1",
+            "closed": False,
+            "commentable_id": "course",
+            "course_id": str(course.id),
+            "user_id": str(self.moderator_b.id),
+        }
+        self.set_mock_return_value("get_course_id_by_thread", str(course.id))
+        self.set_mock_return_value("get_course_id_by_comment", str(course.id))
+        self.set_mock_return_value("get_thread", thread)
+        self.set_mock_return_value("get_parent_comment", comment)
+        for name in self.WRITE_CALLS:
+            self.set_mock_return_value(name, thread)
+
+    def _post(self, user, route, course, **kwargs):
+        """POST to `route` through `course`'s URL, as `user`."""
+        self.client.login(username=user.username, password=self.password)
+        url = reverse(route, kwargs={"course_id": str(course.id), **kwargs})
+        return self.client.post(url, {"body": "text"})
+
+    def _assert_no_writes(self):
+        for name in self.WRITE_CALLS:
+            assert not self.check_mock_called(name), f"{name} should not have been called"
+
+    @ddt.data("delete_thread", "pin_thread", "un_pin_thread", "openclose_thread")
+    def test_moderator_in_other_course_cannot_moderate_thread(self, route):
+        response = self._post(self.moderator_a, route, self.course_a, thread_id="thread_1")
+        assert response.status_code == 401
+        self._assert_no_writes()
+
+    @ddt.data("upvote_thread", "create_comment", "follow_thread", "flag_abuse_for_thread")
+    def test_learner_in_other_course_cannot_act_on_thread(self, route):
+        response = self._post(self.learner_a, route, self.course_a, thread_id="thread_1")
+        assert response.status_code == 401
+        self._assert_no_writes()
+
+    @ddt.data("delete_comment", "endorse_comment")
+    def test_moderator_in_other_course_cannot_moderate_comment(self, route):
+        response = self._post(self.moderator_a, route, self.course_a, comment_id="comment_1")
+        assert response.status_code == 401
+        self._assert_no_writes()
+
+    @ddt.data("upvote_comment", "create_sub_comment", "flag_abuse_for_comment")
+    def test_learner_in_other_course_cannot_act_on_comment(self, route):
+        response = self._post(self.learner_a, route, self.course_a, comment_id="comment_1")
+        assert response.status_code == 401
+        self._assert_no_writes()
+
+    def test_moderator_can_moderate_thread_in_own_course(self):
+        self._mock_content(self.course_a)
+        response = self._post(self.moderator_a, "pin_thread", self.course_a, thread_id="thread_1")
+        assert response.status_code == 200
+        assert self.check_mock_called("pin_thread")
+
+    def test_learner_can_vote_on_thread_in_own_course(self):
+        self._mock_content(self.course_a)
+        response = self._post(self.learner_a, "upvote_thread", self.course_a, thread_id="thread_1")
+        assert response.status_code == 200
+        assert self.check_mock_called("update_thread_votes")
+
+    def test_moderator_can_moderate_thread_through_its_own_course_url(self):
+        """A moderator of B, acting through B's URL on B's thread, is unaffected."""
+        response = self._post(self.moderator_b, "pin_thread", self.course_b, thread_id="thread_1")
+        assert response.status_code == 200
+        assert self.check_mock_called("pin_thread")
+
+
 class CommentActionTestCase(CohortedTestCase, MockForumApiMixin):
     """Test case for thread actions with group ID assertions."""
 
@@ -1756,6 +1903,7 @@ class ForumEventTestCase(
         cs_thread = make_minimal_cs_thread(
             {
                 "commentable_id": "test_commentable_id",
+                "course_id": str(self.course.id),
                 "username": "gumprecht",
             }
         )

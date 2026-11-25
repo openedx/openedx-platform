@@ -101,7 +101,6 @@ CUSTOM_COURSES_EDX = True
 
 # These ports are carefully chosen so that if the browser needs to
 # access them, they will be available through the SauceLabs SSH tunnel
-XQUEUE_PORT = 8040
 YOUTUBE_PORT = 8031
 LTI_PORT = 8765
 VIDEO_SOURCE_PORT = 8777
@@ -221,6 +220,12 @@ big_blue_button_credentials = {
 }
 
 DEFAULT_MOBILE_AVAILABLE = True
+
+# Execute Codejail code locally in tests instead of calling a remote service.
+CODE_JAIL_REST_SERVICE_HOST = "http://localhost:8550"
+CODE_JAIL_REST_SERVICE_REMOTE_EXEC = (
+    "xblock_problem.capa.testing.codejail.send_safe_exec_request_locally"
+)
 
 # Override production settings for testing
 AWS_QUERYSTRING_AUTH = False

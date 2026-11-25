@@ -42,7 +42,6 @@ from cms.djangoapps.contentstore.toggles import (
     libraries_v1_enabled,
     libraries_v2_enabled,
     split_library_view_on_dashboard,
-    use_new_unit_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -53,7 +52,7 @@ from common.djangoapps.course_action_state.models import CourseRerunState, Cours
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.student import auth
-from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_read_access, has_studio_write_access
+from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_write_access
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.track import contexts
@@ -71,6 +70,7 @@ from common.djangoapps.xblock_django.api import deprecated_xblocks
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.content.services import StudioPermissionsService
 from openedx.core.djangoapps.content_libraries.api import get_container
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.credit.api import get_credit_requirements, is_credit_course
@@ -425,13 +425,10 @@ def get_unit_url(course_locator, unit_locator) -> str:
     """
     Gets course authoring microfrontend URL for unit page view.
     """
-    unit_url = None
-    if use_new_unit_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
-        if mfe_base_url:
-            unit_url = course_mfe_url
-    return unit_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    if mfe_base_url:
+        return f'{mfe_base_url}/course/{course_locator}/container/{unit_locator}'
+    return None
 
 
 def get_certificates_url(course_locator) -> str:
@@ -1871,8 +1868,8 @@ def _get_course_index_context(request, course_key, course_block):
 
     from cms.djangoapps.contentstore.views.course import (
         _course_outline_json,
-        _deprecated_blocks_info,
         course_outline_initial_state,
+        deprecated_blocks_info,
         user_can_reindex_course,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
@@ -1899,7 +1896,7 @@ def _get_course_index_context(request, course_key, course_block):
         current_action = None
 
     deprecated_block_names = [block.name for block in deprecated_xblocks()]
-    deprecated_blocks_info = _deprecated_blocks_info(course_block, deprecated_block_names)
+    deprecated_info = deprecated_blocks_info(course_block, deprecated_block_names)
 
     frontend_app_publisher_url = configuration_helpers.get_value_for_org(
         course_block.location.org,
@@ -1931,7 +1928,7 @@ def _get_course_index_context(request, course_key, course_block):
         'course_release_date': course_release_date,
         'settings_url': settings_url,
         'reindex_link': reindex_link,
-        'deprecated_blocks_info': deprecated_blocks_info,
+        'deprecated_blocks_info': deprecated_info,
         'notification_dismiss_url': reverse_course_url(
             'course_notifications_handler',
             current_action.course_key,
@@ -2260,27 +2257,6 @@ def get_group_configurations_context(course, store):
     }
 
     return context
-
-
-class StudioPermissionsService:
-    """
-    Service that can provide information about a user's permissions.
-
-    Deprecated. To be replaced by a more general authorization service.
-
-    Only used by LegacyLibraryContentBlock (and library_tools.py).
-    """
-
-    def __init__(self, user):
-        self._user = user
-
-    def can_read(self, course_key):
-        """ Does the user have read access to the given course/library? """
-        return has_studio_read_access(self._user, course_key)
-
-    def can_write(self, course_key):
-        """ Does the user have read access to the given course/library? """
-        return has_studio_write_access(self._user, course_key)
 
 
 def track_course_update_event(course_key, user, course_update_content=None):

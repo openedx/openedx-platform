@@ -57,7 +57,9 @@ start_sass_watch() {
     #       so depending on the timing, your latest changes may or may not be picked up. We accept this as a reasonable
     #       tradeoff. Some watcher libraries are smarter than watchdog, in that they wait until the filesystem "settles"
     #       before firing off a the recompilation. This sounds nice but did not seem worth the effort for legacy assets.
-    local watch_cmd=(watchmedo shell-command -v --patterns '*.scss' --recursive --drop --command "$handler" "${paths[@]}")
+    # Note: The pattern must be '**/*.scss', not '*.scss'. As of watchdog 7, '*' no longer matches across directories,
+    #       so a bare '*.scss' would silently ignore every Sass file that lives in a subdirectory of a watched path.
+    local watch_cmd=(watchmedo shell-command -v --patterns '**/*.scss' --recursive --drop --command "$handler" "${paths[@]}")
     echo_quoted_cmd "${watch_cmd[@]}"
     "${watch_cmd[@]}" &
 }

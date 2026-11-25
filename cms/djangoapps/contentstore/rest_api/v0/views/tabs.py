@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )

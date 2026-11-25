@@ -59,6 +59,18 @@ def plugin_settings(settings):
     # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/1750
     settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS = False
 
+    # .. toggle_name: ENABLE_ASYNC_ANSWER_DISTRIBUTION
+    # .. toggle_implementation: DjangoSetting
+    # .. toggle_default: False
+    # .. toggle_description: When enabled, the Data Download tab of the instructor dashboard
+    #   shows a paragraph above the report list explaining that the answer distribution report
+    #   is generated several times a day by an external background process and is cumulative.
+    #   The platform does not generate that report; this flag only adds the explanatory text
+    #   for deployments that produce it elsewhere.
+    # .. toggle_use_cases: opt_in
+    # .. toggle_creation_date: 2014-03-18
+    settings.ENABLE_ASYNC_ANSWER_DISTRIBUTION = False
+
     # .. toggle_name: ALLOW_AUTOMATED_SIGNUPS
     # .. toggle_implementation: DjangoSetting
     # .. toggle_default: False

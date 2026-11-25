@@ -542,6 +542,56 @@ class SingleCohortedThreadTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # p
         self.assertRegex(html, r'"group_name": "student_cohort"')  # noqa: PT009
 
 
+class SingleThreadCrossCourseTestCase(ModuleStoreTestCase, ForumViewsUtilsMixin):
+    """A thread must only be readable through the course it belongs to, not through any course the user can load."""
+
+    CREATE_USER = False
+    SECRET_TEXT = "text from the other course"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        super().setUpClassAndForumMock()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        super().disposeForumMocks()
+
+    def setUp(self):
+        super().setUp()
+        self.course_a = CourseFactory.create(org="A", course="a", run="1", discussion_topics={"t": {"id": "topic_a"}})
+        self.course_b = CourseFactory.create(org="B", course="b", run="1", discussion_topics={"t": {"id": "topic_b"}})
+        self.student = UserFactory.create()
+        CourseEnrollmentFactory.create(user=self.student, course_id=self.course_a.id)  # enrolled in A only
+
+    def _read_thread(self, url_course, discussion_id):
+        request = RequestFactory().get("dummy_url", HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        request.user = self.student
+        return views.single_thread(request, str(url_course.id), discussion_id, "thread_1")
+
+    def _make_thread_belong_to(self, course):
+        """Make the mocked comments service return `thread_1` as a thread of `course`."""
+        self.set_mock_return_value("get_course_id_by_thread", str(course.id))
+        self._configure_mock_responses(course=course, text=self.SECRET_TEXT, thread_id="thread_1")
+        # The comments service returns the course a thread belongs to; the shared mock data leaves it out.
+        thread_callback = make_thread_callback(course, self.SECRET_TEXT, "thread_1")
+        self.set_mock_side_effect(
+            "get_thread", lambda *args, **kwargs: {**thread_callback(*args, **kwargs), "course_id": str(course.id)}
+        )
+
+    def test_thread_from_another_course_is_not_found(self):
+        self._make_thread_belong_to(self.course_b)
+        with pytest.raises(Http404):
+            self._read_thread(self.course_a, "topic_a")
+
+    def test_thread_from_own_course_is_readable(self):
+        self._make_thread_belong_to(self.course_a)
+        response = self._read_thread(self.course_a, "topic_a")
+        assert response.status_code == 200
+        assert self.SECRET_TEXT in response.content.decode("utf-8")
+
+
 class SingleThreadAccessTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @classmethod

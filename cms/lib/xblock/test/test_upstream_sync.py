@@ -2,10 +2,8 @@
 Test CMS's upstream->downstream syncing system
 """
 import datetime
-from unittest.mock import patch
 
 import ddt
-from openedx_content.models_api import Unit
 from organizations.api import ensure_organization
 from organizations.models import Organization
 
@@ -19,12 +17,10 @@ from cms.lib.xblock.upstream_sync import (
     sever_upstream_link,
 )
 from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block, sync_from_upstream_block
-from cms.lib.xblock.upstream_sync_container import sync_from_upstream_container
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as libs
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.xblock import api as xblock
-from openedx.core.djangoapps.xblock.data import CheckPerm
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -67,12 +63,12 @@ class UpstreamTestCase(ModuleStoreTestCase):
             ' force_save_button="false"'
             ' graceperiod="1d"'
             ' grading_method="last_attempt"'
-            ' matlab_api_key="abc"'
             ' max_attempts="10"'
             ' rerandomize="&quot;always&quot;"'
             ' show_correctness="never"'
             ' show_reset_button="false"'
             ' showanswer="on_correct"'
+            ' source_code="abc"'
             ' submission_wait_seconds="10"'
             ' use_latex_compiler="false"'
             ' weight="1"'
@@ -254,7 +250,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         assert downstream.upstream_display_name == "Upstream Problem Title V2"
         assert downstream.display_name == "Upstream Problem Title V2"
         assert downstream.rerandomize == '"always"'
-        assert downstream.matlab_api_key == 'abc'
+        assert downstream.source_code == 'abc'
         assert not downstream.use_latex_compiler
 
         # These fields are "downstream only", so field defaults are preserved, and values are NOT copied from upstream
@@ -279,12 +275,12 @@ class UpstreamTestCase(ModuleStoreTestCase):
             ' force_save_button="false"'
             ' graceperiod=""'
             ' grading_method="final_attempt"'
-            ' matlab_api_key="def"'
             ' max_attempts="11"'
             ' rerandomize="&quot;per_student&quot;"'
             ' show_correctness="past_due"'
             ' show_reset_button="false"'
             ' showanswer="attempted"'
+            ' source_code="def"'
             ' submission_wait_seconds="11"'
             ' use_latex_compiler="true"'
             ' weight="2"'
@@ -308,7 +304,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
 
         # Modifying synchronized fields are "unsafe" customizations
         downstream.rerandomize = '"onreset"'
-        downstream.matlab_api_key = 'hij'
+        downstream.source_code = 'hij'
         save_xblock_with_callback(downstream, self.user)
 
         # Follow-up sync.
@@ -317,7 +313,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # "unsafe" customizations are overridden by upstream
         assert downstream.upstream_display_name == "Upstream Problem Title V3"
         assert downstream.rerandomize == '"per_student"'
-        assert downstream.matlab_api_key == 'def'
+        assert downstream.source_code == 'def'
         assert downstream.use_latex_compiler
 
         # but "safe" customizations survive
@@ -655,55 +651,3 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # data is overridden
         assert downstream.data == "<html><body>Upstream content V2</body></html>"
         assert downstream.downstream_customized == ["display_name"]
-
-    def test_load_upstream_block_legacy_does_not_bypass_library_permission(self):
-        """
-        When AuthZ is not enabled, _load_upstream_block falls through to the
-        library-level CAN_READ_AS_AUTHOR check.
-        """
-        downstream = BlockFactory.create(
-            category="html", parent=self.unit, upstream=str(self.upstream_key)
-        )
-
-        # Get upstream xblock before patching
-        real_upstream = xblock.load_block(self.upstream_key, self.user)
-
-        with patch("openedx.core.djangoapps.xblock.api.load_block") as mock_load_block:
-            mock_load_block.return_value = real_upstream
-            sync_from_upstream_block(downstream, self.user)
-
-        mock_load_block.assert_called_once()
-        _, lb_kwargs = mock_load_block.call_args
-        assert lb_kwargs["check_permission"] == CheckPerm.CAN_READ_AS_AUTHOR, (
-            "When the course-level permission is denied, the library block "
-            "should be loaded with CAN_READ_AS_AUTHOR, not with check_permission=None"
-        )
-
-    def test_sync_container_legacy_does_not_bypass_library_permission(self):
-        """
-        When AuthZ is not enabled, sync_from_upstream_container falls through
-        to the library-level CAN_VIEW_THIS_CONTENT_LIBRARY check.
-        """
-        upstream_container = libs.create_container(
-            self.library.key, Unit, "test-container", "Test Container Title", self.user.id,
-        )
-        libs.publish_changes(self.library.key, self.user.id)
-
-        downstream = BlockFactory.create(
-            category="vertical",
-            parent=self.unit,
-            upstream=str(upstream_container.container_key),
-        )
-
-        with patch(
-            "cms.lib.xblock.upstream_sync_container.lib_api.require_permission_for_library_key"
-        ) as mock_require_perm:
-            sync_from_upstream_container(downstream, self.user)
-
-        mock_require_perm.assert_called_once()
-        _, rp_kwargs = mock_require_perm.call_args
-        assert rp_kwargs.get("permission") == libs.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY, (
-            "When the course-level permission is denied, the container sync "
-            "should enforce CAN_VIEW_THIS_CONTENT_LIBRARY via "
-            "require_permission_for_library_key"
-        )

@@ -12,7 +12,7 @@ from opaque_keys.edx.keys import AssetKey, CourseKey
 from opaque_keys.edx.locator import AssetLocator, LibraryLocatorV2
 from PIL import Image
 
-from xmodule.assetstore.assetmgr import AssetManager
+from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
@@ -247,7 +247,7 @@ class StaticContent:  # pylint: disable=missing-class-docstring
         serve_from_cdn = False
         content_digest = None
         try:
-            content = AssetManager.find(asset_key, as_stream=True)
+            content = contentstore().find(asset_key, as_stream=True)
             serve_from_cdn = not getattr(content, "locked", True)
             content_digest = getattr(content, "content_digest", None)
         except (ItemNotFoundError, NotFoundError):

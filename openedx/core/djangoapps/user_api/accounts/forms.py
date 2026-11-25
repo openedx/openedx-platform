@@ -11,8 +11,8 @@ from django.utils.translation import gettext as _
 from common.djangoapps.student.models import User
 from openedx.core.djangoapps.user_api.accounts.utils import handle_retirement_cancellation
 from openedx.core.djangoapps.user_authn.views.registration_form import (
-    get_extended_profile_model,
-    get_registration_extension_form,
+    get_profile_extension_form,
+    get_profile_extension_model,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,22 +108,22 @@ def get_extended_profile_form(
             - field_errors (dict): Dictionary of validation errors, if any
     """
     field_errors, kwargs = {}, {}
-    extended_profile_model = get_extended_profile_model()
+    profile_extension_model = get_profile_extension_model()
 
     try:
-        kwargs["instance"] = extended_profile_model.objects.get(user=user)
+        kwargs["instance"] = profile_extension_model.objects.get(user=user)
     except AttributeError:
-        logger.info("No extended profile model configured")
+        logger.info("No profile extension model configured")
     except ObjectDoesNotExist:
-        logger.info("No existing extended profile found for user %s, creating new instance", user.username)
+        logger.info("No existing profile extension found for user %s, creating new instance", user.username)
 
     try:
-        extended_profile_form = get_registration_extension_form(data=extended_profile_fields_data, **kwargs)
+        extended_profile_form = get_profile_extension_form(data=extended_profile_fields_data, **kwargs)
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Unexpected error creating custom form for user %s: %s", user.username, str(e))
-        field_errors["extended_profile"] = {
+        field_errors["profile_extension"] = {
             "developer_message": f"Error creating custom form: {str(e)}",
-            "user_message": _("There was an error processing the extended profile information"),
+            "user_message": _("There was an error processing the profile extension information"),
         }
         return None, field_errors
 

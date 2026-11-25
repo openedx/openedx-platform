@@ -388,6 +388,12 @@ definitions:
         type: string
         description: Message about analytics dashboard availability
         example: "To gain insights into student enrollment and participation, visit the analytics dashboard."
+      proctored_exams_enabled:
+        type: boolean
+        description: >
+          Whether ENABLE_SPECIAL_EXAMS is on and the course has proctored exams enabled. The proctored
+          exam results report can only be generated when this is true.
+        example: true
 
   InstructorTaskList:
     type: object

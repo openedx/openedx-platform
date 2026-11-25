@@ -16,36 +16,40 @@ define(
 
         window.$ = $;
         window._ = _;
+        window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['\\(', '\\)'],
+                    ['[mathjaxinline]', '[/mathjaxinline]']
+                ],
+                displayMath: [
+                    ['\\[', '\\]'],
+                    ['[mathjax]', '[/mathjax]']
+                ],
+                autoload: {
+                    color: [],
+                    colorv2: ['color']
+                },
+                packages: {'[+]': ['noerrors']}
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process',
+                menuOptions: {
+                    settings: {
+                        collapsible: true
+                    },
+                },
+            },
+            loader: {
+                load: ['input/asciimath', '[tex]/noerrors']
+            }
+        };
 
         $script(
-            'https://cdn.jsdelivr.net/npm/mathjax@2.7.5/MathJax.js'
-            + '?config=TeX-MML-AM_SVG&delayStartupUntil=configured',
+            'https://cdn.jsdelivr.net/npm/mathjax@4.1.2/tex-mml-chtml.js',
             'mathjax',
             function() {
-                window.MathJax.Hub.Config({
-                    tex2jax: {
-                        inlineMath: [
-                            ['\\(', '\\)'],
-                            ['[mathjaxinline]', '[/mathjaxinline]']
-                        ],
-                        displayMath: [
-                            ['\\[', '\\]'],
-                            ['[mathjax]', '[/mathjax]']
-                        ]
-                    },
-                    CommonHTML: {linebreaks: {automatic: true}},
-                    SVG: {linebreaks: {automatic: true}},
-                    'HTML-CSS': {linebreaks: {automatic: true}},
-                });
-
-                // In order to eliminate all flashing during interactive
-                // preview, it is necessary to set processSectionDelay to 0
-                // (remove delay between input and output phases). This
-                // effectively disables fast preview, regardless of
-                // the fast preview setting as shown in the context menu.
-                window.MathJax.Hub.processSectionDelay = 0;
-                window.MathJax.Hub.Configured();
-
                 window.addEventListener('resize', MJrenderer);
 
                 let t = -1;
@@ -60,7 +64,8 @@ define(
                     if (oldWidth !== document.documentElement.scrollWidth) {
                         t = window.setTimeout(function() {
                             oldWidth = document.documentElement.scrollWidth;
-                            MathJax.Hub.Queue(['Rerender', MathJax.Hub]);
+                            MathJax.typesetClear();
+                            MathJax.typesetPromise();
                             t = -1;
                         }, delay);
                     }

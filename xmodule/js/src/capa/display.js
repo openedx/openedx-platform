@@ -20,6 +20,31 @@
       return -1;
     };
 
+  /**
+   * Check whether MathJax has been fully loaded and initialized (not just the config object).
+   * In v3/v4, startup.promise is only set after the MathJax component loader completes.
+   */
+  var isMathJaxTypesetReady = function () {
+    return typeof MathJax !== "undefined" && MathJax !== null &&
+      typeof MathJax.startup !== "undefined" && MathJax.startup !== null &&
+      typeof MathJax.startup.promise !== "undefined" &&
+      typeof MathJax.typesetPromise === "function";
+  };
+
+  var isMathJaxRefreshReady = function () {
+    return isMathJaxTypesetReady() &&
+      typeof MathJax.typesetClear === "function" &&
+      typeof MathJax.startup.document !== "undefined" && MathJax.startup.document !== null &&
+      typeof MathJax.startup.document.getMathItemsWithin === "function";
+  };
+
+  var isMathJaxMathMLReady = function () {
+    return typeof MathJax !== "undefined" && MathJax !== null &&
+      typeof MathJax.startup !== "undefined" && MathJax.startup !== null &&
+      typeof MathJax.startup.promise !== "undefined" &&
+      typeof MathJax.startup.toMML === "function";
+  };
+
   this.Problem = function () {
     function Problem(element) {
       var that = this;
@@ -164,9 +189,9 @@
     Problem.prototype.bind = function () {
       var problemPrefix,
         that = this;
-      if (typeof MathJax !== "undefined" && MathJax !== null) {
+      if (isMathJaxTypesetReady()) {
         this.el.find(".problem > div").each(function (index, element) {
-          return MathJax.Hub.Queue(["Typeset", MathJax.Hub, element]);
+          return MathJax.startup.promise.then(() => MathJax.typesetPromise([element]));
         });
       }
       if (window.hasOwnProperty("update_schematics")) {
@@ -215,10 +240,10 @@
         this.submitAnswersAndSubmitButton(true);
       }
       Collapsible.setCollapsibles(this.el);
-      this.$("input.math").keyup(this.refreshMath);
-      if (typeof MathJax !== "undefined" && MathJax !== null) {
-        this.$("input.math").each(function (index, element) {
-          return MathJax.Hub.Queue([that.refreshMath, null, element]);
+      this.$("input.math, .formulaequationinput input").keyup(this.refreshMath);
+      if (isMathJaxTypesetReady()) {
+        this.$("input.math, .formulaequationinput input").each(function (index, element) {
+          return MathJax.startup.promise.then(() => that.refreshMath(null, element));
         });
       }
     };
@@ -820,9 +845,9 @@
           }
           return results;
         });
-        if (typeof MathJax !== "undefined" && MathJax !== null) {
+        if (isMathJaxTypesetReady()) {
           that.el.find(".problem > div").each(function (index, element) {
-            return MathJax.Hub.Queue(["Typeset", MathJax.Hub, element]);
+            return MathJax.startup.promise.then(() => MathJax.typesetPromise([element]));
           });
         }
         that.el.find(".show").attr("disabled", "disabled");
@@ -876,35 +901,78 @@
     };
 
     Problem.prototype.refreshMath = function (event, element) {
-      var elid, eqn, jax, mathjaxPreprocessor, preprocessorTag, target;
+      var elid,
+          eqn,
+          jax,
+          mathjaxPreprocessor,
+          preprocessorTag,
+          isTexDelimited;
       if (!element) {
         element = event.target; // eslint-disable-line no-param-reassign
       }
       elid = element.id.replace(/^input_/, "");
-      target = "display_" + elid;
-
       // MathJax preprocessor is loaded by 'setupInputTypes'
       preprocessorTag = "inputtype_" + elid;
       mathjaxPreprocessor = this.inputtypeDisplays[preprocessorTag];
-      if (typeof MathJax !== "undefined" && MathJax !== null && MathJax.Hub.getAllJax(target)[0]) {
-        jax = MathJax.Hub.getAllJax(target)[0];
+      if (isMathJaxRefreshReady()) {
+        var math = document.getElementById("display_" + elid);
+        if (!math) {
+          math = document.getElementById(element.id + "_preview");
+        }
+        if (!math) {
+          return;
+        }
         eqn = $(element).val();
         if (mathjaxPreprocessor) {
           eqn = mathjaxPreprocessor(eqn);
         }
-        MathJax.Hub.Queue(["Text", jax, eqn], [this.updateMathML, jax, element]);
+        MathJax.typesetClear([math]);
+        if (!eqn) {
+          math.textContent = "";
+          var dynInput = document.getElementById(element.id + "_dynamath");
+          if (dynInput) { dynInput.value = ""; }
+          return;
+        }
+        // Determine rendering mode:
+        //   isTexDelimited  -> preserve user-written TeX delimiters as-is
+        //   else            -> calculator/AsciiMath syntax via backtick delimiters
+        isTexDelimited = (
+          (/^\s*\\\(/.test(eqn) && /\\\)\s*$/.test(eqn)) ||
+          (/^\s*\\\[/.test(eqn) && /\\\]\s*$/.test(eqn)) ||
+          (/^\s*\$\$/.test(eqn) && /\$\$\s*$/.test(eqn)) ||
+          (/^\s*\$[^$]/.test(eqn) && /[^$]\$\s*$/.test(eqn))
+        );
+        if (isTexDelimited) {
+          math.textContent = eqn;
+        } else {
+          // Calculator/AsciiMath syntax: backtick-delimited for AsciiMath input jax
+          math.textContent = "`" + eqn + "`";
+        }
+        MathJax.typesetPromise([math]).then(function () {
+          jax = MathJax.startup.document.getMathItemsWithin(math)[0];
+          if (jax) {
+            this.updateMathML(jax, element);
+          }
+        }.bind(this)).catch(function () {
+          var dynInput = document.getElementById(element.id + "_dynamath");
+          if (dynInput) { dynInput.value = ""; }
+        });
       }
     };
 
     Problem.prototype.updateMathML = function (jax, element) {
-      try {
-        $("#" + element.id + "_dynamath").val(jax.root.toMathML(""));
-      } catch (exception) {
-        if (!exception.restart) {
-          throw exception;
-        }
-        if (typeof MathJax !== "undefined" && MathJax !== null) {
-          MathJax.Callback.After([this.refreshMath, jax], exception.restart);
+      if (isMathJaxMathMLReady()) {
+        try {
+          var dynInput = document.getElementById(element.id + "_dynamath");
+          if (dynInput) { dynInput.value = MathJax.startup.toMML(jax.root); }
+        } catch (exception) {
+          if (!exception.restart) {
+            throw exception;
+          }
+          MathJax.startup.promise
+            .then(function () {
+              this.refreshMath(null, element);
+            }.bind(this));
         }
       }
     };
@@ -1391,7 +1459,10 @@
             hintMsgContainer = that.$(".problem-hint .notification-message");
             hintContainer.attr("hint_index", response.hint_index);
             edx.HtmlUtils.setHtml(hintMsgContainer, edx.HtmlUtils.HTML(response.msg));
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, hintContainer[0]]);
+            if (isMathJaxTypesetReady()) {
+              MathJax.startup.promise
+                .then(() => MathJax.typesetPromise([hintContainer[0]]));
+            }
             if (response.should_enable_next_hint) {
               that.hintButton.removeAttr("disabled");
             } else {

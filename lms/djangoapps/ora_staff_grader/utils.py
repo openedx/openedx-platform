@@ -7,7 +7,7 @@ from functools import wraps
 from opaque_keys.edx.keys import UsageKey
 from rest_framework.request import clone_request
 
-from lms.djangoapps.courseware.block_render import handle_xblock_callback_noauth
+from lms.djangoapps.courseware.block_render import handle_xblock_callback
 from lms.djangoapps.ora_staff_grader.errors import MissingParamResponse
 
 
@@ -75,11 +75,15 @@ def call_xblock_json_handler(request, usage_id, handler_name, data, auth=False):
     # The body is an encoded JSON blob
     proxy_request.body = json.dumps(data).encode()
 
+    # The ESG view that received the original request has already authenticated the user (and enforced CSRF
+    # for unsafe methods), so the internal POST does not need its own CSRF token.
+    proxy_request._dont_enforce_csrf_checks = True  # pylint: disable=protected-access
+
     # Course ID can be retrieved from the usage_id
     usage_key = UsageKey.from_string(usage_id)
     course_id = str(usage_key.course_key)
 
     # Send the request and return the HTTP response from the XBlock
-    return handle_xblock_callback_noauth(
+    return handle_xblock_callback(
         proxy_request, course_id, usage_id, handler_name
     )
