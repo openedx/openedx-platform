@@ -397,9 +397,9 @@ class TestGetLocalizedPriceText(TestCase):
         mock_get_currency_data.return_value = currency_data
 
         request = RequestFactory().get("/dummy-url")
-        request.session = {"country_code": "CA"}
         expected_result = "$20 CAD"
-        assert get_localized_price_text(10, request) == expected_result
+        with mock.patch(UTILS_MODULE + ".country_code_for_request", return_value="CA"):
+            assert get_localized_price_text(10, request) == expected_result
 
 
 @skip_unless_lms
