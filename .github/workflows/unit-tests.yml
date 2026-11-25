@@ -21,6 +21,11 @@ jobs:
     name: ${{ matrix.shard_name }}(py=${{ matrix.python-version }},dj=${{ matrix.django-version }},mongo=${{ matrix.mongo-version }})
     runs-on: ${{ matrix.os-version }}
     strategy:
+      # TEMPORARY - revert before merge.
+      # The default (fail-fast: true) cancels every other shard as soon as one fails, so a
+      # change that breaks tests broadly only ever reports the first shard's failures. Let
+      # every shard finish so we get the full list in one run.
+      fail-fast: false
       matrix:
         python-version:
           - "3.12"
