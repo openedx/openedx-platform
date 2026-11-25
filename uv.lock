@@ -8189,7 +8189,7 @@ wheels = [
 
 [[package]]
 name = "xblocks-core"
-version = "4.0.0"
+version = "4.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -8221,9 +8221,9 @@ dependencies = [
     { name = "wrapt" },
     { name = "xblock" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/f9/9aebe07dd9d0b716840e9bdaecd5b5c685e1e590f74abd8741f3ee1beb2d/xblocks_core-4.0.0.tar.gz", hash = "sha256:13ca82047b2d48517ea9b36c4407a9a927988f35bd5e445fc276d36327a2e121", size = 3956202, upload-time = "2026-11-24T13:52:48.111Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/2d/4a00ab3c0d7a94dfd61569ecc9bd74ffaa74d1a86064803a3b8da035d558/xblocks_core-4.0.1.tar.gz", hash = "sha256:0bcb60dacda101903ea2cfa0701e8abd31d6a31242d83c1892de23a6dd765435", size = 3956757, upload-time = "2026-11-25T16:26:45.188Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/2c/2a56a4580db7fede53c52adb3aaf113e33557b2cea73ce31114e1afa09c9/xblocks_core-4.0.0-py3-none-any.whl", hash = "sha256:8a1ac3a128ce7e6ef9af75e69d2c31b05f246cf6efd5b7031faf3086d4eca984", size = 3749437, upload-time = "2026-11-24T13:52:46.47Z" },
+    { url = "https://files.pythonhosted.org/packages/36/45/07401fbbaa160a599cdfdee6afc4e2f3aebf8eb9df1fb380d2dc893ae94c/xblocks_core-4.0.1-py3-none-any.whl", hash = "sha256:ca3039f381c91d2ffd58af1471f079fe0c357f5247796649b73ecc045388a248", size = 3749549, upload-time = "2026-11-25T16:26:43.252Z" },
 ]
 
 [[package]]
