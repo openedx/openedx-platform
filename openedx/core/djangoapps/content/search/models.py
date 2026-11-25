@@ -25,6 +25,8 @@ from openedx.core.djangoapps.authz.scopes import (
 )
 from openedx.core.djangoapps.content_libraries.api import get_libraries_for_user
 
+from .access_rules import SearchScopeTooLarge
+
 log = logging.getLogger(__name__)
 
 # The authz permission that admits a user to the course search filter for a
@@ -60,7 +62,9 @@ class SearchAccess(models.Model):  # noqa: DJ008
     )
 
 
-def get_course_access_ids_for_request(request: Request, omit_orgs: list[str] = None) -> list[int]:
+def get_course_access_ids_for_request(
+    request: Request, omit_orgs: list[str] = None, limit: int | None = None,
+) -> list[int]:
     """
     Return the ``SearchAccess.id`` values for courses the requesting user has been
     individually granted access to, via a legacy course role or an authz
@@ -87,10 +91,12 @@ def get_course_access_ids_for_request(request: Request, omit_orgs: list[str] = N
     # Force-on-override courses inside an org the user holds an org-wide authz grant on.
     course_keys.update(_get_authz_org_scoped_course_keys_for_search(request.user, omit_orgs))
 
-    return _access_ids_for_context_keys(list(course_keys))
+    return _access_ids_for_context_keys(list(course_keys), limit=limit)
 
 
-def get_library_access_ids_for_request(request: Request, omit_orgs: list[str] = None) -> list[int]:
+def get_library_access_ids_for_request(
+    request: Request, omit_orgs: list[str] = None, limit: int | None = None,
+) -> list[int]:
     """
     Return the ``SearchAccess.id`` values for content libraries the requesting
     user has been individually granted access to, via the legacy library team
@@ -102,7 +108,11 @@ def get_library_access_ids_for_request(request: Request, omit_orgs: list[str] = 
     """
     omit_orgs = omit_orgs or []
 
-    libraries = get_libraries_for_user(user=request.user)
+    libraries = get_libraries_for_user(user=request.user).exclude(org__short_name__in=omit_orgs)
+    if limit is not None:
+        libraries = list(libraries[:limit + 1])
+        if len(libraries) > limit:
+            raise SearchScopeTooLarge("Library permissions require an explicit library scope.")
     library_keys = set(
         lib.library_key for lib in libraries if lib.library_key.org not in omit_orgs
     )
@@ -110,21 +120,15 @@ def get_library_access_ids_for_request(request: Request, omit_orgs: list[str] = 
     # Libraries the user holds an authz per-library grant on.
     library_keys.update(_get_authz_library_keys_for_search(request.user, omit_orgs))
 
-    return _access_ids_for_context_keys(list(library_keys))
+    return _access_ids_for_context_keys(list(library_keys), limit=limit)
 
 
-def _access_ids_for_context_keys(context_keys: list) -> list[int]:
-    """
-    Return the ``SearchAccess.id`` values for the given context keys, newest first.
-
-    Sorting by descending id simulates prioritizing the most recently created
-    contexts when the filter is truncated to a budget.
-    """
-    return list(
-        SearchAccess.objects.filter(context_key__in=context_keys)
-        .order_by('-id')
-        .values_list("id", flat=True)
-    )
+def _access_ids_for_context_keys(context_keys: list, limit: int | None = None) -> list[int]:
+    """Return newest access IDs, reading one extra row to detect token overflow."""
+    ids = SearchAccess.objects.filter(context_key__in=context_keys).order_by('-id').values_list("id", flat=True)
+    if limit is not None:
+        ids = ids[:limit + 1]
+    return list(ids)
 
 
 def get_access_ids_for_request(request: Request, omit_orgs: list[str] = None) -> list[int]:
@@ -346,3 +350,10 @@ class IncrementalIndexCompleted(models.Model):  # noqa: DJ008
         unique=True,
         null=False,
     )
+
+
+def has_library_search_access(user, library_key) -> bool:
+    """Check one exact library through the existing permission-filtered queryset."""
+    return get_libraries_for_user(user=user).filter(
+        org__short_name=library_key.org, slug=library_key.slug,
+    ).exists()

@@ -3,7 +3,10 @@ Tests for the Studio content search REST API.
 """
 from __future__ import annotations
 
+import ast
 import functools
+import json
+from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import ddt
@@ -63,6 +66,10 @@ def search_rules(course_rule: dict, library_rule: dict | None = None) -> dict:
     Pass only ``course_rule`` when both indexes are expected to carry the same
     rule (e.g. global staff see-everything, or no-access).
     """
+    for rule in (course_rule, library_rule):
+        if rule and "filter" in rule:
+            orgs, ids = rule["filter"].removeprefix("org IN ").split(" OR access_id IN ")
+            rule["filter"] = f"org IN {json.dumps(ast.literal_eval(orgs))} OR access_id IN {ids}"
     return {
         "studio_content": course_rule,
         "studio_library_content": course_rule if library_rule is None else library_rule,
@@ -392,38 +399,77 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
             expires_at=ANY,
         )
 
+    @ddt.data("access_ids", "organizations")
     @mock_meilisearch(enabled=True)
     @patch('openedx.core.djangoapps.content.search.api._get_user_orgs')
     @patch('openedx.core.djangoapps.content.search.api.get_course_access_ids_for_request')
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
-    def test_studio_search_limits(self, mock_search_client, mock_get_access_ids, mock_get_user_orgs):
+    def test_studio_search_limits(self, grant_kind, mock_search_client, mock_get_access_ids, mock_get_user_orgs):
         """
-        Users with access to many courses or orgs are limited to the most recent
-        1_000 of each. The truncation is applied per index; here we exercise the
-        course filter. The student has no library access, so the library index is
-        empty-access.
+        A complete unscoped permission set exceeding the budget returns a scope-required response.
         """
         self.client.login(username='student', password='student_pass')
         mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
 
-        mock_get_access_ids.return_value = list(range(2000))
-        expected_access_ids = list(range(1000))
-
-        mock_get_user_orgs.return_value = [
-            f"studio-search-org{x}" for x in range(2000)
-        ]
-        expected_user_orgs = [
-            f"studio-search-org{x}" for x in range(1000)
-        ]
-
+        mock_get_access_ids.return_value = list(range(2000)) if grant_kind == "access_ids" else []
+        mock_get_user_orgs.return_value = [f"org{i}" for i in range(1001)] if grant_kind == "organizations" else []
         result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 409
+        assert result.data["code"] == "search_scope_required"
+        mock_generate_tenant_token.assert_not_called()
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.get_library_access_ids_for_request')
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_scoped_library_after_1000_grants(self, mock_search_client, mock_get_access_ids):
+        """Scoped access uses database permission checks, without enumerating grants."""
+        self.client.login(username='course_staff', password='course_staff_pass')
+        generate = self._mock_generate_tenant_token(mock_search_client)
+        library_key = str(next(key for key in self.course_user_keys if str(key).startswith('lib:')))
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL, {"library_key": library_key})
         assert result.status_code == 200
-        mock_get_access_ids.assert_called_once()
-        mock_generate_tenant_token.assert_called_once_with(
+        mock_get_access_ids.assert_not_called()
+        expiry = datetime.fromisoformat(result.data["expires_at"])
+        assert timedelta(minutes=4) < expiry - datetime.now(timezone.utc) < timedelta(minutes=6)  # noqa: UP017
+        assert result.data["scope"] == {"library_key": library_key}
+        generate.assert_called_once_with(
             api_key_uid=MOCK_API_KEY_UID,
-            search_rules=search_rules(
-                {"filter": f"org IN {expected_user_orgs} OR access_id IN {expected_access_ids}"},
-                {"filter": "org IN [] OR access_id IN []"},
-            ),
+            search_rules={"studio_library_content": {"filter": f'context_key = "{library_key}"'}},
             expires_at=ANY,
         )
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_scope_unauthorized(self, mock_search_client):
+        """Knowing a library key does not grant access."""
+        self.client.login(username='student', password='student_pass')
+        generate = self._mock_generate_tenant_token(mock_search_client)
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL, {"library_key": "lib:org1:lib1"})
+        assert result.status_code == 403
+        generate.assert_not_called()
+
+    @mock_meilisearch(enabled=True)
+    def test_scope_invalid(self):
+        """Course keys and malformed values are rejected."""
+        self.client.login(username='course_staff', password='course_staff_pass')
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL, {"library_key": "course-v1:org1+course+run"})
+        assert result.status_code == 400
+
+    @mock_meilisearch(enabled=True)
+    def test_repeated_scope(self):
+        """Do not silently choose a repeated query parameter."""
+        self.client.login(username='course_staff', password='course_staff_pass')
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL, {"library_key": ["lib:org1:lib1", "lib:org1:lib2"]})
+        assert result.status_code == 400
+
+    @mock_meilisearch(enabled=True)
+    @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')
+    def test_actual_token_byte_budget(self, mock_search_client):
+        """The final signed JWT is checked as well as its filter payload."""
+        self.client.login(username='student', password='student_pass')
+        generate = self._mock_generate_tenant_token(mock_search_client)
+        generate.return_value = "x" * 8193
+        result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
+        assert result.status_code == 409
+        assert result.data["code"] == "search_scope_required"
+        assert "api_key" not in result.data
