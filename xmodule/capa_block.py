@@ -640,7 +640,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=None,
             xqueue=None,
-            matlab_api_key=None,
         )
         try:
             lcp = LoncapaProblem(
@@ -700,7 +699,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=1,
             xqueue=None,
-            matlab_api_key=None,
         )
         _ = capa_system.i18n.gettext
 
@@ -864,7 +862,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=seed,  # Why do we do this if we have self.seed?
             xqueue=None if is_studio else xqueue_service,
-            matlab_api_key=self.matlab_api_key,
         )
 
         return LoncapaProblem(

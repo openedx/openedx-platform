@@ -13,7 +13,6 @@ from django.conf import settings
 from django.urls import reverse
 from edx_when.field_data import DateLookupFieldData
 from eventtracking import tracker
-from requests.auth import HTTPBasicAuth
 from xblock.reference.plugins import Service
 from xblock.runtime import KvsFieldData
 from xblock_problem.capa.xqueue_interface import XQueueInterface
@@ -339,19 +338,7 @@ class XQueueService:
 
     def __init__(self, block: "ProblemBlock"):
         self._block = block
-
-        basic_auth = settings.XQUEUE_INTERFACE.get("basic_auth")
-        requests_auth = HTTPBasicAuth(*basic_auth) if basic_auth else None
-
-        use_submission = self.use_edx_submissions_for_xqueue()
-
-        self._interface = XQueueInterface(
-            settings.XQUEUE_INTERFACE["url"],
-            settings.XQUEUE_INTERFACE["django_auth"],
-            requests_auth,
-            block=block,
-            use_submission_service=use_submission,
-        )
+        self._interface = XQueueInterface(block)
 
     @property
     def interface(self):

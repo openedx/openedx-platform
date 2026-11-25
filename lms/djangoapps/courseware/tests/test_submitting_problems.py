@@ -27,7 +27,7 @@ from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,
     SchematicResponseXMLFactory,
 )
-from xblock_problem.capa.xqueue_interface import XQueueInterface
+from xblock_problem.capa.xqueue_submission import XQueueInterfaceSubmission
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
@@ -788,7 +788,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         # re-fetch the course from the database so the object is up to date
         self.refresh_course()
 
-    @patch.object(XQueueInterface, '_http_post')
+    @patch.object(XQueueInterfaceSubmission, 'send_to_submission')
     def test_three_files(self, mock_xqueue_post):
         # Open the test files, and arrange to close them later.
         filenames = "prog1.py prog2.py prog3.py"
@@ -809,10 +809,8 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
 
         # See how post got called.
         assert mock_xqueue_post.call_count == 1
-        args, kwargs = mock_xqueue_post.call_args
-        assert len(args) == 2
-        assert args[0].endswith('/submit/')
-        self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
+        args, _ = mock_xqueue_post.call_args
+        self.assertEqual(list(args[3].keys()), filenames.split())  # noqa: PT009
 
 
 class TestPythonGradedResponse(TestSubmittingProblems):

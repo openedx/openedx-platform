@@ -14,7 +14,6 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-import requests
 import webob
 from codejail.safe_exec import SafeExecException
 from django.test import override_settings
@@ -29,7 +28,7 @@ from xblock.scorable import Score
 from xblock_problem.capa import responsetypes
 from xblock_problem.capa.correctmap import CorrectMap
 from xblock_problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xblock_problem.capa.xqueue_interface import XQueueInterface
+from xblock_problem.capa.xqueue_submission import XQueueInterfaceSubmission
 
 from lms.djangoapps.courseware.user_state_client import XBlockUserState
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -265,21 +264,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         # not visible.
         problem = CapaFactory.create()
         assert not problem.answer_available()
-
-    @ddt.data(
-        (requests.exceptions.ReadTimeout, (1, "failed to read from the server")),
-        (requests.exceptions.ConnectionError, (1, "cannot connect to server")),
-    )
-    @ddt.unpack
-    def test_xqueue_request_exception(self, exception, result):
-        """
-        Makes sure that platform will raise appropriate exception in case of
-        connect/read timeout(s) to request to xqueue
-        """
-        xqueue_interface = XQueueInterface("http://example.com/xqueue", Mock())
-        with patch.object(xqueue_interface.session, "post", side_effect=exception):
-            response = xqueue_interface._http_post("http://some/fake/url", {})  # pylint: disable=protected-access
-            assert response == result
 
     def test_showanswer_attempted(self):
         """Check answer availability changes after attempting the problem."""
@@ -1238,7 +1222,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.attempts == 1
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_submit_problem_with_files(self, mock_xqueue_post):
         """Verify file-upload submissions are sent correctly to XQueue via submit_problem."""
         # Check a problem with uploaded files, using the submit_problem API.
@@ -1301,13 +1285,13 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         #   )
 
         assert mock_xqueue_post.call_count == 1
-        _, kwargs = mock_xqueue_post.call_args
-        self.assertCountEqual(fpaths, list(kwargs["files"].keys()))  # noqa: PT009
-        for fpath, fileobj in kwargs["files"].items():
+        files = mock_xqueue_post.call_args.args[3]
+        self.assertCountEqual(fpaths, list(files.keys()))  # noqa: PT009
+        for fpath, fileobj in files.items():
             assert fpath == fileobj.name
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_submit_problem_with_files_as_xblock(self, mock_xqueue_post):
         """Verify file-upload submissions work correctly via the XBlock handler API."""
         # Check a problem with uploaded files, using the XBlock API.
@@ -1335,9 +1319,9 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block.handle("xmodule_handler", request, "problem_check")
 
         assert mock_xqueue_post.call_count == 1
-        _, kwargs = mock_xqueue_post.call_args
-        self.assertCountEqual(fnames, list(kwargs["files"].keys()))  # noqa: PT009
-        for fpath, fileobj in kwargs["files"].items():
+        files = mock_xqueue_post.call_args.args[3]
+        self.assertCountEqual(fnames, list(files.keys()))  # noqa: PT009
+        for fpath, fileobj in files.items():
             assert fpath == fileobj.name
 
     def test_submit_problem_error(self):
@@ -3976,7 +3960,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         }
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_file_inputs(self, mock_xqueue_post):
         """Verify tracking data for file submission and custom response inputs."""
         fnames = ["prog1.py", "prog2.py", "prog3.py"]

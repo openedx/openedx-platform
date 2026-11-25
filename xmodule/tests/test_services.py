@@ -184,13 +184,8 @@ class XQueueServiceTest(TestCase):
         self.service = XQueueService(self.block)
 
     def test_interface(self):
-        """Test that the `XQUEUE_INTERFACE` settings are passed from the service to the interface."""
+        """The service wraps an XQueueInterface for the block."""
         assert isinstance(self.service.interface, XQueueInterface)
-        assert self.service.interface.url == "http://sandbox-xqueue.edx.org"
-        assert self.service.interface.auth["username"] == "lms"
-        assert self.service.interface.auth["password"] == "***REMOVED***"
-        assert self.service.interface.session.auth.username == "anant"
-        assert self.service.interface.session.auth.password == "agarwal"
 
     @patch("xmodule.services.XQueueService.use_edx_submissions_for_xqueue", return_value=True)
     def test_construct_callback_with_flag_enabled(self, mock_flag):  # pylint: disable=unused-argument

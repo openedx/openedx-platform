@@ -63,7 +63,6 @@ class UpstreamTestCase(ModuleStoreTestCase):
             ' force_save_button="false"'
             ' graceperiod="1d"'
             ' grading_method="last_attempt"'
-            ' matlab_api_key="abc"'
             ' max_attempts="10"'
             ' rerandomize="&quot;always&quot;"'
             ' show_correctness="never"'
@@ -250,7 +249,6 @@ class UpstreamTestCase(ModuleStoreTestCase):
         assert downstream.upstream_display_name == "Upstream Problem Title V2"
         assert downstream.display_name == "Upstream Problem Title V2"
         assert downstream.rerandomize == '"always"'
-        assert downstream.matlab_api_key == 'abc'
         assert not downstream.use_latex_compiler
 
         # These fields are "downstream only", so field defaults are preserved, and values are NOT copied from upstream
@@ -275,7 +273,6 @@ class UpstreamTestCase(ModuleStoreTestCase):
             ' force_save_button="false"'
             ' graceperiod=""'
             ' grading_method="final_attempt"'
-            ' matlab_api_key="def"'
             ' max_attempts="11"'
             ' rerandomize="&quot;per_student&quot;"'
             ' show_correctness="past_due"'
@@ -304,7 +301,6 @@ class UpstreamTestCase(ModuleStoreTestCase):
 
         # Modifying synchronized fields are "unsafe" customizations
         downstream.rerandomize = '"onreset"'
-        downstream.matlab_api_key = 'hij'
         save_xblock_with_callback(downstream, self.user)
 
         # Follow-up sync.
@@ -313,7 +309,6 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # "unsafe" customizations are overridden by upstream
         assert downstream.upstream_display_name == "Upstream Problem Title V3"
         assert downstream.rerandomize == '"per_student"'
-        assert downstream.matlab_api_key == 'def'
         assert downstream.use_latex_compiler
 
         # but "safe" customizations survive
