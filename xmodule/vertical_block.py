@@ -99,17 +99,29 @@ class VerticalBlock(
 
         child_blocks = self.get_children()  # pylint: disable=no-member
 
+        # Large assessment units render only the first `incremental_load_eager_count`
+        # children here; the rest are left as placeholders (`lazy_children`) for the page's
+        # own JS to fill in via batched calls to XBlockChildren. Absent that context key,
+        # every child renders inline, exactly as before.
+        eager_count = (context or {}).get('incremental_load_eager_count')
+        if eager_count is not None and eager_count < len(child_blocks):
+            eager_blocks = child_blocks[:eager_count]
+            lazy_blocks = child_blocks[eager_count:]
+        else:
+            eager_blocks = child_blocks
+            lazy_blocks = []
+
         child_blocks_to_complete_on_view = set()
         completion_service = self.runtime.service(self, 'completion')
         if completion_service and completion_service.completion_tracking_enabled():
-            child_blocks_to_complete_on_view = completion_service.blocks_to_mark_complete_on_view(child_blocks)
+            child_blocks_to_complete_on_view = completion_service.blocks_to_mark_complete_on_view(eager_blocks)
             complete_on_view_delay = completion_service.get_complete_on_view_delay_ms()
 
         child_context['child_of_vertical'] = True
         is_child_of_vertical = context.get('child_of_vertical', False)
 
         # pylint: disable=no-member
-        for child in child_blocks:
+        for child in eager_blocks:
             child_has_access_error = self.block_has_access_error(child)
             if context.get('hide_access_error_blocks') and child_has_access_error:
                 continue
@@ -141,6 +153,8 @@ class VerticalBlock(
         cta_service = self.runtime.service(self, 'call_to_action')
         vertical_banner_ctas = cta_service.get_ctas(self, 'vertical_banner', completed) if cta_service else []
 
+        lazy_children = [str(child.location) for child in lazy_blocks]
+
         fragment_context = {
             'items': contents,
             'xblock_context': context,
@@ -151,6 +165,8 @@ class VerticalBlock(
             'has_assignments': completed is not None,
             'subsection_format': context.get('format', ''),
             'vertical_banner_ctas': vertical_banner_ctas,
+            'lazy_children': lazy_children,
+            'parent_usage_key': str(self.location) if lazy_children else None,
         }
 
         if view == STUDENT_VIEW:
