@@ -130,7 +130,7 @@ For example, this command runs a single python unit test file::
 
 Note -
 edx-platorm has multiple services (lms, cms) in it. The environment for each service is different enough that we run some tests in both environments in Github Actions.
-To test in each of these environments (especially for tests in "common" and "xmodule" directories), you will need to test in each seperately.
+To test in each of these environments (especially for tests in "common" and "xmodule" directories), you will need to test in each separately.
 To specify that the tests are run with the relevant service as root, Add --rootdir flag at end of your pytest call and specify the env to test in::
 
     pytest test --rootdir <lms or cms>
