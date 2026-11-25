@@ -15,8 +15,14 @@ from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.api import users as authz_api
-from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, RoleAssignmentData
+from openedx_authz.api.data import (
+    CourseOverviewData,
+    OrgCourseOverviewGlobData,
+    PlatformCourseOverviewGlobData,
+    RoleAssignmentData,
+)
 from openedx_authz.constants import roles as authz_roles
+from organizations.api import get_organizations
 
 from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
@@ -159,44 +165,54 @@ class AuthzCompatCourseAccessRole:
     role: str
 
 
-def _get_org_and_course_id_from_authz_scope(
-    scope: CourseOverviewData | OrgCourseOverviewGlobData,
-) -> tuple[str, str | None] | None:
+def _get_orgs_and_course_ids_from_authz_scope(
+    scope: CourseOverviewData | OrgCourseOverviewGlobData | PlatformCourseOverviewGlobData,
+) -> list[tuple[str, str | None]]:
     """
-    Extract the org and course key from an AuthZ course assignment scope.
+    Extract the (org, course_id) pairs an AuthZ course assignment scope maps to.
 
-    Course-scoped assignments return ``(org, course_external_key)``.
-    Org-wide assignments return ``(org, None)``.
+    Course-scoped assignments map to a single ``(org, course_external_key)`` pair.
+    Org-wide assignments map to a single ``(org, None)`` pair.
 
-    Returns ``None`` when the org cannot be determined. For org-wide scopes,
-    ``OrgGlobData.org`` is typed as ``str | None`` because it is parsed from
-    ``external_key`` and returns ``None`` for malformed glob patterns.
+    Platform-wide assignments (``course-v1:*``) apply to every org, not just one, so
+    they map to ``(org, None)`` for *every registered org* — the same shape an org-wide
+    grant already produces, just repeated per org. This lets a platform-wide grant be
+    picked up by the existing OrgRole-based legacy checks (e.g. ``has_staff_roles``,
+    ``get_user_permissions``, which already check org-level and course-level access
+    separately) with no changes to ``RoleCache``/``OrgRole``/``CourseRole``.
+
+    Returns an empty list when the scope type isn't one of the above (e.g. a content
+    library scope).
     """
     if isinstance(scope, CourseOverviewData):
         course_id = scope.external_key
-        return get_org_from_key(course_id), course_id
+        return [(get_org_from_key(course_id), course_id)]
+    if isinstance(scope, PlatformCourseOverviewGlobData):
+        return [(org["short_name"], None) for org in get_organizations()]
     if isinstance(scope, OrgCourseOverviewGlobData):
-        return scope.org, None
-    return None
+        return [(scope.org, None)]
+    return []
 
 
 def authz_get_all_course_assignments_for_user(user: User) -> list[RoleAssignmentData]:
     """
     Return AuthZ role assignments for a user that apply to courses.
 
-    Includes assignments scoped to a specific course (``CourseOverviewData``) and
-    assignments scoped to all courses in an organization (``OrgCourseOverviewGlobData``).
-    Assignments for other resource types, such as content libraries, are excluded.
+    Includes assignments scoped to a specific course (``CourseOverviewData``), to all
+    courses in an organization (``OrgCourseOverviewGlobData``), and to all courses on
+    the platform (``PlatformCourseOverviewGlobData``). Assignments for other resource
+    types, such as content libraries, are excluded.
 
     Args:
         user (User): The user whose AuthZ role assignments should be retrieved.
 
     Returns:
-        list[RoleAssignmentData]: Role assignments whose scope is course-level or org-wide
+        list[RoleAssignmentData]: Role assignments whose scope is course-level,
+            org-wide, or platform-wide.
     """
     return authz_api.get_user_role_assignments_per_scope_type(
         user_external_key=user.username,
-        scope_types=(CourseOverviewData, OrgCourseOverviewGlobData),
+        scope_types=(CourseOverviewData, OrgCourseOverviewGlobData, PlatformCourseOverviewGlobData),
     )
 
 
@@ -207,9 +223,10 @@ def _compat_roles_from_authz_assignment(
     """
     Convert an AuthZ role assignment into legacy-compatible course access roles.
 
-    Course-scoped assignments produce roles tied to a specific course key.
-    Org-wide assignments produce org-level roles with no course key (``course_id``
-    is ``None``), matching legacy ``OrgStaffRole`` / ``OrgInstructorRole`` behavior.
+    Course-scoped assignments produce roles tied to a specific course key. Org-wide
+    and platform-wide assignments produce org-level roles with no course key
+    (``course_id`` is ``None``), matching legacy ``OrgStaffRole`` / ``OrgInstructorRole``
+    behavior — a platform-wide assignment produces one such role per registered org.
     AuthZ roles without a legacy mapping are skipped.
 
     Args:
@@ -222,25 +239,21 @@ def _compat_roles_from_authz_assignment(
             assignment. Returns an empty set if the org cannot be determined from
             the scope or no roles could be mapped.
     """
-    org_and_course_id = _get_org_and_course_id_from_authz_scope(assignment.scope)
-    if org_and_course_id is None:
-        return set()
-    org, course_id = org_and_course_id
-
     compat_roles = set()
-    for role in assignment.roles:
-        legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
-        if legacy_role is None:
-            continue
-        compat_roles.add(
-            AuthzCompatCourseAccessRole(
-                user_id=user.id,
-                username=user.username,
-                org=org,
-                course_id=course_id,
-                role=legacy_role,
+    for org, course_id in _get_orgs_and_course_ids_from_authz_scope(assignment.scope):
+        for role in assignment.roles:
+            legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
+            if legacy_role is None:
+                continue
+            compat_roles.add(
+                AuthzCompatCourseAccessRole(
+                    user_id=user.id,
+                    username=user.username,
+                    org=org,
+                    course_id=course_id,
+                    role=legacy_role,
+                )
             )
-        )
     return compat_roles
 
 
