@@ -331,17 +331,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         help=_("Source code for LaTeX and Word problems. This feature is not well-supported."), scope=Scope.settings
     )
     use_latex_compiler = Boolean(help=_("Enable LaTeX templates?"), default=False, scope=Scope.settings)
-    matlab_api_key = String(
-        display_name=_("Matlab API key"),
-        help=_(
-            "Enter the API key provided by MathWorks for accessing the MATLAB Hosted Service. "
-            "This key is granted for exclusive use by this course for the specified duration. "
-            "Please do not share the API key with other courses and notify MathWorks immediately "
-            "if you believe the key is exposed or compromised. To obtain a key for your course, "
-            "or to report an issue, please contact moocsupport@mathworks.com"
-        ),
-        scope=Scope.settings,
-    )
     markdown_edited = Boolean(
         help=_("Indicates if the problem was edited using the Markdown editor in the Authoring MFE."),
         scope=Scope.settings,
@@ -416,7 +405,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             "problem_show": self.get_answer,
             "score_update": self.update_score,
             "input_ajax": self.handle_input_ajax,
-            "ungraded_response": self.handle_ungraded_response,
         }
 
         _ = self.runtime.service(self, "i18n").gettext
@@ -543,10 +531,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
                 ProblemBlock.markdown,
                 ProblemBlock.use_latex_compiler,
                 ProblemBlock.show_correctness,
-                # Temporarily remove the ability to see MATLAB API key in Studio, as
-                # a pre-cursor to removing it altogether.
-                #   https://github.com/openedx/public-engineering/issues/192
-                ProblemBlock.matlab_api_key,
             ]
         )
         return non_editable_fields
@@ -640,7 +624,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=None,
             xqueue=None,
-            matlab_api_key=None,
         )
         try:
             lcp = LoncapaProblem(
@@ -687,7 +670,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         capa_system = LoncapaSystem(
             ajax_url=None,
             # TODO set anonymous_student_id to the anonymous ID of the user which answered each problem
-            # Anonymous ID is required for Matlab, CodeResponse, and some custom problems that include
+            # Anonymous ID is required for CodeResponse and some custom problems that include
             # '$anonymous_student_id' in their XML.
             # For the purposes of this report, we don't need to support those use cases.
             anonymous_student_id=None,
@@ -700,7 +683,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=1,
             xqueue=None,
-            matlab_api_key=None,
         )
         _ = capa_system.i18n.gettext
 
@@ -864,7 +846,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             resources_fs=self.runtime.resources_fs,
             seed=seed,  # Why do we do this if we have self.seed?
             xqueue=None if is_studio else xqueue_service,
-            matlab_api_key=self.matlab_api_key,
         )
 
         return LoncapaProblem(
@@ -1540,29 +1521,6 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         self.publish_grade(grader_response=True)
 
         return {}  # No AJAX return is needed
-
-    def handle_ungraded_response(self, data):
-        """
-        Delivers a response from the XQueue to the capa problem
-
-        The score of the problem will not be updated
-
-        Args:
-            - data (dict) must contain keys:
-                            queuekey - a key specific to this response
-                            xqueue_body - the body of the response
-        Returns:
-            empty dictionary
-
-        No ajax return is needed, so an empty dict is returned
-        """
-        queuekey = data["queuekey"]
-        score_msg = data["xqueue_body"]
-
-        # pass along the xqueue message to the problem
-        self.lcp.ungraded_response(score_msg, queuekey)
-        self.set_state_from_lcp()
-        return {}
 
     def handle_input_ajax(self, data):
         """

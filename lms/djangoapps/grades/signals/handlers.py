@@ -420,7 +420,6 @@ def handle_external_grader_score(signal, sender, score, **kwargs):
 
     # pylint: disable=broad-exception-caught
     try:
-        # Use our new function instead of load_single_xblock
         # NOTE: Importing this at module level causes a circular import because
         # score_render → block_render → grades signals → back into this module.
         # Keeping it inside the handler avoids that by loading it only when needed.
@@ -430,7 +429,7 @@ def handle_external_grader_score(signal, sender, score, **kwargs):
                                                    usage_key,
                                                    course=course)
 
-        # Call the handler method (mirroring the original xqueue_callback)
+        # Pass the grader's result to the problem's score_update handler
         instance.handle_ajax('score_update', data)
 
         # Save any state changes
