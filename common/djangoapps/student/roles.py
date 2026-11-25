@@ -77,24 +77,18 @@ def authz_add_role(user: User, authz_role: str, course_key: str):
     """
     course_locator = CourseLocator.from_string(course_key)
 
-    # Check if the user is not already assigned this role for this course
-    existing_assignments = authz_api.get_user_role_assignments_in_scope(
-        user_external_key=user.username,
-        scope_external_key=course_key
-    )
-    existing_roles = [existing_role.external_key
-                      for existing_assignment in existing_assignments
-                      for existing_role in existing_assignment.roles]
-
-    if authz_role in existing_roles:
-        return
-
-    # Assign new role
-    authz_api.assign_role_to_user_in_scope(
+    # Assign the role in the course's own scope. This returns False when that exact
+    # assignment already exists. Don't pre-check with get_user_role_assignments_in_scope:
+    # it also reports roles inherited from an org-wide or platform-wide assignment, and
+    # skipping the course assignment for those leaves the user without a course-level
+    # role, which is what course-role checks such as `user_has_role` read.
+    if not authz_api.assign_role_to_user_in_scope(
         user_external_key=user.username,
         role_external_key=authz_role,
         scope_external_key=course_key
-    )
+    ):
+        return
+
     legacy_role = get_legacy_role_from_authz_role(authz_role)
     emit_course_access_role_added(user, course_locator, course_locator.org, legacy_role)
 
