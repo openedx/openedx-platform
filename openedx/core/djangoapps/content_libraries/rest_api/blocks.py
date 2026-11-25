@@ -503,9 +503,13 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # Permissions check...
     learning_package = component_version.component.learning_package
     library_key = LibraryLocatorV2.from_string(learning_package.package_ref)
-    api.require_permission_for_library_key(
-        library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
-    )
+    upstream_key = api.library_component_usage_key(library_key, component_version.component)
+    if not user_has_course_permission_for_upstream(
+        request, authz_permissions.COURSES_VIEW_LIBRARY_UPDATES.identifier, upstream_key
+    ):
+        api.require_permission_for_library_key(
+            library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+        )
 
     # We already have logic for getting the correct content and generating the
     # proper headers in openedx_content, but the response generated here is an

@@ -4,6 +4,7 @@ Tests for the XBlock v2 runtime's "embed" view, using Content Libraries
 This view is used in the MFE to preview XBlocks that are in the library.
 """
 import re
+from urllib.parse import parse_qs, urlparse
 
 import ddt
 import pytest
@@ -383,4 +384,101 @@ class LibraryBlockMetadataAuthzBypassTest(
     def test_library_permission_alone_still_works_without_course_id(self):
         """Backward compatibility: a user with direct library access keeps working as before."""
         response = self.client.get(URL_LIB_BLOCK.format(block_key=self.block_id))
+        assert response.status_code == 200
+
+
+@skip_unless_cms
+class LibraryComponentAssetAuthzBypassTest(
+    CourseAuthoringAuthzTestMixin, ContentLibrariesRestApiTest, ModuleStoreTestCase,
+):
+    """
+    Same bypass as EmbedViewAuthzBypassTest above, but for the static asset URLs (images,
+    etc.) embedded inside a block's rendered content. The browser requests these directly,
+    not through a call the frontend controls, so the embed view's runtime has to bake
+    downstream_block_id into the asset URLs it generates, and LibraryComponentAssetView has
+    to do its own upstream-link check when those URLs are requested.
+
+    See openedx-authz#473.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_AUDITOR.external_key, str(self.course.id))
+
+        lib = self._create_library(slug="asset-authz-bypass-lib", title="Asset AuthZ Bypass Test Library")
+        create_response = self._add_block_to_library(lib["id"], "html", "block1")
+        self.block_id = create_response["id"]
+        self._set_library_block_olx(self.block_id, '<html><![CDATA[<img src="/static/deer.jpg"/>]]></html>')
+        self._set_library_block_asset(self.block_id, "static/deer.jpg", b"This is not a valid JPEG file")
+        self._commit_library_changes(lib["id"])
+
+        self.linked_downstream_id = str(
+            BlockFactory.create(category="html", parent=self.course, upstream=self.block_id).location
+        )
+        self.unrelated_downstream_id = str(
+            BlockFactory.create(category="html", parent=self.course).location
+        )
+
+    def _embed_html(self, downstream_block_id=None):
+        """Render the published embed view and return its HTML, as whichever user is active."""
+        params = {"version": "published"}
+        if downstream_block_id is not None:
+            params["downstream_block_id"] = downstream_block_id
+        response = self.client.get(
+            URL_BLOCK_EMBED_VIEW.format(block_key=self.block_id, view_name="student_view"), params,
+        )
+        assert response.status_code == 200
+        return response.content.decode()
+
+    @staticmethod
+    def _extract_asset_url(html):
+        match = re.search(r'src="(https?://[^"]*/library_assets/component_versions/[^"]*/static/deer\.jpg[^"]*)"', html)
+        assert match, html
+        return match.group(1)
+
+    @staticmethod
+    def _downstream_block_id_param(asset_url):
+        return parse_qs(urlparse(asset_url).query).get("downstream_block_id", [None])[0]
+
+    def test_asset_allowed_with_linked_downstream(self):
+        """
+        A course auditor can load an asset embedded in content they're reviewing via
+        downstream_block_id: the runtime bakes the param into the asset URL, and the asset
+        endpoint honors it because the downstream is actually linked to this block.
+        """
+        with self.as_user(self.authorized_user):
+            html = self._embed_html(downstream_block_id=self.linked_downstream_id)
+        asset_url = self._extract_asset_url(html)
+        assert self._downstream_block_id_param(asset_url) == self.linked_downstream_id
+
+        with self.as_user(self.authorized_user):
+            response = self.client.get(asset_url)
+        assert response.status_code == 200
+
+    def test_asset_denied_without_downstream_block_id(self):
+        """
+        Without downstream_block_id, a course auditor with no direct library access is
+        denied, same as before this fix (this was the actual bug report: the image was
+        broken because this always failed, even when the embed view itself was allowed).
+        """
+        asset_url = self._extract_asset_url(self._embed_html())  # as self.user, who has direct access
+
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(asset_url)
+        assert response.status_code == 403
+
+    def test_asset_downstream_not_linked_to_this_block_is_denied(self):
+        """A downstream in the user's course, but not linked to this block, must not grant access."""
+        asset_url = self._extract_asset_url(self._embed_html())
+        asset_url += f"?downstream_block_id={self.unrelated_downstream_id}"
+
+        with self.as_user(self.authorized_user), self.allow_transaction_exception():
+            response = self.client.get(asset_url)
+        assert response.status_code == 403
+
+    def test_library_permission_alone_still_works_without_downstream_block_id(self):
+        """Backward compatibility: a user with direct library access keeps working as before."""
+        asset_url = self._extract_asset_url(self._embed_html())
+        response = self.client.get(asset_url)
         assert response.status_code == 200

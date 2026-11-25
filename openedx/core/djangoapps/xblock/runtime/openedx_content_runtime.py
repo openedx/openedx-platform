@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.transaction import atomic
@@ -163,6 +163,12 @@ class OpenedXContentRuntime(XBlockRuntime):
     worry about the block storage, block serialization/de-serialization, and
     (eventually) asset storage.
     """
+
+    def __init__(self, user, *, downstream_block_id: str | None = None, **kwargs):
+        super().__init__(user, **kwargs)
+        # The usage key of the downstream course block this runtime is rendering content
+        # on behalf of, if any. See _absolute_url_for_asset for why this is needed.
+        self.downstream_block_id = downstream_block_id
 
     def get_block(self, usage_key, for_parent=None, *, version: int | LatestVersion = LatestVersion.AUTO):
         """
@@ -360,17 +366,27 @@ class OpenedXContentRuntime(XBlockRuntime):
 
         This does not check for whether the path actually exists–it just returns
         where it would be if it did exist.
+
+        If this runtime was constructed with a ``downstream_block_id`` (see
+        ``OpenedXContentRuntime.__init__``), it's appended as a query param so that
+        a user reviewing pending library updates from a course they don't otherwise
+        have library access to (e.g. a Course Auditor) can still load the asset: the
+        browser requests this URL directly, so there's no other way to carry that
+        context to LibraryComponentAssetView's own permission check.
         """
         # This function should return absolute URLs, so we need the site root.
         site_root_url = get_xblock_app_config().get_site_root_url()
 
-        return site_root_url + reverse(
+        url = site_root_url + reverse(
             'content_libraries:library-assets',
             kwargs={
                 'component_version_uuid': component_version.uuid,
                 'asset_path': f"static/{asset_path}",
             }
         )
+        if self.downstream_block_id:
+            url += f"?downstream_block_id={quote(self.downstream_block_id)}"
+        return url
 
     def _lookup_asset_url(self, block: XBlock, asset_path: str) -> str | None:
         """

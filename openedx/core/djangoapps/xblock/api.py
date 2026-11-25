@@ -47,7 +47,7 @@ from .utils import get_auto_latest_version, get_secure_token_for_xblock_handler,
 log = logging.getLogger(__name__)
 
 
-def get_runtime(user: UserType | None) -> OpenedXContentRuntime:
+def get_runtime(user: UserType | None, *, downstream_block_id: str | None = None) -> OpenedXContentRuntime:
     """
     Return a new XBlockRuntime.
 
@@ -55,13 +55,19 @@ def get_runtime(user: UserType | None) -> OpenedXContentRuntime:
     celery task). It is typically used just to load and render a single block,
     but the API _does_ allow a single runtime instance to load multiple blocks
     (as long as they're for the same user).
+
+    ``downstream_block_id`` is the usage key of the downstream course block this
+    runtime is rendering content on behalf of, if any (see ``load_block``). It's
+    threaded through so that any static asset URLs generated while rendering can
+    carry it too, since the browser requests those directly and isn't going
+    through a caller that could add the param itself.
     """
     params = get_xblock_app_config().get_runtime_params()
     params.update(
         handler_url=get_handler_url,
         authored_data_store=OpenedXContentFieldData(),
     )
-    runtime = OpenedXContentRuntime(user, **params)
+    runtime = OpenedXContentRuntime(user, downstream_block_id=downstream_block_id, **params)
 
     return runtime
 
@@ -72,6 +78,7 @@ def load_block(
     *,
     check_permission: CheckPerm | None = CheckPerm.CAN_LEARN,
     version: int | LatestVersion = LatestVersion.AUTO,
+    downstream_block_id: str | None = None,
 ):
     """
     Load the specified XBlock for the given user.
@@ -85,6 +92,8 @@ def load_block(
     Args:
         usage_key(OpaqueKey): block identifier
         user(User): user requesting the block
+        downstream_block_id: the usage key of the downstream course block this block is
+            being rendered on behalf of, if any. See ``get_runtime``.
     """
     # Is this block part of a course, a library, or what?
     # Get the Learning Context Implementation based on the usage key
@@ -108,7 +117,7 @@ def load_block(
     # e.g. a course might specify that all 'problem' XBlocks have 'max_attempts'
     # set to 3.
     # field_overrides = context_impl.get_field_overrides(usage_key)
-    runtime = get_runtime(user=user)
+    runtime = get_runtime(user=user, downstream_block_id=downstream_block_id)
 
     try:
         return runtime.get_block(usage_key, version=version)
