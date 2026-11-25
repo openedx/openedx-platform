@@ -57,6 +57,27 @@ def get_subsection_assignments(course):
     return assignments
 
 
+def to_edx_when_assignments(assignments):
+    """
+    Convert ``get_course_assignments`` output into ``edx_when.api.Assignment`` instances.
+
+    Arguments:
+        assignments: iterable of ``_Assignment`` namedtuples.
+
+    Returns:
+        list of ``edx_when.api.Assignment`` instances.
+    """
+    return [
+        Assignment(
+            title=assignment.title,
+            date=assignment.date,
+            block_key=assignment.block_key,
+            subsection_name=assignment.title,
+        )
+        for assignment in assignments
+    ]
+
+
 def get_expected_duration(course_id):
     """
     Return a `datetime.timedelta` defining the expected length of the supplied course.
