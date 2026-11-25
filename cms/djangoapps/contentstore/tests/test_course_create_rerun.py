@@ -335,6 +335,70 @@ class TestCourseListing(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 403)  # noqa: PT009
 
+    @override_settings(ENABLE_CREATOR_GROUP=True)
+    @mock.patch(
+        'cms.djangoapps.course_creators.admin.render_to_string',
+        mock.Mock(side_effect=mock_render_to_string, autospec=True)
+    )
+    def test_inactive_organizations_excluded_with_all_org_checked(self):
+        """
+        Tests that inactive organizations are excluded when all_organizations is True.
+        """
+        add_organization({
+            'name': 'Active Org',
+            'short_name': self.source_course_key.org,
+            'description': 'Active Organization',
+        })
+        add_organization({
+            'name': 'Inactive Org',
+            'short_name': 'INACTIVE',
+            'description': 'Inactive Organization',
+        })
+        inactive_org = Organization.objects.get(short_name='INACTIVE')
+        inactive_org.active = False
+        inactive_org.save()
+
+        self.course_creator_entry.all_organizations = True
+        self.course_creator_entry.state = CourseCreator.GRANTED
+        self.creator_admin.save_model(self.request, self.course_creator_entry, None, True)
+
+        allowed_orgs = get_allowed_organizations(self.user)
+        self.assertIn(self.source_course_key.org, allowed_orgs)  # noqa: PT009
+        self.assertNotIn('INACTIVE', allowed_orgs)  # noqa: PT009
+
+    @override_settings(ENABLE_CREATOR_GROUP=True)
+    @mock.patch(
+        'cms.djangoapps.course_creators.admin.render_to_string',
+        mock.Mock(side_effect=mock_render_to_string, autospec=True)
+    )
+    def test_inactive_organizations_excluded_with_specific_organization(self):
+        """
+        Tests that inactive organizations are excluded when specific organizations are assigned.
+        """
+        add_organization({
+            'name': 'Active Org',
+            'short_name': self.source_course_key.org,
+            'description': 'Active Organization',
+        })
+        add_organization({
+            'name': 'Inactive Org',
+            'short_name': 'INACTIVE',
+            'description': 'Inactive Organization',
+        })
+        active_org = Organization.objects.get(short_name=self.source_course_key.org)
+        inactive_org = Organization.objects.get(short_name='INACTIVE')
+        inactive_org.active = False
+        inactive_org.save()
+
+        self.course_creator_entry.all_organizations = False
+        self.course_creator_entry.state = CourseCreator.GRANTED
+        self.creator_admin.save_model(self.request, self.course_creator_entry, None, True)
+        self.course_creator_entry.organizations.add(active_org, inactive_org)
+
+        allowed_orgs = get_allowed_organizations(self.user)
+        self.assertIn(self.source_course_key.org, allowed_orgs)  # noqa: PT009
+        self.assertNotIn('INACTIVE', allowed_orgs)  # noqa: PT009
+
     @ddt.data(*product([True, False], [True, False]))
     @ddt.unpack
     @mock.patch(
