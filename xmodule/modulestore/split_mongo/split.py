@@ -769,12 +769,17 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                 definitions = {definition['_id']: definition
                                for definition in descendent_definitions}
 
-                for block in new_block_data.values():
+                for block_key, block in list(new_block_data.items()):
                     if block.definition in definitions:
                         definition = definitions[block.definition]
-                        # convert_fields gets done later in the runtime's xblock_from_json
-                        block.fields.update(definition.get('fields'))
-                        block.definition_loaded = True
+                        # Merge the definition into a copy of the block, so that the structure
+                        # keeps only its own fields. Other readers in this request may share the
+                        # structure through the request cache, and code that changes a course
+                        # copies it. convert_fields gets done later in the runtime's xblock_from_json
+                        loaded_block = copy.copy(block)
+                        loaded_block.fields = {**block.fields, **definition.get('fields')}
+                        loaded_block.definition_loaded = True
+                        new_block_data[block_key] = loaded_block
 
             system.module_data.update(new_block_data)
             return system.module_data

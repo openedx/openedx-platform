@@ -9,6 +9,7 @@ from edx_django_utils.cache import RequestCache
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.util.keys import BlockKey
 
 
 class TestStructureRequestCache(ModuleStoreTestCase):
@@ -102,3 +103,27 @@ class TestStructureRequestCache(ModuleStoreTestCase):
                 self.store.update_item(dest_vertical, self.user.id)
 
         assert self.storable_blocks(source_structure) == blocks_before
+
+    def test_loading_definitions_leaves_cached_structure_alone(self):
+        """
+        Loading blocks with lazy=False fills in their content fields from their definitions.
+        That must not add content fields to the structure that later reads share.
+        """
+        html = BlockFactory.create(parent=self.chapter, category="html", data="<p>Hello</p>")
+        draft_key = self.course.id.for_branch(ModuleStoreEnum.BranchName.draft)
+        html_block_key = BlockKey.from_usage_key(html.location)
+        RequestCache.clear_all_namespaces()
+
+        with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
+            # The first read caches the structure, and the runtime it builds keeps using it.
+            self.store.get_course(self.course.id)
+            structure = self.split._lookup_course(draft_key).structure  # pylint: disable=protected-access
+            blocks_before = self.storable_blocks(structure)
+
+            # The block structure collector loads blocks this way.
+            loaded_html = self.store.get_item(html.location, lazy=False)
+
+            assert loaded_html.data == "<p>Hello</p>"
+            assert self.split._lookup_course(draft_key).structure is structure  # pylint: disable=protected-access
+            assert "data" not in structure["blocks"][html_block_key].fields
+            assert self.storable_blocks(structure) == blocks_before
