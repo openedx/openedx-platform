@@ -9,6 +9,9 @@ import pytest
 from django.test import TestCase
 
 from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from ..block_structure import BlockStructureBlockData
 from ..exceptions import UsageKeyNotInBlockStructure
@@ -174,6 +177,21 @@ class TestBlockStructureManager(UsageKeyFactoryMixin, ChildrenMapTestMixin, Test
             with pytest.raises(UsageKeyNotInBlockStructure):
                 self.bs_manager.get_transformed(self.transformers, starting_block_usage_key=100)
 
+    def test_get_collected_restores_user_known_on_error(self):
+        """
+        Collecting for a known user marks the user unknown only while collecting,
+        also when collection raises.
+        """
+        user = MagicMock(known=True)
+        self.bs_manager._update_collected = MagicMock(  # pylint: disable=protected-access
+            side_effect=RuntimeError('collection failed')
+        )
+
+        with pytest.raises(RuntimeError):
+            self.bs_manager.get_collected(user)
+
+        assert user.known is True
+
     def test_get_collected_cached(self):
         self.collect_and_verify(expect_modulestore_called=True, expect_cache_updated=True)
         self.collect_and_verify(expect_modulestore_called=False, expect_cache_updated=False)
@@ -254,3 +272,27 @@ class TestBlockStructureManager(UsageKeyFactoryMixin, ChildrenMapTestMixin, Test
                 setattr(self.modulestore, attr_name, original_branch_setting)
             elif hasattr(self.modulestore, attr_name):
                 delattr(self.modulestore, attr_name)
+
+
+class TestBlockStructureManagerCollection(ModuleStoreTestCase):
+    """
+    Tests for collecting block structures from the modulestore.
+    """
+
+    def test_collect_ignores_blocks_changed_in_memory(self):
+        """
+        Block instances loaded and changed in memory earlier in a bulk operation are not
+        collected into the block structure, which is cached and shared by every user.
+        """
+        course = CourseFactory.create()
+        chapter = BlockFactory.create(parent=course, category='chapter', display_name='Authored')
+        store = modulestore()
+        manager = BlockStructureManager(course.location, store, MockCache())
+
+        with store.bulk_operations(course.id):
+            loaded = store.get_course(course.id, depth=None).get_children()[0]
+            loaded.display_name = 'Changed in memory'
+            collected = manager.get_collected()
+            assert store.get_item(chapter.location).display_name == 'Changed in memory'
+
+        assert collected.get_xblock_field(chapter.location, 'display_name') == 'Authored'

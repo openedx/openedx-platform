@@ -312,7 +312,9 @@ class CourseOverview(TimeStampedModel):
             course_id,
         )
         store = modulestore()
-        with store.bulk_operations(course_id):
+        # The overview is shared by every user, so it is never built from blocks this
+        # request has already loaded and may have changed in memory.
+        with store.bulk_operations(course_id), store.fresh_block_reads(course_id):
             course = store.get_course(course_id)
             if isinstance(course, CourseBlock):
                 try:

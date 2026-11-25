@@ -12,6 +12,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import CoursewareMetadataAPIRenderStarted
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import RetrieveAPIView
@@ -696,6 +697,16 @@ class CoursewareInformation(RetrieveAPIView):
                     user=user,
                     defaults={'last_seen_courseware_timezone': browser_timezone},
                 )
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Return the serialized course, after the CoursewareMetadataAPIRenderStarted filter.
+        """
+        response = super().retrieve(request, *args, **kwargs)
+        response.data = CoursewareMetadataAPIRenderStarted.run_filter(
+            course_key=CourseKey.from_string(self.kwargs['course_key_string']), user=request.user, data=response.data
+        )
+        return response
 
     def get_object(self):
         """

@@ -9,6 +9,7 @@ from edx_django_utils.plugins import pluggable_override
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.learning.filters import CourseHomeProgressAPIRenderStarted
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -307,5 +308,6 @@ class ProgressTabView(RetrieveAPIView):
         context['course_overview'] = course_overview
         context['enrollment'] = enrollment
         serializer = self.get_serializer_class()(data, context=context)
+        data = CourseHomeProgressAPIRenderStarted.run_filter(course_key=course_key, user=student, data=serializer.data)
 
-        return Response(serializer.data)
+        return Response(data)
