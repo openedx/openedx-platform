@@ -11,7 +11,12 @@ from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
 from openedx_authz.authz import COURSES_VIEW_COURSE
-from openedx_learning.api import create_competency_taxonomy, select_competency_taxonomies
+from openedx_learning.api import (
+    create_competency_taxonomy,
+    is_competency_taxonomy,
+    select_competency_taxonomies,
+    validate_tag_import_dominance,
+)
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist, TaxonomyType
 from openedx_tagging.models import Taxonomy
@@ -48,6 +53,7 @@ from .serializers import (
 
 if TYPE_CHECKING:
     from opaque_keys.edx.keys import CourseKey
+    from openedx_tagging.import_export.api import ImportValidator
 
 
 class TaxonomyOrgView(TaxonomyView):
@@ -142,6 +148,16 @@ class TaxonomyOrgView(TaxonomyView):
             except exceptions.ValidationError as e:
                 raise ValidationError() from e
         return super()._create_taxonomy_for_import(validated_data)
+
+    def _get_import_validators(self, taxonomy: Taxonomy) -> list[ImportValidator]:
+        """
+        Add the dominance check for a competency taxonomy, so a re-import cannot nest two tags
+        that both hold criteria in one course.
+        """
+        validators = super()._get_import_validators(taxonomy)
+        if is_competency_taxonomy(taxonomy):
+            return [*validators, validate_tag_import_dominance]
+        return validators
 
     @action(detail=False, url_path="import", methods=["post"])
     def create_import(self, request: RestRequest, **kwargs) -> Response:  # type: ignore
