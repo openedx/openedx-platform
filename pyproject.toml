@@ -69,6 +69,7 @@ dependencies = [
     "edx-when",
     "edxval",
     "event-tracking",
+    "enmerkar", # Implements the `django` template extractor for Babel, used by conf/locale/babel_third_party.cfg to extract strings from third-party apps (wiki).
     "enmerkar-underscore", # Implements a underscore extractor for django-babel.
     "fs",
     "fs-s3fs",
