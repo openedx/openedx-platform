@@ -2131,8 +2131,8 @@ def get_organizations(user):
     if not course_creator or course_creator.state != CourseCreator.GRANTED:
         return []
     elif course_creator.all_organizations:
-        organizations = Organization.objects.all().values_list('short_name', flat=True)
+        organizations = Organization.objects.filter(active=True).values_list('short_name', flat=True)
     else:
-        organizations = course_creator.organizations.all().values_list('short_name', flat=True)
+        organizations = course_creator.organizations.filter(active=True).values_list('short_name', flat=True)
 
     return organizations

@@ -452,8 +452,8 @@ class UnitTestLibraries(CourseTestCase):
         course_creator = CourseCreator.objects.create(user=self.user, all_organizations=True)
         with patch('cms.djangoapps.course_creators.models.CourseCreator.objects.filter') as mock_filter:
             mock_filter.return_value.first.return_value = course_creator
-            with patch('organizations.models.Organization.objects.all') as mock_all:
-                mock_all.return_value.values_list.return_value = ['org1', 'org2']
+            with patch('organizations.models.Organization.objects.filter') as mock_filter_orgs:
+                mock_filter_orgs.return_value.values_list.return_value = ['org1', 'org2']
                 with patch('common.djangoapps.student.roles.OrgStaffRole.get_orgs_for_user') as get_user_orgs:
                     get_user_orgs.return_value = ['org3']
                     # Call the method under test
