@@ -6140,8 +6140,6 @@ paths:
         schema:
           type: string
         description: If '1', include expired enrollment modes in the response.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6287,8 +6285,6 @@ paths:
           type: string
         description: Username of the user.
         required: true
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6321,8 +6317,6 @@ paths:
           type: string
         description: Username of the user.
         required: true
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -6563,8 +6557,6 @@ paths:
         schema:
           type: string
         description: Comma-separated list of usernames.
-      tags:
-      - openedx-platform-sdk
       responses:
         '200':
           content:
@@ -7855,6 +7847,7 @@ paths:
                     },
                 ],
                 "disable_buttons": false,
+                "proctored_exams_enabled": false,
                 "analytics_dashboard_message": "To gain insights into student enrollment and participation..."
             }
 
@@ -8831,7 +8824,7 @@ paths:
         description: 'Type of report to generate. Valid values: enrolled_students,
           pending_enrollments, pending_activations, anonymized_student_ids, grade,
           problem_grade, problem_responses, ora2_summary, ora2_data, ora2_submission_files,
-          issued_certificates'
+          issued_certificates, proctored_exam_results'
         required: true
       tags:
       - api
@@ -18059,6 +18052,11 @@ components:
           readOnly: true
           description: Whether certificate management features are enabled for this
             course
+        proctored_exams_enabled:
+          type: string
+          readOnly: true
+          description: Whether proctored exams, and the proctored exam results report,
+            are enabled for this course
       required:
       - admin_console_url
       - analytics_dashboard_message
@@ -18082,6 +18080,7 @@ components:
       - org
       - pacing
       - permissions
+      - proctored_exams_enabled
       - staff_count
       - start
       - studio_grading_url
