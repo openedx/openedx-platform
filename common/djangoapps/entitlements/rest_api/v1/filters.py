@@ -45,4 +45,4 @@ class CourseEntitlementFilter(filters.FilterSet):
 
     class Meta:
         model = CourseEntitlement
-        fields = ('uuid', 'user', 'course_uuid')
+        fields = ('uuid', 'user', 'course_uuid', 'order_number')
