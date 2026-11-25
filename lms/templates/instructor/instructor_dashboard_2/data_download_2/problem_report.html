@@ -36,7 +36,7 @@ from openedx.core.djangolib.markup import HTML, Text
            class="download-report mb-20 hidden"
            style="margin-left: 0">
 
-    <% max_entries = settings.FEATURES.get('MAX_PROBLEM_RESPONSES_COUNT') %>
+    <% max_entries = settings.MAX_PROBLEM_RESPONSES_COUNT %>
     %if max_entries is not None:
     <p class="mb-15">
         <strong>${_("NOTE")}: </strong>

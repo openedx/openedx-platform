@@ -4,7 +4,7 @@
 
 import json
 
-import httpretty
+import responses
 from django.conf import settings
 
 from . import factories
@@ -14,20 +14,21 @@ class mock_ecommerce_api_endpoint:
     """
     Base class for contextmanagers used to mock calls to api endpoints.
 
-    The contextmanager internally activates and deactivates httpretty as
-    required, therefore it is not advised to use this mock endpoint in
-    test cases where httpretty is being used directly.
+    The contextmanager registers its response with ``responses`` on entry and
+    checks on exit whether the endpoint was called, so the test (or its setUp)
+    must already have ``responses`` active, e.g. via ``@responses.activate``
+    or ``responses.start()``.
     """
 
     # override this in subclasses.
     default_response = None
 
-    # override this in subclasses, using one of httpretty's method constants
+    # override this in subclasses, using one of responses' method constants
     method = None
 
     host = settings.ECOMMERCE_API_URL.strip('/')
 
-    def __init__(self, response=None, status=200, expect_called=True, exception=None, reset_on_exit=True):
+    def __init__(self, response=None, status=200, expect_called=True, exception=None):
         """
         Keyword Arguments:
             response: a JSON-serializable Python type representing the desired response body.
@@ -36,23 +37,22 @@ class mock_ecommerce_api_endpoint:
                 to False if we should ensure that no request arrived, or None to skip checking
                 if the request arrived
             exception: raise this exception instead of returning an HTTP response when called.
-            reset_on_exit (bool): Indicates if `httpretty` should be reset after the decorator exits.
         """
         self.response = response or self.default_response
         self.status = status
         self.expect_called = expect_called
         self.exception = exception
-        self.reset_on_exit = reset_on_exit
+        self._calls_on_enter = 0
 
     def get_uri(self):
         """
-        Returns the uri to register with httpretty for this contextmanager.
+        Returns the uri to register with responses for this contextmanager.
         """
         return self.host + '/' + self.get_path().lstrip('/')
 
     def get_path(self):
         """
-        Returns the path of the URI to register with httpretty for this contextmanager.
+        Returns the path of the URI to register with responses for this contextmanager.
 
         Subclasses must override this method.
 
@@ -61,38 +61,42 @@ class mock_ecommerce_api_endpoint:
         """
         raise NotImplementedError
 
-    def _exception_body(self, request, uri, headers):
-        """Helper used to create callbacks in order to have httpretty raise Exceptions."""
-        raise self.exception
+    def _matching_calls(self):
+        """Count the requests made so far to this contextmanager's endpoint."""
+        uri = self.get_uri()
+        return sum(
+            1 for call in responses.calls
+            if call.request.method == self.method and call.request.url.split('?', 1)[0] == uri
+        )
 
     def __enter__(self):
-        httpretty.enable()
-        httpretty.register_uri(
+        self._calls_on_enter = self._matching_calls()
+        if self.exception is not None:
+            # responses raises an Exception instance given as the body instead of returning a response.
+            body = self.exception
+        else:
+            body = json.dumps(self.response)
+        responses.add(
             self.method,
             self.get_uri(),
             status=self.status,
-            body=self._exception_body if self.exception is not None else json.dumps(self.response),
-            adding_headers={'Content-Type': 'application/json'},
+            body=body,
+            content_type='application/json',
         )
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.expect_called is None:
-            called_if_expected = True
-        else:
-            called_if_expected = self.expect_called == (bool(httpretty.last_request().headers))
-        httpretty.disable()
-
-        if self.reset_on_exit:
-            httpretty.reset()
-
-        assert called_if_expected
+            return
+        called = self._matching_calls() > self._calls_on_enter
+        assert called == self.expect_called
 
 
 class mock_basket_order(mock_ecommerce_api_endpoint):
     """ Mocks calls to E-Commerce API client basket order method. """
 
     default_response = {'number': 1}
-    method = httpretty.GET
+    method = responses.GET
 
     def __init__(self, basket_id, **kwargs):
         super().__init__(**kwargs)
@@ -106,7 +110,7 @@ class mock_create_refund(mock_ecommerce_api_endpoint):
     """ Mocks calls to E-Commerce API client refund creation method. """
 
     default_response = []
-    method = httpretty.POST
+    method = responses.POST
 
     def get_path(self):
         return '/refunds/'
@@ -118,7 +122,7 @@ class mock_payment_processors(mock_ecommerce_api_endpoint):
     """
 
     default_response = ['foo', 'bar']
-    method = httpretty.GET
+    method = responses.GET
 
     def get_path(self):
         return "/payment/processors/"
@@ -128,7 +132,7 @@ class mock_process_refund(mock_ecommerce_api_endpoint):
     """ Mocks calls to E-Commerce API client refund process method. """
 
     default_response = []
-    method = httpretty.PUT
+    method = responses.PUT
 
     def __init__(self, refund_id, **kwargs):
         super().__init__(**kwargs)
@@ -142,7 +146,7 @@ class mock_order_endpoint(mock_ecommerce_api_endpoint):
     """ Mocks calls to E-Commerce API client basket order method. """
 
     default_response = {'number': 'EDX-100001'}
-    method = httpretty.GET
+    method = responses.GET
 
     def __init__(self, order_number, **kwargs):
         super().__init__(**kwargs)
@@ -190,7 +194,7 @@ class mock_get_orders(mock_ecommerce_api_endpoint):
             ),
         ]
     }
-    method = httpretty.GET
+    method = responses.GET
 
     def get_path(self):
         return '/orders/'

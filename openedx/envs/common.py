@@ -1463,16 +1463,8 @@ ENABLE_MAX_FAILED_LOGIN_ATTEMPTS: bool
 
 ###################### CAPA External Code Evaluation #######################
 
-# Used with XQueue
+# Seconds a learner must wait between submissions to a problem graded by an external grader.
 XQUEUE_WAITTIME_BETWEEN_REQUESTS = 5  # seconds
-XQUEUE_INTERFACE = {
-    'url': 'http://localhost:18040',
-    'basic_auth': ['edx', 'edx'],
-    'django_auth': {
-        'username': 'lms',
-        'password': 'password'
-    }
-}
 
 ################################### CSRF ###################################
 
@@ -1995,9 +1987,10 @@ SOCIAL_AUTH_SAML_SP_PUBLIC_CERT_DICT = {}
 #   as a defense against SSRF attacks. Set to True only in deployments where the
 #   SAML Identity Provider is hosted on the same private network as the Open edX
 #   server. Note: loopback (127.x) and link-local (169.254.x) addresses remain
-#   blocked regardless of this toggle. Operators are also encouraged to enforce
-#   network-level egress filtering as a complementary control, particularly to
-#   cover hostname-based URLs that are not subject to IP validation.
+#   blocked regardless of this toggle. Hostnames, including those reached through
+#   redirects, are resolved and checked the same way. Operators are also encouraged
+#   to enforce network-level egress filtering as a complementary control,
+#   particularly against DNS records that change between validation and connection.
 # .. toggle_implementation: DjangoSetting
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2026-04-24
@@ -2115,7 +2108,7 @@ XBLOCK_MIXINS = (
 # .. toggle_name: USE_EXTRACTED_WORD_CLOUD_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Word Cloud XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted Word Cloud XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2124,7 +2117,7 @@ USE_EXTRACTED_WORD_CLOUD_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_ANNOTATABLE_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted annotatable XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted annotatable XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2133,7 +2126,7 @@ USE_EXTRACTED_ANNOTATABLE_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_POLL_QUESTION_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted poll question XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted poll question XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2142,7 +2135,7 @@ USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_LTI_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted LTI XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted LTI XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2151,7 +2144,7 @@ USE_EXTRACTED_LTI_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_HTML_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted HTML XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted HTML XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2160,7 +2153,7 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_DISCUSSION_BLOCK
 # .. toggle_default: False
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Discussion XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted Discussion XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
@@ -2170,7 +2163,7 @@ USE_EXTRACTED_DISCUSSION_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_PROBLEM_BLOCK
 # .. toggle_default: False
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Problem XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted Problem XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
@@ -2180,7 +2173,7 @@ USE_EXTRACTED_PROBLEM_BLOCK = True
 # .. toggle_name: USE_EXTRACTED_VIDEO_BLOCK
 # .. toggle_default: True
 # .. toggle_implementation: DjangoSetting
-# .. toggle_description: Enables the use of the extracted Video XBlock, which has been shifted to the 'openedx/xblocks-contrib' repo.
+# .. toggle_description: Enables the use of the extracted Video XBlock, which has been shifted to the 'openedx/xblocks-core' repo.
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
@@ -2242,54 +2235,20 @@ ZENDESK_GROUP_ID_MAPPING = {}
 
 ############################## Python sandbox ##############################
 
-CODE_JAIL = {
-    # from https://github.com/openedx/codejail/blob/master/codejail/django_integration.py#L24, '' should be same as None
-    'python_bin': '/edx/app/edxapp/venvs/edxapp-sandbox/bin/python',
-    # User to run as in the sandbox.
-    'user': 'sandbox',
 
-    # Configurable limits.
-    'limits': {
-        # How many CPU seconds can jailed code use?
-        'CPU': 1,
-        # Limit the memory of the jailed process to something high but not
-        # infinite (512MiB in bytes)
-        'VMEM': 536870912,
-        # Time in seconds that the jailed process has to run.
-        'REALTIME': 3,
-        'PROXY': 0,
-    },
-
-    # Overrides to default configurable 'limits' (above).
-    # Keys should be course run ids (or, in the special case of code running
-    # on the /debug/run_python page, the key is 'debug_run_python').
-    # Values should be dictionaries that look like 'limits'.
-    "limit_overrides": {},
-}
-
-# Some courses are allowed to run unsafe code. This is a list of regexes, one
-# of them must match the course id for that course to run unsafe code.
-#
-# For example:
-#
-#   COURSES_WITH_UNSAFE_CODE = [
-#       r"Harvard/XY123.1/.*"
-#   ]
-COURSES_WITH_UNSAFE_CODE = []
-
-# Code jail REST service
-ENABLE_CODEJAIL_REST_SERVICE = False
+# CodeJail REST service
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_REMOTE_EXEC
-# .. setting_default: 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+# .. setting_default: 'xblock_problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 # .. setting_description: Set the python package.module.function that is reponsible of
 #   calling the remote service in charge of jailed code execution
-CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xblock_problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_HOST
-# .. setting_default: 'http://127.0.0.1:8550'
-# .. setting_description: Set the codejail remote service host
-CODE_JAIL_REST_SERVICE_HOST = 'http://127.0.0.1:8550'
+# .. setting_default: None
+# .. setting_description: Set the codejail remote service host. When not set problem blocks may return an
+#   ImproperlyConfigured error.
+CODE_JAIL_REST_SERVICE_HOST = None
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_CONNECT_TIMEOUT
 # .. setting_default: 0.5

@@ -15,6 +15,7 @@ from edx_django_utils.monitoring import (
 )
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_learning.api import roll_up_competency_statuses
 from submissions import api as sub_api
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -183,6 +184,29 @@ def recalculate_subsection_grade_v3(self, **kwargs):
     for _recalculate_subsection_grade for further description.
     """
     _recalculate_subsection_grade(self, **kwargs)
+
+
+@shared_task(
+    bind=True,
+    base=LoggedPersistOnFailureTask,
+    time_limit=SUBSECTION_GRADE_TIMEOUT_SECONDS,
+    max_retries=2,
+    default_retry_delay=RETRY_DELAY_SECONDS
+)
+def roll_up_competency_statuses_for_user(self, **kwargs):
+    """
+    Rolls up a learner's competency statuses for the graded objects whose criteria were just updated.
+
+    Keyword Arguments:
+        user_id (int): id of applicable User object
+        object_ids (list of string): usage keys of the graded objects that changed
+    """
+    try:
+        roll_up_competency_statuses(user_id=kwargs['user_id'], object_ids=kwargs['object_ids'])
+    except Exception as exc:
+        if not isinstance(exc, KNOWN_RETRY_ERRORS):
+            raise
+        raise self.retry(kwargs=kwargs, exc=exc) from exc
 
 
 def _recalculate_subsection_grade(self, **kwargs):

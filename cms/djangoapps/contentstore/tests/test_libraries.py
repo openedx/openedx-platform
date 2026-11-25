@@ -570,7 +570,7 @@ class TestLibraryAccess(LibraryTestCase):
 
         # Now log out and ensure we are forbidden from creating a library:
         self.client.logout()
-        self._assert_cannot_create_library(expected_code=302)  # 302 redirect to login expected
+        self._assert_cannot_create_library(expected_code=401)  # an AJAX request gets 401, not the login redirect
 
         # Now check that logged-in users without CourseCreator role cannot create libraries
         self._login_as_non_staff_user(logout_first=False)

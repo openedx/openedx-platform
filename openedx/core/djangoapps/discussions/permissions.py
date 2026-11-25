@@ -2,7 +2,7 @@
 API library for Django REST Framework permissions-oriented workflows
 """
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import (
+from openedx_authz.authz import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_VIEW_PAGES_AND_RESOURCES,
 )

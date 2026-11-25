@@ -16,6 +16,7 @@ from cms.djangoapps.contentstore.rest_api.v0.views.transcripts import (
     YoutubeTranscriptCheckView,
     YoutubeTranscriptUploadView,
 )
+from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import generate_cms_schema
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
@@ -47,6 +48,8 @@ CHECK_URL_NAME = "authoring_v1:youtube_transcript_check_list"
 IMPORT_URL_NAME = "authoring_v1:youtube_transcript_import_list"
 LEGACY_CHECK_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_check"
 LEGACY_IMPORT_URL_NAME = "cms.djangoapps.contentstore:v0:cms_api_youtube_transcripts_upload"
+# A key that names a version and no course run.
+VERSION_ONLY_COURSE_KEY = "course-v1:version@5f8d0d55b54eba0b97d3dba5"
 # A V1 content library block: neither a course nor a V2 library context.
 UNSUPPORTED_CONTEXT_LOCATOR = "lib-block-v1:edX+Lib+2024+type@video+block@abc"
 
@@ -163,6 +166,10 @@ class TestYoutubeTranscriptChecksAuthorization(BaseYoutubeTranscriptTest):
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "Success"
 
+    def test_a_version_only_course_key_is_not_found(self):
+        response = self.get_check(user=self.course_instructor, course_key=VERSION_ONLY_COURSE_KEY)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
+
 
 @ddt.ddt
 @patch(DOWNLOAD_PATH, Mock(return_value=[["en", SJSON_TRANSCRIPT_CONTENT]]))
@@ -185,6 +192,10 @@ class TestYoutubeTranscriptImportsAuthorization(BaseYoutubeTranscriptTest):
         response = self.post_import(user=self.course_instructor)
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "Success"
+
+    def test_a_version_only_course_key_is_not_found(self):
+        response = self.post_import(user=self.course_instructor, course_key=VERSION_ONLY_COURSE_KEY)
+        assert_error_envelope(response, expected_status=404, expected_type_slug="not-found")
 
     def test_global_staff_is_allowed(self):
         response = self.post_import(user=self.global_staff)
@@ -517,7 +528,10 @@ class TestYoutubeTranscriptUrls(BaseYoutubeTranscriptTest):
     def test_the_conforming_url_names_are_unique_in_their_namespace(self):
         from cms.djangoapps.contentstore.rest_api.v1 import authoring_urls  # noqa: PLC0415
         names = [pattern.name for pattern in authoring_urls.urlpatterns]
-        assert sorted(names) == ["youtube_transcript_check_list", "youtube_transcript_import_list"]
+        # Other APIs share this namespace, so check uniqueness and presence
+        # rather than the exact set of names.
+        assert len(names) == len(set(names))
+        assert {"youtube_transcript_check_list", "youtube_transcript_import_list"} <= set(names)
 
     def test_a_malformed_course_key_does_not_reach_the_view(self):
         """An unparseable key fails to route, so no handler runs."""
@@ -826,3 +840,28 @@ class TestYoutubeTranscriptParity(BaseYoutubeTranscriptTest):
             )
         ]
         assert missing == [], f"declared but never produced: {missing}"
+
+
+class TestYoutubeTranscriptSchema(CourseTestCase):
+    """What the published schema says each endpoint returns."""
+
+    CHECK_PATH = "/api/authoring/v1/courses/{course_key}/youtube_transcript_checks/"
+    IMPORT_PATH = "/api/authoring/v1/courses/{course_key}/youtube_transcript_imports/"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.schema = generate_cms_schema()
+
+    def _success(self, path, method):
+        return self.schema["paths"][path][method]["responses"]["200"]["content"]["application/json"]["schema"]
+
+    def test_the_check_returns_one_report_not_a_list(self):
+        assert self._success(self.CHECK_PATH, "get") == {
+            "$ref": "#/components/schemas/YoutubeTranscriptCheckResult"
+        }
+
+    def test_the_import_returns_one_record(self):
+        assert self._success(self.IMPORT_PATH, "post") == {
+            "$ref": "#/components/schemas/YoutubeTranscriptImportResult"
+        }

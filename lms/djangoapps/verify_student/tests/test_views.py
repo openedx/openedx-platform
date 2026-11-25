@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import ddt
-import httpretty
+import responses
 import simplejson as json
 from bs4 import BeautifulSoup
 from django.conf import settings
@@ -102,10 +102,10 @@ def _mock_payment_processors():
     """
     Mock out the payment processors endpoint, since we don't run ecommerce for unit tests here.
     Used in tests where ``mock_payment_processors`` can't be easily used, for example the whole
-    test is an httpretty context or the mock may or may not be called depending on ddt parameters.
+    test is a responses context or the mock may or may not be called depending on ddt parameters.
     """
-    httpretty.register_uri(
-        httpretty.GET,
+    responses.add(
+        responses.GET,
         f"{TEST_API_URL}/payment/processors/",
         body=json.dumps(['foo', 'bar']),
         content_type="application/json",
@@ -154,6 +154,9 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
 
     def setUp(self):
         super().setUp()
+        responses.start()
+        self.addCleanup(responses.stop)
+        self.addCleanup(responses.reset)
         self.user = UserFactory.create(username=self.USERNAME, password=self.PASSWORD)
         result = self.client.login(username=self.USERNAME, password=self.PASSWORD)
         assert result, 'Could not log in'
@@ -182,7 +185,6 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         ])
         self._assert_upgrade_session_flag(False)
 
-    @httpretty.activate
     @override_settings(
         ECOMMERCE_API_URL=TEST_API_URL,
         ECOMMERCE_PUBLIC_URL_ROOT=TEST_PUBLIC_URL_ROOT
@@ -190,12 +192,9 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
     def test_start_flow_with_ecommerce(self):
         """Verify user gets redirected to ecommerce checkout when ecommerce checkout is enabled."""
         sku = 'TESTSKU'
-        # When passing a SKU ecommerce api gets called.
-        _mock_payment_processors()
         configuration = CommerceConfiguration.objects.create(checkout_on_ecommerce_service=True)
         checkout_page = configuration.basket_checkout_page
         checkout_page += "?utm_source=test"
-        httpretty.register_uri(httpretty.GET, f"{TEST_PUBLIC_URL_ROOT}{checkout_page}")
 
         course = self._create_course('verified', sku=sku)
         self._enroll(course.id)
@@ -896,7 +895,6 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
         }
         session.save()
 
-    @httpretty.activate
     @override_settings(ECOMMERCE_API_URL=TEST_API_URL)
     def _get_page(self, url_name, course_key, expected_status_code=200, skip_first_step=False, assert_headers=False):
         """Retrieve one of the verification pages. """
@@ -913,7 +911,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             # ensure the mock api call was made.  NOTE: the following line
             # approximates the check - if the headers were empty it means
             # there was no last request.
-            assert httpretty.last_request().headers
+            assert responses.calls
         return response
 
     def _assert_displayed_mode(self, response, expected_mode):
@@ -1191,7 +1189,6 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
     Ensures correct behavior in the function `checkout_with_ecommerce_service`.
     """
 
-    @httpretty.activate
     @override_settings(ECOMMERCE_API_URL=TEST_API_URL)
     def test_create_basket(self):
         """
@@ -1202,15 +1199,13 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
         course_id = 'edX/test/test_run'
         course_mode = CourseModeFactory.create(course_id=course_id, sku="test-sku").to_tuple()
         expected_payment_data = {'foo': 'bar'}
-        # mock out the payment processors endpoint
-        httpretty.register_uri(
-            httpretty.POST,
-            f"{TEST_API_URL}/baskets/",
-            body=json.dumps({'payment_data': expected_payment_data}),
-            content_type="application/json",
-        )
+        # mock out the ecommerce API client's response to the baskets endpoint
+        mock_api_client = Mock()
+        mock_api_client.post.return_value.json.return_value = {'payment_data': expected_payment_data}
 
-        with mock.patch('lms.djangoapps.verify_student.views.audit_log') as mock_audit_log:
+        with mock.patch('lms.djangoapps.verify_student.views.audit_log') as mock_audit_log, \
+                mock.patch('lms.djangoapps.verify_student.views.get_ecommerce_api_client',
+                           return_value=mock_api_client):
             # Call the function
             actual_payment_data = checkout_with_ecommerce_service(
                 user,
@@ -1223,8 +1218,10 @@ class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
             assert mock_audit_log.called
 
         # Check the api call
-        assert json.loads(httpretty.last_request().body.decode('utf-8')) ==\
-               {'products': [{'sku': 'test-sku'}], 'checkout': True, 'payment_processor_name': 'test-processor'}
+        mock_api_client.post.assert_called_once_with(
+            f"{TEST_API_URL}/baskets/",
+            json={'products': [{'sku': 'test-sku'}], 'checkout': True, 'payment_processor_name': 'test-processor'},
+        )
         # Check the response
         assert actual_payment_data == expected_payment_data
 
@@ -1305,11 +1302,11 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
         },
         "DAYS_GOOD_FOR": 10,
     })
-    @httpretty.activate
+    @responses.activate
     def test_submit_photos_for_reverification(self):
-        httpretty.register_uri(
-            httpretty.POST, settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_URL"],
-            status=200, body={},
+        responses.add(
+            responses.POST, settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_URL"],
+            status=200, json={},
             content_type='application/json'
         )
 
@@ -1458,7 +1455,7 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
 
     def _get_post_data(self):
         """Retrieve POST data from the last request. """
-        last_request = httpretty.last_request()
+        last_request = responses.calls[-1].request
         return json.loads(last_request.body)
 
 

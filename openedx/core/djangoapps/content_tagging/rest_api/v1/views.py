@@ -10,7 +10,7 @@ from django.core import exceptions
 from django.db.models import Count
 from django.http import StreamingHttpResponse
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.authz import COURSES_VIEW_COURSE
 from openedx_learning.api import create_competency_taxonomy, select_competency_taxonomies
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.api import TagDoesNotExist, TaxonomyType
@@ -196,7 +196,8 @@ class ObjectTagOrgView(ObjectTagView):
     This view extends the ObjectTagView to add Organization filters for the results,
     and fires events when the tags are updated.
 
-    Refer to ObjectTagView docstring for usage details.
+    Refer to ObjectTagView docstring for usage details. In addition, each taxonomy entry carries
+    ``taxonomy_type``: "competency" for a competency taxonomy, and "tags" for any other taxonomy.
     """
     # Serializer overrides
     minimal_serializer_class = ObjectTagCopiedMinimalSerializer

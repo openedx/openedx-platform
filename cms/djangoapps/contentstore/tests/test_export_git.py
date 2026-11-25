@@ -126,7 +126,7 @@ class TestExportGit(CourseTestCase):
                                        self.course_block.giturl, self.user)
 
         # Make arbitrary change to course to make diff
-        self.course_block.matlab_api_key = 'something'
+        self.course_block.display_name = 'something'
         modulestore().update_item(self.course_block, self.user.id)
         # Touch a file in the directory, export again, and make sure
         # the test file is gone

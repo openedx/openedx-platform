@@ -540,7 +540,7 @@ paths:
   /api/authz/v1/users/:
     get:
       operationId: api_authz_v1_users_retrieve
-      description: Retrieve all users that have at least one assignation according
+      description: Retrieve all users that have at least one assignment according
         to the filtering fields.
       tags:
       - api
@@ -6153,6 +6153,39 @@ paths:
           description: Invalid request data or parameters.
         '404':
           description: The requested resource does not exist.
+      deprecated: true
+  /api/enrollment/v2/courses/{course_id}/:
+    get:
+      operationId: api_enrollment_v2_courses_retrieve
+      description: Returns the course schedule and supported enrollment modes. No
+        authentication required. Use ?include_expired=1 to include expired enrollment
+        modes.
+      summary: Get enrollment details for a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+        description: Course ID (e.g. course-v1:org+course+run).
+        required: true
+      - in: query
+        name: include_expired
+        schema:
+          type: string
+        description: If '1', include expired enrollment modes in the response.
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/enrollment.Course'
+          description: Course enrollment details retrieved successfully.
+        '400':
+          description: Invalid request data or parameters.
+        '404':
+          description: The requested resource does not exist.
   /api/enrollment/v2/enrollment/:
     get:
       operationId: api_enrollment_v2_enrollment_list
@@ -6267,6 +6300,7 @@ paths:
           description: Invalid request data or parameters.
         '404':
           description: The requested resource does not exist.
+      deprecated: true
   /api/enrollment/v2/enrollment/{username},{course_id}:
     get:
       operationId: api_enrollment_v2_enrollment_,_retrieve
@@ -6300,6 +6334,7 @@ paths:
           description: Invalid request data or parameters.
         '404':
           description: The requested resource does not exist.
+      deprecated: true
   /api/enrollment/v2/enrollment/enrollment_allowed/:
     get:
       operationId: api_enrollment_v2_enrollment_enrollment_allowed_retrieve
@@ -6471,6 +6506,79 @@ paths:
           description: Invalid request data or parameters.
         '404':
           description: The requested resource does not exist.
+  /api/enrollment/v2/enrollments:
+    get:
+      operationId: api_enrollment_v2_enrollments_list_legacy
+      description: Admin-only paginated list of CourseEnrollment records, optionally
+        filtered by course_key, course_keys, username, or email, and optionally ordered.
+      summary: List all course enrollments (admin-only, paginated)
+      parameters:
+      - in: query
+        name: course_id
+        schema:
+          type: string
+        description: Deprecated alias for 'course_key' (ADR 0033). Use 'course_key'
+          instead.
+        deprecated: true
+      - in: query
+        name: course_ids
+        schema:
+          type: string
+        description: Deprecated alias for 'course_keys' (ADR 0033). Use 'course_keys'
+          instead.
+        deprecated: true
+      - in: query
+        name: course_key
+        schema:
+          type: string
+        description: Filter to enrollments for this course (OEP-68).
+      - in: query
+        name: course_keys
+        schema:
+          type: string
+        description: Comma-separated list of course keys (OEP-68).
+      - in: query
+        name: email
+        schema:
+          type: string
+        description: Comma-separated list of emails.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 'Order results by one of: created, -created, id, -id (ADR 0033
+          §3).'
+      - in: query
+        name: page
+        schema:
+          type: string
+        description: Page number to retrieve. Default 1.
+      - in: query
+        name: page_size
+        schema:
+          type: string
+        description: Items per page (default 10, max 100).
+      - in: query
+        name: username
+        schema:
+          type: string
+        description: Comma-separated list of usernames.
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCourseEnrollmentsApiListList'
+          description: Paginated list of course enrollments.
+        '400':
+          description: Invalid request data or parameters.
+        '401':
+          description: The requester is not authenticated.
+        '403':
+          description: The requester does not have permission for this operation.
+      deprecated: true
   /api/enrollment/v2/enrollments/:
     get:
       operationId: api_enrollment_v2_enrollments_list
@@ -6543,6 +6651,39 @@ paths:
           description: The requester is not authenticated.
         '403':
           description: The requester does not have permission for this operation.
+  /api/enrollment/v2/enrollments/{username},{course_id}/:
+    get:
+      operationId: api_enrollment_v2_enrollments_,_retrieve
+      description: Returns the current user's enrollment for the specified course,
+        or the named user's enrollment when invoked with the {username},{course_id}
+        URL form (server-to-server or staff only).
+      summary: Retrieve a user's enrollment in a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+        description: Course ID (e.g. course-v1:org+course+run).
+        required: true
+      - in: path
+        name: username
+        schema:
+          type: string
+        description: Username of the user.
+        required: true
+      tags:
+      - openedx-platform-sdk
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseEnrollment'
+          description: Enrollment retrieved successfully (or empty body if no enrollment).
+        '400':
+          description: Invalid request data or parameters.
+        '404':
+          description: The requested resource does not exist.
   /api/enrollment/v2/roles/:
     get:
       operationId: api_enrollment_v2_roles_retrieve
@@ -15604,1660 +15745,6 @@ paths:
       - discussions
       responses:
         '200':
-          description: No response body
-  /forum/api/v1/commentables/{course_id}/counts:
-    get:
-      operationId: forum_api_v1_commentables_counts_retrieve
-      description: |-
-        Retrieves a the threads count based on thread_type.
-
-        Parameters:
-            request (Request): The incoming request.
-            course_id: The ID of the course.
-        Body:
-            Empty.
-        Response:
-            The threads count for the given course_id based on thread_type.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/comments/{comment_id}:
-    get:
-      operationId: forum_api_v1_comments_retrieve
-      description: |-
-        Retrieves a parent comment.
-        For chile comments, below API is called that return all child comments in children field
-        url: http://localhost:8000/forum/api/v2/threads/66ab94950dead7001deb947a
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment.
-        Body:
-            Empty.
-        Response:
-            The details of the comment for the given comment_id.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v1_comments_create
-      description: |-
-        Creates a new child comment.
-        For parent comment below API is called.
-        url: http://localhost:8000/forum/api/v2/threads/66ab94950dead7001deb947a/comments
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the parent comment for creating it's child comment.
-        Body:
-            body: The content of the comment.
-            course_id: The Id of the respective course.
-            user_id: The requesting user id.
-            anonymous: anonymous flag(True or False).
-            anonymous_to_peers: anonymous to peers flag(True or False).
-        Response:
-            The details of the comment that is created.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v1_comments_update
-      description: |-
-        Updates an existing child/parent comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment to be edited.
-        Body:
-            fields to be updated.
-        Response:
-            The details of the comment that is updated.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_comments_destroy
-      description: |-
-        Deletes a comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment to be deleted.
-        Body:
-            Empty.
-        Response:
-            The details of the comment that is deleted.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v1/comments/{comment_id}/abuse_{action}:
-    put:
-      operationId: forum_api_v1_comments_abuse__update
-      description: |-
-        Flag or unflag a comment.
-
-        Parameters:
-        request (Request): The incoming request.
-        comment_id (str): The ID of the comment to flag/unflag.
-        action (str): The action to take (either "flag" or "unflag").
-
-        Returns:
-        Response: A response with the updated comment data.
-      parameters:
-      - in: path
-        name: action
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/comments/{comment_id}/votes:
-    put:
-      operationId: forum_api_v1_comments_votes_update
-      description: |-
-        Handles the upvote or downvote on a comment.
-
-        Args:
-            request (Request): The incoming request object.
-            comment_id (str): The ID of the comment to vote on.
-
-        Returns:
-            Response: The HTTP response with the result of the vote operation.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_comments_votes_destroy
-      description: |-
-        Handles removing a vote from a comment.
-
-        Args:
-            request (Request): The incoming request object.
-            comment_id (str): The ID of the comment to remove the vote from.
-
-        Returns:
-            Response: The HTTP response with the result of the remove vote operation.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v1/course/threads:
-    post:
-      operationId: forum_api_v1_course_threads_create
-      description: |-
-        Create a new thread.
-
-        Parameters:
-            request (Request): The incoming request.
-        Body:
-            fields to be added in a new thread.
-        Response:
-            The details of the thread that is created.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/search/threads:
-    get:
-      operationId: forum_api_v1_search_threads_retrieve
-      description: |-
-        Handle GET requests to search for threads based on query parameters.
-
-        Args:
-            request (Request): The Django request object containing query parameters.
-
-        Returns:
-            Response: A JSON response containing the search results, corrected text (if any), and total results.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads:
-    get:
-      operationId: forum_api_v1_threads_retrieve
-      description: |-
-        Retrieve a course's threads.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-
-        Returns:
-            Response: A Response object with the threads data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user does not exist.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}:
-    get:
-      operationId: forum_api_v1_threads_retrieve_2
-      description: |-
-        Retrieve a thread by its ID.
-
-        Args:
-            request: The HTTP request object.
-            thread_id: The ID of the thread to retrieve.
-
-        Returns:
-            Response: A Response object containing the serialized thread data or an error message.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v1_threads_update
-      description: |-
-        Updates an existing thread.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread to be edited.
-        Body:
-            fields to be updated.
-        Response:
-            The details of the thread that is updated.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_threads_destroy
-      description: |-
-        Deletes a thread by its ID.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread to be deleted.
-        Body:
-            Empty.
-        Response:
-            The details of the thread that is deleted.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/abuse_{action}:
-    put:
-      operationId: forum_api_v1_threads_abuse__update
-      description: |-
-        Flag or unflag a thread.
-
-        Parameters:
-        request (Request): The incoming request.
-        thread_id (str): The ID of the thread to flag/unflag.
-        action (str): The action to take (either "flag" or "unflag").
-
-        Returns:
-        Response: A response with the updated thread data.
-      parameters:
-      - in: path
-        name: action
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/comments:
-    post:
-      operationId: forum_api_v1_threads_comments_create
-      description: |-
-        Creates a new parent comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread for creating a comment on it.
-        Body:
-            body: The content of the comment.
-            course_id: The Id of the respective course.
-            user_id: The requesting user id.
-            anonymous: anonymous flag(True or False).
-            anonymous_to_peers: anonymous to peers flag(True or False).
-        Response:
-            The details of the comment that is created.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/pin:
-    put:
-      operationId: forum_api_v1_threads_pin_update
-      description: |-
-        Pins a thread.
-        Parameters:
-            request (Request): The incoming request.
-            thread_id (str): The ID of the thread to pin.
-        Body:
-            user_id: requesting user's id
-        Response:
-            A response with the updated thread data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/subscriptions:
-    get:
-      operationId: forum_api_v1_threads_subscriptions_retrieve
-      description: |-
-        Retrieve subscriptions to a specific thread.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            thread_id (str): The ID of the thread to retrieve subscriptions for.
-
-        Returns:
-            Response: A paginated Response object with the subscription data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/unpin:
-    put:
-      operationId: forum_api_v1_threads_unpin_update
-      description: |-
-        Unpins a thread.
-        Parameters:
-            request (Request): The incoming request.
-            thread_id (str): The ID of the thread to unpin.
-        Body:
-            user_id: requesting user's id
-        Response:
-            A response with the updated thread data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/threads/{thread_id}/votes:
-    put:
-      operationId: forum_api_v1_threads_votes_update
-      description: |-
-        Handles the upvote or downvote on a thread.
-
-        Args:
-            request (Request): The incoming request object.
-            thread_id (str): The ID of the thread to vote on.
-
-        Returns:
-            Response: The HTTP response with the result of the vote operation.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_threads_votes_destroy
-      description: |-
-        Handles removing a vote from a thread.
-
-        Args:
-            request (Request): The incoming request object.
-            thread_id (str): The ID of the thread to remove the vote from.
-
-        Returns:
-            Response: The HTTP response with the result of the remove vote operation.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v1/users:
-    post:
-      operationId: forum_api_v1_users_create
-      description: Create user.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{course_id}/stats:
-    get:
-      operationId: forum_api_v1_users_stats_retrieve
-      description: Get user course stats.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v1_users_stats_create
-      description: Update user stats for a course.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{course_id}/update_stats:
-    get:
-      operationId: forum_api_v1_users_update_stats_retrieve
-      description: Get user course stats.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v1_users_update_stats_create
-      description: Update user stats for a course.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}:
-    get:
-      operationId: forum_api_v1_users_retrieve
-      description: Get user data.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v1_users_update
-      description: Update user data.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/active_threads:
-    get:
-      operationId: forum_api_v1_users_active_threads_retrieve
-      description: User active threads.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/posts:
-    get:
-      operationId: forum_api_v1_users_posts_retrieve
-      description: Return thread_count and comment_count for user in course.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_users_posts_destroy
-      description: Delete all posts by user in course. Returns counts before deletion.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v1/users/{user_id}/read:
-    post:
-      operationId: forum_api_v1_users_read_create
-      description: User read.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/replace_username:
-    post:
-      operationId: forum_api_v1_users_replace_username_create
-      description: Edit user.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/retire:
-    post:
-      operationId: forum_api_v1_users_retire_create
-      description: Retire user.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/subscribed_threads:
-    get:
-      operationId: forum_api_v1_users_subscribed_threads_retrieve
-      description: |-
-        Retrieve a user's subscriptions.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to retrieve subscriptions for.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v1/users/{user_id}/subscriptions:
-    post:
-      operationId: forum_api_v1_users_subscriptions_create
-      description: |-
-        Subscribe a user to a source.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to subscribe.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user or content does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v1_users_subscriptions_destroy
-      description: |-
-        Unsubscribe a user from a source.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to unsubscribe.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user or subscription does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/commentables/{course_id}/counts:
-    get:
-      operationId: forum_api_v2_commentables_counts_retrieve
-      description: |-
-        Retrieves a the threads count based on thread_type.
-
-        Parameters:
-            request (Request): The incoming request.
-            course_id: The ID of the course.
-        Body:
-            Empty.
-        Response:
-            The threads count for the given course_id based on thread_type.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/comments/{comment_id}:
-    get:
-      operationId: forum_api_v2_comments_retrieve
-      description: |-
-        Retrieves a parent comment.
-        For chile comments, below API is called that return all child comments in children field
-        url: http://localhost:8000/forum/api/v2/threads/66ab94950dead7001deb947a
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment.
-        Body:
-            Empty.
-        Response:
-            The details of the comment for the given comment_id.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v2_comments_create
-      description: |-
-        Creates a new child comment.
-        For parent comment below API is called.
-        url: http://localhost:8000/forum/api/v2/threads/66ab94950dead7001deb947a/comments
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the parent comment for creating it's child comment.
-        Body:
-            body: The content of the comment.
-            course_id: The Id of the respective course.
-            user_id: The requesting user id.
-            anonymous: anonymous flag(True or False).
-            anonymous_to_peers: anonymous to peers flag(True or False).
-        Response:
-            The details of the comment that is created.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v2_comments_update
-      description: |-
-        Updates an existing child/parent comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment to be edited.
-        Body:
-            fields to be updated.
-        Response:
-            The details of the comment that is updated.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_comments_destroy
-      description: |-
-        Deletes a comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            comment_id: The ID of the comment to be deleted.
-        Body:
-            Empty.
-        Response:
-            The details of the comment that is deleted.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/comments/{comment_id}/abuse_{action}:
-    put:
-      operationId: forum_api_v2_comments_abuse__update
-      description: |-
-        Flag or unflag a comment.
-
-        Parameters:
-        request (Request): The incoming request.
-        comment_id (str): The ID of the comment to flag/unflag.
-        action (str): The action to take (either "flag" or "unflag").
-
-        Returns:
-        Response: A response with the updated comment data.
-      parameters:
-      - in: path
-        name: action
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/comments/{comment_id}/votes:
-    put:
-      operationId: forum_api_v2_comments_votes_update
-      description: |-
-        Handles the upvote or downvote on a comment.
-
-        Args:
-            request (Request): The incoming request object.
-            comment_id (str): The ID of the comment to vote on.
-
-        Returns:
-            Response: The HTTP response with the result of the vote operation.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_comments_votes_destroy
-      description: |-
-        Handles removing a vote from a comment.
-
-        Args:
-            request (Request): The incoming request object.
-            comment_id (str): The ID of the comment to remove the vote from.
-
-        Returns:
-            Response: The HTTP response with the result of the remove vote operation.
-      parameters:
-      - in: path
-        name: comment_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/course/threads:
-    post:
-      operationId: forum_api_v2_course_threads_create
-      description: |-
-        Create a new thread.
-
-        Parameters:
-            request (Request): The incoming request.
-        Body:
-            fields to be added in a new thread.
-        Response:
-            The details of the thread that is created.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/search/threads:
-    get:
-      operationId: forum_api_v2_search_threads_retrieve
-      description: |-
-        Handle GET requests to search for threads based on query parameters.
-
-        Args:
-            request (Request): The Django request object containing query parameters.
-
-        Returns:
-            Response: A JSON response containing the search results, corrected text (if any), and total results.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads:
-    get:
-      operationId: forum_api_v2_threads_retrieve
-      description: |-
-        Retrieve a course's threads.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-
-        Returns:
-            Response: A Response object with the threads data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user does not exist.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}:
-    get:
-      operationId: forum_api_v2_threads_retrieve_2
-      description: |-
-        Retrieve a thread by its ID.
-
-        Args:
-            request: The HTTP request object.
-            thread_id: The ID of the thread to retrieve.
-
-        Returns:
-            Response: A Response object containing the serialized thread data or an error message.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v2_threads_update
-      description: |-
-        Updates an existing thread.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread to be edited.
-        Body:
-            fields to be updated.
-        Response:
-            The details of the thread that is updated.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_threads_destroy
-      description: |-
-        Deletes a thread by its ID.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread to be deleted.
-        Body:
-            Empty.
-        Response:
-            The details of the thread that is deleted.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/abuse_{action}:
-    put:
-      operationId: forum_api_v2_threads_abuse__update
-      description: |-
-        Flag or unflag a thread.
-
-        Parameters:
-        request (Request): The incoming request.
-        thread_id (str): The ID of the thread to flag/unflag.
-        action (str): The action to take (either "flag" or "unflag").
-
-        Returns:
-        Response: A response with the updated thread data.
-      parameters:
-      - in: path
-        name: action
-        schema:
-          type: string
-        required: true
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/comments:
-    post:
-      operationId: forum_api_v2_threads_comments_create
-      description: |-
-        Creates a new parent comment.
-
-        Parameters:
-            request (Request): The incoming request.
-            thread_id: The ID of the thread for creating a comment on it.
-        Body:
-            body: The content of the comment.
-            course_id: The Id of the respective course.
-            user_id: The requesting user id.
-            anonymous: anonymous flag(True or False).
-            anonymous_to_peers: anonymous to peers flag(True or False).
-        Response:
-            The details of the comment that is created.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/pin:
-    put:
-      operationId: forum_api_v2_threads_pin_update
-      description: |-
-        Pins a thread.
-        Parameters:
-            request (Request): The incoming request.
-            thread_id (str): The ID of the thread to pin.
-        Body:
-            user_id: requesting user's id
-        Response:
-            A response with the updated thread data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/subscriptions:
-    get:
-      operationId: forum_api_v2_threads_subscriptions_retrieve
-      description: |-
-        Retrieve subscriptions to a specific thread.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            thread_id (str): The ID of the thread to retrieve subscriptions for.
-
-        Returns:
-            Response: A paginated Response object with the subscription data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/unpin:
-    put:
-      operationId: forum_api_v2_threads_unpin_update
-      description: |-
-        Unpins a thread.
-        Parameters:
-            request (Request): The incoming request.
-            thread_id (str): The ID of the thread to unpin.
-        Body:
-            user_id: requesting user's id
-        Response:
-            A response with the updated thread data.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/threads/{thread_id}/votes:
-    put:
-      operationId: forum_api_v2_threads_votes_update
-      description: |-
-        Handles the upvote or downvote on a thread.
-
-        Args:
-            request (Request): The incoming request object.
-            thread_id (str): The ID of the thread to vote on.
-
-        Returns:
-            Response: The HTTP response with the result of the vote operation.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_threads_votes_destroy
-      description: |-
-        Handles removing a vote from a thread.
-
-        Args:
-            request (Request): The incoming request object.
-            thread_id (str): The ID of the thread to remove the vote from.
-
-        Returns:
-            Response: The HTTP response with the result of the remove vote operation.
-      parameters:
-      - in: path
-        name: thread_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/users:
-    post:
-      operationId: forum_api_v2_users_create
-      description: Create user.
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{course_id}/stats:
-    get:
-      operationId: forum_api_v2_users_stats_retrieve
-      description: Get user course stats.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v2_users_stats_create
-      description: Update user stats for a course.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{course_id}/update_stats:
-    get:
-      operationId: forum_api_v2_users_update_stats_retrieve
-      description: Get user course stats.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    post:
-      operationId: forum_api_v2_users_update_stats_create
-      description: Update user stats for a course.
-      parameters:
-      - in: path
-        name: course_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}:
-    get:
-      operationId: forum_api_v2_users_retrieve
-      description: Get user data.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    put:
-      operationId: forum_api_v2_users_update
-      description: Update user data.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/active_threads:
-    get:
-      operationId: forum_api_v2_users_active_threads_retrieve
-      description: User active threads.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/posts:
-    get:
-      operationId: forum_api_v2_users_posts_retrieve
-      description: Return thread_count and comment_count for user in course.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_users_posts_destroy
-      description: Delete all posts by user in course. Returns counts before deletion.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
-          description: No response body
-  /forum/api/v2/users/{user_id}/read:
-    post:
-      operationId: forum_api_v2_users_read_create
-      description: User read.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/replace_username:
-    post:
-      operationId: forum_api_v2_users_replace_username_create
-      description: Edit user.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/retire:
-    post:
-      operationId: forum_api_v2_users_retire_create
-      description: Retire user.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/subscribed_threads:
-    get:
-      operationId: forum_api_v2_users_subscribed_threads_retrieve
-      description: |-
-        Retrieve a user's subscriptions.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to retrieve subscriptions for.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-  /forum/api/v2/users/{user_id}/subscriptions:
-    post:
-      operationId: forum_api_v2_users_subscriptions_create
-      description: |-
-        Subscribe a user to a source.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to subscribe.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user or content does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '200':
-          description: No response body
-    delete:
-      operationId: forum_api_v2_users_subscriptions_destroy
-      description: |-
-        Unsubscribe a user from a source.
-
-        Args:
-            request (HttpRequest): The HTTP request object.
-            user_id (str): The ID of the user to unsubscribe.
-
-        Returns:
-            Response: A Response object with the subscription data.
-
-        Raises:
-            HTTP_400_BAD_REQUEST: If the user or subscription does not exist.
-      parameters:
-      - in: path
-        name: user_id
-        schema:
-          type: string
-        required: true
-      tags:
-      - forum
-      security:
-      - {}
-      responses:
-        '204':
           description: No response body
   /oauth2/login/:
     post:

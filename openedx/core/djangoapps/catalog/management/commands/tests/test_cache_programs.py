@@ -3,11 +3,13 @@ Test cases for cache_programs command.
 """
 
 import json
+from urllib.parse import parse_qs, urlparse
 
-import httpretty
 import pytest
+import responses
 from django.core.cache import cache
 from django.core.management import call_command
+from responses import matchers
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.catalog.cache import (
@@ -28,7 +30,6 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
 
 
 @skip_unless_lms
-@httpretty.activate
 class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMixin):
     """
     Defines tests for the ``cache_programs`` management command.
@@ -37,8 +38,10 @@ class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMix
 
     def setUp(self):
         super().setUp()
+        responses.start()
+        self.addCleanup(responses.stop)
+        self.addCleanup(responses.reset)
 
-        httpretty.httpretty.reset()
 
         self.catalog_integration = self.create_catalog_integration()
         self.site_domain = 'testsite.com'
@@ -97,47 +100,45 @@ class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMix
 
     def mock_list(self, site=""):
         """ Mock the data returned by the program listing API endpoint. """
-        # pylint: disable=unused-argument
-        def list_callback(request, uri, headers):
+        def list_callback(request):
             """ The mock listing callback. """
             expected = {
                 'exclude_utm': ['1'],
                 'status': ['active', 'retired'],
                 'uuids_only': ['1']
             }
-            assert request.querystring == expected
+            assert parse_qs(urlparse(request.url).query) == expected
             uuids = self.uuids[self.site_domain2] if site else self.uuids[self.site_domain]
-            return (200, headers, json.dumps(uuids))
+            return (200, {}, json.dumps(uuids))
 
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add_callback(
+            responses.GET,
             self.list_url,
-            body=list_callback,
-            content_type='application/json'
+            callback=list_callback,
+            content_type='application/json',
         )
 
     def mock_detail(self, uuid, program):
         """ Mock the data returned by the program detail API endpoint. """
-        # pylint: disable=unused-argument
-        def detail_callback(request, uri, headers):
+        def detail_callback(request):
             """ The mock detail callback. """
             expected = {
                 'exclude_utm': ['1'],
             }
-            assert request.querystring == expected
+            assert parse_qs(urlparse(request.url).query) == expected
 
-            return (200, headers, json.dumps(program))
+            return (200, {}, json.dumps(program))
 
-        httpretty.register_uri(
-            httpretty.GET,
+        responses.add_callback(
+            responses.GET,
             self.detail_tpl.format(uuid=uuid),
-            body=detail_callback,
-            content_type='application/json'
+            callback=detail_callback,
+            content_type='application/json',
         )
 
     def mock_pathways(self, pathways, page_number=1, final=True):
         """ Mock the data for discovery's credit pathways endpoint. """
-        def pathways_callback(request, uri, headers):  # pylint: disable=unused-argument
+        def pathways_callback(request):
             """ Mocks the pathways response. """
 
             expected = {
@@ -145,7 +146,7 @@ class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMix
                 'page': [str(page_number)],
                 'status': ['published']
             }
-            assert request.querystring == expected
+            assert parse_qs(urlparse(request.url).query) == expected
 
             body = {
                 'count': len(pathways),
@@ -154,15 +155,16 @@ class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMix
                 'results': pathways
             }
 
-            return (200, headers, json.dumps(body))
+            return (200, {}, json.dumps(body))
 
-        httpretty.register_uri(
-            httpretty.GET,
-            self.pathway_url + f'?status=published&exclude_utm=1&page={page_number}',
-            body=pathways_callback,
+        # Each page is a separate mock on the same path, so match on the query parameters.
+        responses.add(responses.CallbackResponse(
+            responses.GET,
+            self.pathway_url,
+            callback=pathways_callback,
             content_type='application/json',
-            match_querystring=True,
-        )
+            match=[matchers.query_param_matcher({'status': 'published', 'exclude_utm': '1', 'page': str(page_number)})],
+        ))
 
     def test_handle_domain(self):
         """

@@ -14,45 +14,6 @@ from cms.djangoapps.contentstore.rest_api.v2.textbooks_service import get_course
 from cms.djangoapps.contentstore.views.permissions import CanViewPagesAndResources
 
 
-class CourseTextbookPagination(DefaultPagination):
-    """
-    The standard page envelope, with a schema that describes all seven of its keys.
-
-    ``DefaultPagination`` returns seven keys but inherits a response schema
-    that documents only four, so generated clients would drop ``num_pages``,
-    ``current_page`` and ``start``.
-
-    Delete this subclass and use ``DefaultPagination`` directly once
-    edx-drf-extensions documents all seven keys in
-    ``DefaultPagination.get_paginated_response_schema``.
-    """
-
-    def get_paginated_response_schema(self, schema):
-        return {
-            "type": "object",
-            "required": ["count", "num_pages", "current_page", "start", "next", "previous", "results"],
-            "properties": {
-                "count": {"type": "integer", "description": "Total number of items."},
-                "num_pages": {"type": "integer", "description": "Total number of pages."},
-                "current_page": {"type": "integer", "description": "Number of this page, starting at 1."},
-                "start": {"type": "integer", "description": "Zero-based index of the first item on this page."},
-                "next": {
-                    "type": "string",
-                    "format": "uri",
-                    "nullable": True,
-                    "description": "Address of the next page, or null on the last page.",
-                },
-                "previous": {
-                    "type": "string",
-                    "format": "uri",
-                    "nullable": True,
-                    "description": "Address of the previous page, or null on the first page.",
-                },
-                "results": schema,
-            },
-        }
-
-
 @extend_schema(tags=["openedx-platform-sdk"])
 class CourseTextbooksViewSet(StandardizedErrorMixin, IterablePaginationMixin, viewsets.ViewSet):
     """
@@ -73,7 +34,7 @@ class CourseTextbooksViewSet(StandardizedErrorMixin, IterablePaginationMixin, vi
     authentication_classes = (JwtAuthentication, SessionAuthenticationAllowInactiveUser)
     permission_classes = (IsAuthenticated, CanViewPagesAndResources)
     serializer_class = CourseTextbookSerializer
-    pagination_class = CourseTextbookPagination
+    pagination_class = DefaultPagination
 
     def get_serializer(self, *args, **kwargs):
         """Instantiate the textbook serializer declared on this viewset."""

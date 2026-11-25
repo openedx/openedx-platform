@@ -40,6 +40,7 @@ from opaque_keys.edx.asides import AsideUsageKeyV2  # pylint: disable=wrong-impo
 from opaque_keys.edx.keys import CourseKey, UsageKey  # pylint: disable=wrong-import-order
 from pyquery import PyQuery  # pylint: disable=wrong-import-order
 from web_fragments.fragment import Fragment  # pylint: disable=wrong-import-order
+from webob import Response
 from xblock.completable import CompletableXBlockMixin  # pylint: disable=wrong-import-order
 from xblock.core import XBlock, XBlockAside  # pylint: disable=wrong-import-order
 from xblock.exceptions import NoSuchServiceError
@@ -51,13 +52,14 @@ from xblock.runtime import (  # pylint: disable=wrong-import-order
     Mixologist,  # pylint: disable=wrong-import-order
 )
 from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
-from xblocks_contrib.problem.capa.testing.response_xml_factory import (
+from xblock_problem.capa.testing.response_xml_factory import (
     OptionResponseXMLFactory,  # pylint: disable=reimported
 )
 
 from common.djangoapps.course_modes.models import CourseMode  # pylint: disable=reimported
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
 from common.djangoapps.student.tests.factories import (
+    TEST_PASSWORD,
     BetaTesterFactory,
     GlobalStaffFactory,
     InstructorFactory,
@@ -216,6 +218,29 @@ class XBlockWithoutCompletionAPI(XBlock):
         return self.runtime.publish(self, 'progress', {})
 
 
+class NoauthHandlerXBlock(XBlock):
+    """
+    XBlock with two handlers that report which user they ran as, for testing the noauth handler URL.
+    """
+
+    @XBlock.handler
+    def allowed_handler(self, request, suffix=''):  # pylint: disable=unused-argument
+        """
+        Handler that the tests put on XBLOCK_NOAUTH_HANDLER_ALLOWLIST.
+        """
+        return Response(json_body={'user_id': self.scope_ids.user_id})
+
+    @XBlock.handler
+    def other_handler(self, request, suffix=''):  # pylint: disable=unused-argument
+        """
+        Handler that is never on XBLOCK_NOAUTH_HANDLER_ALLOWLIST.
+        """
+        return Response(json_body={'user_id': self.scope_ids.user_id})
+
+
+NOAUTH_TEST_ALLOWLIST = [f'{__name__}.NoauthHandlerXBlock.allowed_handler']
+
+
 @ddt.ddt
 class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
@@ -240,22 +265,6 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         self.mock_user = UserFactory()
         self.mock_user.id = 1
         self.request_factory = RequestFactoryNoCsrf()
-
-        # Construct a mock block for the modulestore to return
-        self.mock_block = MagicMock()
-        self.mock_block.id = 1
-        self.dispatch = 'score_update'
-
-        # Construct a 'standard' xqueue_callback url
-        self.callback_url = reverse(
-            'xqueue_callback',
-            kwargs=dict(
-                course_id=str(self.course_key),
-                userid=str(self.mock_user.id),
-                mod_id=self.mock_block.id,
-                dispatch=self.dispatch
-            )
-        )
 
     def tearDown(self):
         OverrideFieldData.provider_classes = None
@@ -291,63 +300,6 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         # See if the url got rewritten to the target link
         # note if the URL mapping changes then this assertion will break
         assert '/courses/' + str(self.course_key) + '/jump_to_id/vertical_test' in html
-
-    def test_xqueue_callback_success(self):
-        """
-        Test for happy-path xqueue_callback
-        """
-        fake_key = 'fake key'
-        xqueue_header = json.dumps({'lms_key': fake_key})
-        data = {
-            'xqueue_header': xqueue_header,
-            'xqueue_body': 'hello world',
-        }
-
-        # Patch getmodule to return our mock block
-        with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
-            # call xqueue_callback with our mocked information
-            request = self.request_factory.post(self.callback_url, data)
-            render.xqueue_callback(
-                request,
-                str(self.course_key),
-                self.mock_user.id,
-                self.mock_block.id,
-                self.dispatch
-            )
-
-        # Verify that handle ajax is called with the correct data
-        request.POST._mutable = True  # pylint: disable=protected-access
-        request.POST['queuekey'] = fake_key
-        self.mock_block.handle_ajax.assert_called_once_with(self.dispatch, request.POST)
-
-    def test_xqueue_callback_missing_header_info(self):
-        data = {
-            'xqueue_header': '{}',
-            'xqueue_body': 'hello world',
-        }
-
-        with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
-            # Test with missing xqueue data
-            with pytest.raises(Http404):  # noqa: PT012
-                request = self.request_factory.post(self.callback_url, {})
-                render.xqueue_callback(
-                    request,
-                    str(self.course_key),
-                    self.mock_user.id,
-                    self.mock_block.id,
-                    self.dispatch
-                )
-
-            # Test with missing xqueue_header
-            with pytest.raises(Http404):  # noqa: PT012
-                request = self.request_factory.post(self.callback_url, data)
-                render.xqueue_callback(
-                    request,
-                    str(self.course_key),
-                    self.mock_user.id,
-                    self.mock_block.id,
-                    self.dispatch
-                )
 
     def _get_dispatch_url(self):
         """Helper to get dispatch URL for testing xblock callback."""
@@ -583,21 +535,6 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         self.location = self.course_key.make_usage_key('chapter', 'Overview')
         self.mock_user = UserFactory.create()
         self.request_factory = RequestFactoryNoCsrf()
-
-        # Construct a mock block for the modulestore to return
-        self.mock_block = MagicMock()
-        self.mock_block.id = 1
-        self.dispatch = 'score_update'
-
-        # Construct a 'standard' xqueue_callback url
-        self.callback_url = reverse(
-            'xqueue_callback', kwargs={
-                'course_id': str(self.course_key),
-                'userid': str(self.mock_user.id),
-                'mod_id': self.mock_block.id,
-                'dispatch': self.dispatch
-            }
-        )
 
     def _mock_file(self, name='file', size=10):
         """Create a mock file object for testing uploads"""
@@ -990,6 +927,91 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         render.handle_xblock_callback(request, str(course.id), usage_id, handler)
         assert mock_get_block.call_count == 2
         assert mock_get_block.call_args[1]['will_recheck_access'] == will_recheck_access
+
+
+@ddt.ddt
+@override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=NOAUTH_TEST_ALLOWLIST)
+class TestNoauthXBlockHandler(ModuleStoreTestCase):
+    """
+    Test which handlers can be called without authentication, and as which user.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.chapter = BlockFactory.create(parent=self.course, category='chapter')
+
+    def _create_block(self, **kwargs):
+        return BlockFactory.create(parent=self.chapter, category='noauth_test', **kwargs)
+
+    def _handler_url(self, block, handler, url_name='xblock_handler_noauth'):
+        return reverse(url_name, kwargs={
+            'course_id': str(self.course.id),
+            'usage_id': quote_slashes(str(block.location)),
+            'handler': handler,
+        })
+
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_allowed_handler_runs_as_anonymous(self):
+        """
+        An allowed handler runs without a user, even when the request carries a session.
+        """
+        block = self._create_block()
+        user = UserFactory.create()
+        self.client.login(username=user.username, password=TEST_PASSWORD)
+
+        response = self.client.post(self._handler_url(block, 'allowed_handler'))
+
+        assert response.status_code == 200
+        assert json.loads(response.content) == {'user_id': None}
+
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_handler_not_on_allowlist(self):
+        block = self._create_block()
+
+        response = self.client.post(self._handler_url(block, 'other_handler'))
+
+        assert response.status_code == 404
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=['no_such_module.NoSuchBlock.handler'] + NOAUTH_TEST_ALLOWLIST)
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_unimportable_allowlist_entry_is_skipped(self):
+        block = self._create_block()
+
+        with self.assertLogs('lms.djangoapps.courseware.block_render', level='WARNING') as logs:
+            response = self.client.post(self._handler_url(block, 'allowed_handler'))
+
+        assert response.status_code == 200
+        assert 'no_such_module.NoSuchBlock.handler' in logs.output[0]
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+    def test_default_allowlist_blocks_problem_handler(self):
+        problem = BlockFactory.create(parent=self.chapter, category='problem')
+
+        response = self.client.post(self._handler_url(problem, 'xmodule_handler') + '/problem_get')
+
+        assert response.status_code == 404
+
+    @override_settings(XBLOCK_NOAUTH_HANDLER_ALLOWLIST=settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+    def test_default_allowlist_entries_import(self):
+        """
+        Every handler on the default allowlist exists, so a rename upstream doesn't silently drop it.
+        """
+        handlers = render._get_noauth_handlers(tuple(settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST))  # pylint: disable=protected-access
+
+        assert len(handlers) == len(settings.XBLOCK_NOAUTH_HANDLER_ALLOWLIST)
+
+    @ddt.data(False, True)
+    @XBlock.register_temp_plugin(NoauthHandlerXBlock, identifier='noauth_test')
+    def test_anonymous_get_checks_access(self, visible_to_staff_only):
+        """
+        An anonymous GET on the regular handler URL only reaches blocks an anonymous user can load.
+        """
+        block = self._create_block(visible_to_staff_only=visible_to_staff_only)
+
+        response = self.client.get(self._handler_url(block, 'other_handler', url_name='xblock_handler'))
+
+        assert response.status_code == (404 if visible_to_staff_only else 200)
 
 
 @ddt.ddt

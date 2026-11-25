@@ -24,7 +24,7 @@ block_is_unit = is_unit(xblock)
                 % else:
                     <p>${_('Access to this component is not restricted, but visibility might be affected by inherited settings.')}</p>
                 %endif
-                % if settings.FEATURES.get('ENABLE_ENROLLMENT_TRACK_USER_PARTITION'):
+                % if settings.ENABLE_ENROLLMENT_TRACK_USER_PARTITION:
                     % if block_is_unit:
                         <p>${_('You can restrict access to this unit to learners in specific enrollment tracks or content groups.')}</p>
                     % else:

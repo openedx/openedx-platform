@@ -2,7 +2,7 @@
 Integration tests verifying authz permissions for discussions views.
 """
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
+from openedx_authz.authz import COURSE_AUDITOR, COURSE_LIMITED_STAFF, COURSE_STAFF
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
