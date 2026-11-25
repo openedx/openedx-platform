@@ -1286,7 +1286,9 @@ class TeamMembersSchemaTest(TestCase):
         assertions above cannot see what devstack or production would publish.
         """
         overrides = settings.SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"]
-        assert overrides["CourseTeamRoleEnum"] == "cms.djangoapps.contentstore.rest_api.v2.serializers.team_members.TEAM_ROLES"
+        assert overrides["CourseTeamRoleEnum"] == (
+            "cms.djangoapps.contentstore.rest_api.v2.serializers.team_members.TEAM_ROLES"
+        )
         for module in ("cms/envs/devstack.py", "cms/envs/production.py"):
             assert "ENUM_NAME_OVERRIDES" not in (Path(settings.REPO_ROOT) / module).read_text(), module
 
