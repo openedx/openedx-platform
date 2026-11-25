@@ -4,11 +4,11 @@
 import pprint
 import traceback
 
-from codejail.safe_exec import safe_exec
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
 from django.utils.html import escape
 from django.views.decorators.csrf import ensure_csrf_cookie
+from xblock_problem.capa.safe_exec import safe_exec
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from openedx.core.djangolib.markup import HTML

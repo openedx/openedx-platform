@@ -1018,31 +1018,6 @@ MONGODB_LOG = {}
 
 #################### Python sandbox ############################################
 
-CODE_JAIL = {
-    # from https://github.com/openedx/codejail/blob/master/codejail/django_integration.py#L24, '' should be same as None
-    'python_bin': '/edx/app/edxapp/venvs/edxapp-sandbox/bin/python',
-    # User to run as in the sandbox.
-    'user': 'sandbox',
-
-    # Configurable limits.
-    'limits': {
-        # How many CPU seconds can jailed code use?
-        'CPU': 1,
-        # Limit the memory of the jailed process to something high but not
-        # infinite (512MiB in bytes)
-        'VMEM': 536870912,
-        # Time in seconds that the jailed process has to run.
-        'REALTIME': 3,
-        'PROXY': 0,
-    },
-
-    # Overrides to default configurable 'limits' (above).
-    # Keys should be course run ids (or, in the special case of code running
-    # on the /debug/run_python page, the key is 'debug_run_python').
-    # Values should be dictionaries that look like 'limits'.
-    "limit_overrides": {},
-}
-
 # .. setting_name: PYTHON_LIB_FILENAME
 # .. setting_default: python_lib.zip
 # .. setting_description: Name of the course file to make available to code in
@@ -1307,7 +1282,6 @@ MIDDLEWARE = [
     'django.middleware.locale.LocaleMiddleware',
 
     'lms.djangoapps.discussion.django_comment_client.utils.ViewNameMiddleware',
-    'codejail.django_integration.ConfigureCodeJailMiddleware',
 
     # for expiring inactive sessions
     'openedx.core.djangoapps.session_inactivity_timeout.middleware.SessionInactivityTimeout',

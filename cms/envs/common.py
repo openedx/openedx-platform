@@ -425,8 +425,6 @@ MIDDLEWARE = [
     # Detects user-requested locale from 'accept-language' header in http request
     'django.middleware.locale.LocaleMiddleware',
 
-    'codejail.django_integration.ConfigureCodeJailMiddleware',
-
     # for expiring inactive sessions
     'openedx.core.djangoapps.session_inactivity_timeout.middleware.SessionInactivityTimeout',
 
@@ -477,11 +475,6 @@ CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'PRIMARY'  # noqa: F405
 MODULESTORE_BRANCH = 'draft-preferred'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-
-#################### Python sandbox ############################################
-
-# Needs to be non-zero so that jailed code can use it as their temp directory.(1MiB in bytes)
-CODE_JAIL['limits']['FSIZE'] = 1048576  # noqa: F405
 
 ############################ DJANGO_BUILTINS ################################
 

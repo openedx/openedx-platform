@@ -48,7 +48,7 @@ return "export_course"
             <p>${_("You can export courses and edit them outside of {studio_name}. The exported file is a .tar.gz file (that is, a .tar file compressed with GNU Zip) that contains the course structure and content. You can also re-import courses that you've exported.").format(
               studio_name=settings.STUDIO_SHORT_NAME
             )}</p>
-            <p>${Text(_("{em_start}Caution:{em_end} When you export a course, information such as MATLAB API keys, LTI passports, annotation secret token strings, and annotation storage URLs are included in the exported data. If you share your exported files, you may also be sharing sensitive or license-specific information.")).format(
+            <p>${Text(_("{em_start}Caution:{em_end} When you export a course, information such as LTI passports, annotation secret token strings, and annotation storage URLs are included in the exported data. If you share your exported files, you may also be sharing sensitive or license-specific information.")).format(
                   em_start=HTML('<strong>'),
                   em_end=HTML("</strong>")
                 )}</p>
@@ -151,7 +151,7 @@ return "export_course"
                 em_end=HTML("</strong>")
               )}</h3>
           <ul class="list-details list-export-includes">
-            <li class="item-detail">${_("Values from Advanced Settings, including MATLAB API keys and LTI passports")}</li>
+            <li class="item-detail">${_("Values from Advanced Settings, including LTI passports")}</li>
             <li class="item-detail">${_("Course Content (all Sections, Sub-sections, and Units)")}</li>
             <li class="item-detail">${_("Course Structure")}</li>
             <li class="item-detail">${_("Individual Problems")}</li>
@@ -192,7 +192,7 @@ return "export_course"
           <li>${_("Course dates")}</li>
           <li>${_("Grading policy")}</li>
           <li>${_("Any group configurations")}</li>
-          <li>${_("Settings on the Advanced Settings page, including MATLAB API keys and LTI passports")}</li>
+          <li>${_("Settings on the Advanced Settings page, including LTI passports")}</li>
         </ul>
         <p>${_("The following content is not exported.")}</p>
         <ul>

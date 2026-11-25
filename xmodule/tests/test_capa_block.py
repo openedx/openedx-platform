@@ -14,7 +14,6 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-import requests
 import webob
 from codejail.safe_exec import SafeExecException
 from django.test import override_settings
@@ -29,8 +28,7 @@ from xblock.scorable import Score
 from xblock_problem.capa import responsetypes
 from xblock_problem.capa.correctmap import CorrectMap
 from xblock_problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xblock_problem.capa.testing.codejail import UseUnsafeCodejail
-from xblock_problem.capa.xqueue_interface import XQueueInterface
+from xblock_problem.capa.xqueue_submission import XQueueInterfaceSubmission
 
 from lms.djangoapps.courseware.user_state_client import XBlockUserState
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -266,21 +264,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         # not visible.
         problem = CapaFactory.create()
         assert not problem.answer_available()
-
-    @ddt.data(
-        (requests.exceptions.ReadTimeout, (1, "failed to read from the server")),
-        (requests.exceptions.ConnectionError, (1, "cannot connect to server")),
-    )
-    @ddt.unpack
-    def test_xqueue_request_exception(self, exception, result):
-        """
-        Makes sure that platform will raise appropriate exception in case of
-        connect/read timeout(s) to request to xqueue
-        """
-        xqueue_interface = XQueueInterface("http://example.com/xqueue", Mock())
-        with patch.object(xqueue_interface.session, "post", side_effect=exception):
-            response = xqueue_interface._http_post("http://some/fake/url", {})  # pylint: disable=protected-access
-            assert response == result
 
     def test_showanswer_attempted(self):
         """Check answer availability changes after attempting the problem."""
@@ -1239,9 +1222,9 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.attempts == 1
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_submit_problem_with_files(self, mock_xqueue_post):
-        """Verify file-upload submissions are sent correctly to XQueue via submit_problem."""
+        """Verify file-upload submissions reach edx-submissions via submit_problem."""
         # Check a problem with uploaded files, using the submit_problem API.
 
         # The files we'll be uploading.
@@ -1253,8 +1236,8 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
         block = CapaFactoryWithFiles.create()
 
-        # Mock the XQueueInterface post method
-        mock_xqueue_post.return_value = (0, "ok")
+        # Mock the hand-off to edx-submissions
+        mock_xqueue_post.return_value = {}
 
         # Create a request dictionary for submit_problem.
         get_request_dict = {
@@ -1264,51 +1247,24 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
         block.submit_problem(get_request_dict)
 
-        # _http_post is called like this:
-        #   _http_post(
-        #       'http://example.com/xqueue/xqueue/submit/',
-        #       {
-        #           'xqueue_header':
-        #               '{"lms_key": "df34fb702620d7ae892866ba57572491", '
-        #               '"lms_callback_url": "/", '
-        #               '"queue_name": "BerkeleyX-cs188x"}',
-        #           'xqueue_body':
-        #               '{"student_info": "{\\"anonymous_student_id\\": '
-        #               '\\"student\\", \\"submission_time\\": '
-        #               '\\"20131117183318\\"}", '
-        #               '"grader_payload": "{\\"project\\": \\"p3\\"}", '
-        #               '"student_response": ""}',
-        #       },
-        #       files={
-        #           path(
-        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'asset.html'
-        #           ):
-        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'asset.html', mode 'r' at 0x49c5f60>,
-        #           path(
-        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'image.jpg'
-        #           ):
-        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'image.jpg', mode 'r' at 0x49c56f0>,
-        #           path(
-        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'textbook.pdf'
-        #           ):
-        #               <open file  u'/home/ned/edx/edx-platform/common/test/data/uploads/'
-        #               'textbook.pdf', mode 'r' at 0x49c5a50>,
-        #       },
+        # send_to_submission is called like this:
+        #   send_to_submission(
+        #       '{"lms_key": "df34fb702620d7ae892866ba57572491", "queue_name": "BerkeleyX-cs188x"}',
+        #       '{"student_info": "{\\"anonymous_student_id\\": \\"student\\", '
+        #       '\\"submission_time\\": \\"20131117183318\\"}", '
+        #       '"grader_payload": "{\\"project\\": \\"p3\\"}", "student_response": ""}',
+        #       "df34fb702620d7ae892866ba57572491",
+        #       {"/path/to/prog1.py": <open file>, ...},
         #   )
 
         assert mock_xqueue_post.call_count == 1
-        _, kwargs = mock_xqueue_post.call_args
-        self.assertCountEqual(fpaths, list(kwargs["files"].keys()))  # noqa: PT009
-        for fpath, fileobj in kwargs["files"].items():
+        files = mock_xqueue_post.call_args.args[3]
+        self.assertCountEqual(fpaths, list(files.keys()))  # noqa: PT009
+        for fpath, fileobj in files.items():
             assert fpath == fileobj.name
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_submit_problem_with_files_as_xblock(self, mock_xqueue_post):
         """Verify file-upload submissions work correctly via the XBlock handler API."""
         # Check a problem with uploaded files, using the XBlock API.
@@ -1323,8 +1279,8 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
         block = CapaFactoryWithFiles.create()
 
-        # Mock the XQueueInterface post method
-        mock_xqueue_post.return_value = (0, "ok")
+        # Mock the hand-off to edx-submissions
+        mock_xqueue_post.return_value = {}
 
         # Create a webob Request with the files uploaded.
         post_data = []
@@ -1336,9 +1292,9 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block.handle("xmodule_handler", request, "problem_check")
 
         assert mock_xqueue_post.call_count == 1
-        _, kwargs = mock_xqueue_post.call_args
-        self.assertCountEqual(fnames, list(kwargs["files"].keys()))  # noqa: PT009
-        for fpath, fileobj in kwargs["files"].items():
+        files = mock_xqueue_post.call_args.args[3]
+        self.assertCountEqual(fnames, list(files.keys()))  # noqa: PT009
+        for fpath, fileobj in files.items():
             assert fpath == fileobj.name
 
     def test_submit_problem_error(self):
@@ -3713,7 +3669,6 @@ class ComplexEncoderTest(unittest.TestCase):
 
 
 @skip_unless_lms
-@UseUnsafeCodejail()
 @pytest.mark.django_db
 class ProblemCheckTrackingTest(unittest.TestCase):
     """
@@ -3978,7 +3933,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         }
 
     @pytest.mark.django_db
-    @patch.object(XQueueInterface, "_http_post")
+    @patch.object(XQueueInterfaceSubmission, "send_to_submission")
     def test_file_inputs(self, mock_xqueue_post):
         """Verify tracking data for file submission and custom response inputs."""
         fnames = ["prog1.py", "prog2.py", "prog3.py"]
@@ -3991,8 +3946,8 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         factory = CapaFactoryWithFiles
         block = factory.create()
 
-        # Mock the XQueueInterface post method
-        mock_xqueue_post.return_value = (0, "ok")
+        # Mock the hand-off to edx-submissions
+        mock_xqueue_post.return_value = {}
 
         answer_input_dict = {
             CapaFactoryWithFiles.input_key(response_num=2): fileobjs,

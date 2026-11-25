@@ -20,7 +20,6 @@ from django.contrib.auth.models import User  # pylint: disable=imported-auth-use
 from django.test.utils import override_settings
 from django.urls import reverse
 from xblock_problem.capa.responsetypes import StudentInputError
-from xblock_problem.capa.testing.codejail import UseUnsafeCodejail
 from xblock_problem.capa.testing.response_xml_factory import CodeResponseXMLFactory, CustomResponseXMLFactory
 
 from common.test.utils import assert_dict_contains_subset
@@ -73,7 +72,6 @@ class TestIntegrationTask(InstructorTaskModuleTestCase):
 
 @ddt.ddt
 @override_settings(RATELIMIT_ENABLE=False)
-@UseUnsafeCodejail()
 class TestRescoringTask(TestIntegrationTask):
     """
     Integration-style tests for rescoring problems in a background task.

@@ -17,21 +17,21 @@ from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import connections
 from django.test import TestCase
-from django.test.client import RequestFactory
+from django.test.client import Client, RequestFactory
 from django.urls import reverse
 from django.utils.timezone import now
 from submissions import api as submissions_api
-from xblock_problem.capa.testing.codejail import UseUnsafeCodejail
+from submissions.models import ExternalGraderDetail
 from xblock_problem.capa.testing.response_xml_factory import (
     CodeResponseXMLFactory,
     CustomResponseXMLFactory,
     OptionResponseXMLFactory,
     SchematicResponseXMLFactory,
 )
-from xblock_problem.capa.xqueue_interface import XQueueInterface
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
+from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.models import BaseStudentModuleHistory, StudentModule
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.grades.api import CourseGradeFactory, task_compute_all_grades_for_course
@@ -789,8 +789,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         # re-fetch the course from the database so the object is up to date
         self.refresh_course()
 
-    @patch.object(XQueueInterface, '_http_post')
-    def test_three_files(self, mock_xqueue_post):
+    def test_three_files(self):
         # Open the test files, and arrange to close them later.
         filenames = "prog1.py prog2.py prog3.py"
         fileobjs = [
@@ -801,22 +800,38 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
             self.addCleanup(fileobj.close)
 
         self.problem_setup("the_problem", filenames)
-        mock_xqueue_post.return_value = (0, "ok")
         resp = self.submit_question_answer("the_problem", {'2_1': fileobjs})
 
         assert resp.status_code == 200
         json_resp = json.loads(resp.content.decode('utf-8'))
         assert json_resp['success'] == 'incorrect'
 
-        # See how post got called.
-        assert mock_xqueue_post.call_count == 1
-        args, kwargs = mock_xqueue_post.call_args
-        assert len(args) == 2
-        assert args[0].endswith('/submit/')
-        self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
+        # The submission and its files are waiting in edx-submissions for a grader.
+        external_grader = ExternalGraderDetail.objects.get()
+        assert external_grader.status == 'pending'
+        assert sorted(f.original_filename for f in external_grader.files.all()) == filenames.split()
+
+        # A grader pulls the submission from the LMS and posts a result, as xqueue-watcher does.
+        grader = UserFactory(password="grader-password")
+        grader.groups.create(name="xqueue")
+        grader_client = Client()
+        grader_client.post("/xqueue/login/", {"username": grader.username, "password": "grader-password"})
+        pulled = grader_client.get("/xqueue/get_submission/", {"queue_name": external_grader.queue_name})
+        submission = json.loads(pulled.json()["content"])
+        assert sorted(json.loads(submission["xqueue_files"])) == filenames.split()
+        grader_client.post("/xqueue/put_result/", {
+            "xqueue_header": submission["xqueue_header"],
+            "xqueue_body": json.dumps({"correct": True, "score": 1, "msg": "<p>Good job</p>"}),
+        })
+
+        # The learner's problem has the grader's result.
+        module = StudentModule.objects.get(
+            student=self.student_user, module_state_key=self.problem_location("the_problem")
+        )
+        assert module.grade == 1.0
+        assert json.loads(module.state)["correct_map"]["the_problem_2_1"]["correctness"] == "correct"
 
 
-@UseUnsafeCodejail()
 class TestPythonGradedResponse(TestSubmittingProblems):
     """
     Check that we can submit a schematic and custom response, and it answers properly.

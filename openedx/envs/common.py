@@ -1463,16 +1463,8 @@ ENABLE_MAX_FAILED_LOGIN_ATTEMPTS: bool
 
 ###################### CAPA External Code Evaluation #######################
 
-# Used with XQueue
+# Seconds a learner must wait between submissions to a problem graded by an external grader.
 XQUEUE_WAITTIME_BETWEEN_REQUESTS = 5  # seconds
-XQUEUE_INTERFACE = {
-    'url': 'http://localhost:18040',
-    'basic_auth': ['edx', 'edx'],
-    'django_auth': {
-        'username': 'lms',
-        'password': 'password'
-    }
-}
 
 ################################### CSRF ###################################
 
@@ -2243,54 +2235,20 @@ ZENDESK_GROUP_ID_MAPPING = {}
 
 ############################## Python sandbox ##############################
 
-CODE_JAIL = {
-    # from https://github.com/openedx/codejail/blob/master/codejail/django_integration.py#L24, '' should be same as None
-    'python_bin': '/edx/app/edxapp/venvs/edxapp-sandbox/bin/python',
-    # User to run as in the sandbox.
-    'user': 'sandbox',
 
-    # Configurable limits.
-    'limits': {
-        # How many CPU seconds can jailed code use?
-        'CPU': 1,
-        # Limit the memory of the jailed process to something high but not
-        # infinite (512MiB in bytes)
-        'VMEM': 536870912,
-        # Time in seconds that the jailed process has to run.
-        'REALTIME': 3,
-        'PROXY': 0,
-    },
-
-    # Overrides to default configurable 'limits' (above).
-    # Keys should be course run ids (or, in the special case of code running
-    # on the /debug/run_python page, the key is 'debug_run_python').
-    # Values should be dictionaries that look like 'limits'.
-    "limit_overrides": {},
-}
-
-# Some courses are allowed to run unsafe code. This is a list of regexes, one
-# of them must match the course id for that course to run unsafe code.
-#
-# For example:
-#
-#   COURSES_WITH_UNSAFE_CODE = [
-#       r"Harvard/XY123.1/.*"
-#   ]
-COURSES_WITH_UNSAFE_CODE = []
-
-# Code jail REST service
-ENABLE_CODEJAIL_REST_SERVICE = False
+# CodeJail REST service
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_REMOTE_EXEC
-# .. setting_default: 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+# .. setting_default: 'xblock_problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 # .. setting_description: Set the python package.module.function that is reponsible of
 #   calling the remote service in charge of jailed code execution
-CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xmodule.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
+CODE_JAIL_REST_SERVICE_REMOTE_EXEC = 'xblock_problem.capa.safe_exec.remote_exec.send_safe_exec_request_v0'
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_HOST
-# .. setting_default: 'http://127.0.0.1:8550'
-# .. setting_description: Set the codejail remote service host
-CODE_JAIL_REST_SERVICE_HOST = 'http://127.0.0.1:8550'
+# .. setting_default: None
+# .. setting_description: Set the codejail remote service host. When not set problem blocks may return an
+#   ImproperlyConfigured error.
+CODE_JAIL_REST_SERVICE_HOST = None
 
 # .. setting_name: CODE_JAIL_REST_SERVICE_CONNECT_TIMEOUT
 # .. setting_default: 0.5
