@@ -13,7 +13,7 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -41,7 +41,9 @@ from lms.djangoapps.courseware.courses import (
     get_course_with_access,
     get_permission_for_course_about,
 )
+from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.entrance_exams import course_has_entrance_exam, user_has_passed_entrance_exam
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.courseware.masquerade import (
     is_masquerading_as_non_audit_enrollment,
     is_masquerading_as_specific_student,
@@ -388,7 +390,12 @@ class CoursewareMeta:
         """
         with modulestore().bulk_operations(self.course_key):
             permission = get_permission_for_course_about()
-            course_with_access = get_course_with_access(self.request.user, permission, self.course_key)
+            try:
+                course_with_access = get_course_with_access(self.request.user, permission, self.course_key)
+            except (CourseAccessRedirect, CoursewareAccessException):
+                # The (possibly masqueraded) user can't see the about page, so there is no
+                # link to show. Don't let the redirect escape and turn this API into a 302.
+                return False
             return bool(
                 self.request.user.has_perm(VIEW_COURSEWARE, course_with_access)
                 or settings.ENABLE_LMS_MIGRATION
@@ -667,6 +674,7 @@ class CoursewareInformation(RetrieveAPIView):
           for an authenticated request.
         * 403 if a user who does not have permission to masquerade as
           another user specifies a username other than their own.
+        * 403 if the course's catalog visibility hides it from the user.
         * 404 if the course is not available or cannot be seen.
     """
 
@@ -708,11 +716,20 @@ class CoursewareInformation(RetrieveAPIView):
         else:
             username = self.request.user.username
         course_key = CourseKey.from_string(self.kwargs['course_key_string'])
-        overview = CoursewareMeta(
-            course_key,
-            self.request,
-            username=username,
-        )
+        try:
+            overview = CoursewareMeta(
+                course_key,
+                self.request,
+                username=username,
+            )
+        except CourseAccessRedirect as exc:
+            # Answer with a 403 instead of redirecting the API call to the dashboard,
+            # matching the course home metadata API.
+            error = exc.access_error
+            raise PermissionDenied(
+                detail=error.user_message if error is not None else 'You do not have access to this course.',
+                code=error.error_code if error is not None else None,
+            ) from exc
         # Record course goals user activity for learning mfe courseware on web
         UserActivity.record_user_activity(self.request.user, course_key)
 
