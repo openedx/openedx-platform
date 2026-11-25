@@ -5,15 +5,17 @@ from django.conf import settings
 from django.test import RequestFactory
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.roles import COURSE_EDITOR
+from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import PermissionAccessMixin
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase
 from cms.djangoapps.contentstore.utils import get_lms_link_for_item, get_pages_and_resources_url
 from cms.djangoapps.contentstore.views.course import _course_outline_json
+from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from xmodule.modulestore.tests.factories import BlockFactory, check_mongo_calls
@@ -224,3 +226,72 @@ class CourseIndexAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
 
         assert response.status_code == status.HTTP_200_OK
         assert "course_structure" in response.data
+
+
+class CourseIndexViewReindexLinkAuthzTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
+    """
+    Regression tests: with AuthZ course authoring enabled, `reindex_link` (and therefore the
+    Reindex button in the course-authoring MFE) must follow the same access rules as the actual
+    reindex action, not be restricted to Global Staff only.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("cms.djangoapps.contentstore:v1:course_index", kwargs={"course_id": self.course.id})
+
+    def test_reindex_link_present_for_non_global_staff_with_authz_permission(self):
+        """A non-global-staff user granted the AuthZ course-staff role sees the reindex link."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_STAFF.external_key, self.course.id)
+
+        response = self.authorized_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not self.authorized_user.is_staff
+        assert response.data["reindex_link"] == f"/course/{self.course.id}/search_reindex"
+
+    def test_reindex_link_absent_without_reindex_permission(self):
+        """
+        A user with enough AuthZ permission to view the course (COURSE_EDITOR) but without the
+        publish-content permission required to reindex does not see the reindex link.
+        """
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+
+        response = self.authorized_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["reindex_link"] is None
+
+
+class CourseIndexViewReindexLinkLegacyTest(CourseTestCase):
+    """
+    Regression tests: with AuthZ course authoring disabled, `reindex_link` must preserve the
+    legacy behavior of being restricted to Global Staff, even for users with legacy course-staff
+    write access.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("cms.djangoapps.contentstore:v1:course_index", kwargs={"course_id": self.course.id})
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_reindex_link_absent_for_course_staff_without_global_staff(self):
+        """A course-staff member who isn't Global Staff does not see the reindex link."""
+        course_staff_user, password = self.create_non_staff_user()
+        CourseStaffRole(self.course.id).add_users(course_staff_user)
+
+        client = AjaxEnabledTestClient()
+        client.login(username=course_staff_user.username, password=password)
+
+        response = client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not course_staff_user.is_staff
+        assert response.data["reindex_link"] is None
+
+    @override_waffle_flag(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, active=False)
+    def test_reindex_link_present_for_global_staff(self):
+        """Global Staff still sees the reindex link (legacy behavior preserved)."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["reindex_link"] == f"/course/{self.course.id}/search_reindex"
