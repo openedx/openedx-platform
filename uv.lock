@@ -4315,8 +4315,8 @@ wheels = [
 
 [[package]]
 name = "openedx-authz"
-version = "4.3.0"
-source = { registry = "https://pypi.org/simple" }
+version = "4.6.0"
+source = { git = "https://github.com/openedx/openedx-authz?rev=8cfee04ff49359c6c4a292b85da423bf83f27fe6#8cfee04ff49359c6c4a292b85da423bf83f27fe6" }
 dependencies = [
     { name = "attrs" },
     { name = "casbin-django-orm-adapter" },
@@ -4335,10 +4335,6 @@ dependencies = [
     { name = "openedx-events" },
     { name = "openedx-filters" },
     { name = "pycasbin" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/c9/cc5761a21466ff533c051e8d0db7fcc955ea514499cc467f6caaf2a4b533/openedx_authz-4.3.0.tar.gz", hash = "sha256:a74bba2b28a0660630652d7c37c19771c64b0d2f0970cfdc90e5d9007d75b1b2", size = 934723, upload-time = "2026-11-23T15:20:40.03Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/a0/1e25b437f98df57171723dcebf3be723c7a24158c4c17e1c2eec470785b9/openedx_authz-4.3.0-py3-none-any.whl", hash = "sha256:4088600619fdfab0dd514855096eb3bd55943040cb536a506bfe8b5b93bd115c", size = 242114, upload-time = "2026-11-23T15:20:38.296Z" },
 ]
 
 [[package]]
@@ -4926,7 +4922,7 @@ requires-dist = [
     { name = "oauthlib" },
     { name = "olxcleaner" },
     { name = "openedx-atlas" },
-    { name = "openedx-authz" },
+    { name = "openedx-authz", git = "https://github.com/openedx/openedx-authz?rev=8cfee04ff49359c6c4a292b85da423bf83f27fe6" },
     { name = "openedx-calc" },
     { name = "openedx-core" },
     { name = "openedx-django-require" },

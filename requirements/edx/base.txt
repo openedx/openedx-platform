@@ -824,7 +824,7 @@ openedx-atlas==0.7.2
     #   openedx-authz
     #   openedx-forum
     #   openedx-platform
-openedx-authz==4.3.0
+openedx-authz @ git+https://github.com/openedx/openedx-authz@8cfee04ff49359c6c4a292b85da423bf83f27fe6
     # via openedx-platform
 openedx-calc==5.1.0
     # via
