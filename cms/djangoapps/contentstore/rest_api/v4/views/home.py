@@ -1,6 +1,5 @@
 """HomeCoursesViewSet for getting courses available to the logged-in user (v4)."""
 
-from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, inline_serializer
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import (
@@ -18,9 +17,10 @@ from cms.djangoapps.contentstore.rest_api.v4.serializers.home import (
     CourseHomeTabSerializerV4,
 )
 from cms.djangoapps.contentstore.utils import get_course_context_v2
+from cms.lib.spectacular import CmsAutoSchema
 
 
-class _HomeCoursesAutoSchema(AutoSchema):
+class _HomeCoursesAutoSchema(CmsAutoSchema):
     """Custom AutoSchema that treats the 'list' action as a single-object response."""
 
     def _is_list_view(self, serializer=None):

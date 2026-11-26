@@ -85,7 +85,7 @@
 
     <br><br>
 
-    %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+    %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         <h5 class="hd hd-5">${_("Rescore")}</h5>
         <label for="rescore-actions-single">${_("For the specified problem, rescore the learner's responses. The 'Rescore Only If Score Improves' option updates the learner's score only if it improves in the learner's favor.")}</label>
         <br>
@@ -97,7 +97,7 @@
 
     <br><br>
 
-    %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+    %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         <h5 class="hd hd-5">${_("Score Override")}</h5>
         <label for="override-problem-score-single">${_("For the specified problem, override the learner's score.")}</label>
         <br><br>
@@ -121,7 +121,7 @@
 
     <br><br>
 
-    %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+    %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         <h5 class="hd hd-5">${_("Task Status")}</h5>
         <label for="task-history-single">${_("Show the status for the rescoring tasks that you submitted for this learner and problem.")}</label>
         <br>
@@ -155,7 +155,7 @@
     <input type="button" name="skip-entrance-exam" value="${_('Let Learner Skip Entrance Exam')}" data-endpoint="${ section_data['student_can_skip_entrance_exam_url'] }">
     <br><br>
 
-    %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS') and section_data['access']['instructor']:
+    %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS and section_data['access']['instructor']:
         <h5 class="hd hd-5">${_("Rescore")}</h5>
         <label for="rescore-actions-entrance-exam">
             ${_("Rescore any responses that have been submitted. The 'Rescore All Problems Only If Score Improves' option updates the learner's scores only if it improves in the learner's favor.")}
@@ -177,7 +177,7 @@
     <br><br>
 
 
-    %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+    %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         <h5 class="hd hd-5">${_("Task Status")}</h5>
         <label for="entrance-exam-task-history">
             ${_("Show the status for the rescoring tasks that you submitted for this learner and entrance exam.")}
@@ -193,7 +193,7 @@
 %endif
 
 %if section_data['access']['instructor']:
-%if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+%if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
 <div class="course-specific-container action-type-container">
     <h4 class="hd hd-4">${_("Adjust all enrolled learners' grades for a specific problem")}</h4>
     <div class="request-response-error"></div>
@@ -231,7 +231,7 @@
 %endif
 %endif
 
-%if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+%if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
 <div class="running-tasks-container action-type-container">
     <h4 class="hd hd-4">${_("Pending Tasks")}</h4>
     <div class="running-tasks-section">

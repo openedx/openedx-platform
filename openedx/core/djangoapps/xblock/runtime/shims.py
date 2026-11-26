@@ -238,7 +238,6 @@ class RuntimeShim:
         # TODO: Refactor capa to access this directly, don't bother the runtime. Then remove it from here.
         return {
             'interface': None,
-            'construct_callback': None,
             'default_queuename': None,
             'waittime': 5,  # seconds; should come from settings.XQUEUE_WAITTIME_BETWEEN_REQUESTS
         }

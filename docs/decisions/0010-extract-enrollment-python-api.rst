@@ -31,7 +31,8 @@ We are not changing the POST handler because it serves various use cases and par
 performs authorization checks on request object, none of which are needed and would require careful
 and rigorous testing of various enrollment flows, and also introduce risk of regressions if done in a single round of work.
 
-We will add a new function to the `enterprise_support` package in edx-platform to achieve this.
+We will add a new function to the `enterprise_support` package (since moved out of edx-platform
+and into edx-enterprise as `enterprise.platform_support`) to achieve this.
 
 A few other features of the endpoint are also not needed in order to obtain the functionality needed
 to replace the existing POST call:

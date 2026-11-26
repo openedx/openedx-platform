@@ -86,7 +86,7 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 	@# independent of the root project's dependency graph) before exporting any
 	@# compat file below, so a failure in one halts the whole target before
 	@# anything downstream of it is (re)generated.
-	@for d in requirements/edx-sandbox scripts/xblock scripts/user_retirement scripts/structures_pruning; do \
+	@for d in scripts/xblock scripts/user_retirement scripts/structures_pruning; do \
 		echo ; \
 		echo "== $$d ===============================" ; \
 		uv run --no-project --isolated --with edx-lint edx_lint write_uv_constraints $$d/pyproject.toml && \
@@ -126,13 +126,6 @@ compile-requirements: ## Regenerate uv.lock for the root project and all uv sub-
 		uv export --frozen --no-hashes --group development --group ci --no-emit-project; \
 	} > requirements/edx/development.txt
 
-	@# requirements/edx-sandbox, scripts/xblock: single compat export, no dependency-groups.
-	@{ \
-		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
-		echo "# Compatibility export for anyone still 'pip install -r requirements/edx-sandbox/base.txt'"; \
-		echo "# directly instead of using uv. Source of truth: requirements/edx-sandbox/pyproject.toml / uv.lock."; \
-		(cd requirements/edx-sandbox && uv export --frozen --no-hashes --no-emit-project); \
-	} > requirements/edx-sandbox/base.txt
 	@{ \
 		echo "# GENERATED FILE, DO NOT EDIT DIRECTLY."; \
 		echo "# Compatibility export for anyone still 'pip install -r scripts/xblock/requirements.txt'"; \

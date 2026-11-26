@@ -20,7 +20,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
  </div>
 
-%if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+%if settings.ENABLE_GRADE_DOWNLOADS:
   <div class="reports-download-container action-type-container">
     <hr>
     <h3 class="hd hd-3">${_("Reports")}</h3>
@@ -55,7 +55,7 @@ from openedx.core.djangolib.markup import HTML, Text
     %endif
 
     <p>${_("Select a problem to generate a CSV file that lists all student answers to the problem. You also select a section or chapter to include results of all problems in that section or chapter.")}</p>
-    <% max_entries = settings.FEATURES.get('MAX_PROBLEM_RESPONSES_COUNT') %>
+    <% max_entries = settings.MAX_PROBLEM_RESPONSES_COUNT %>
     %if max_entries is not None:
       <p>
         <strong>${_("NOTE")}: </strong>
@@ -96,7 +96,7 @@ from openedx.core.djangolib.markup import HTML, Text
   %endif
   <div class="data-display-table profile-data-display-table" id="data-student-profiles-table"></div>
 
-  %if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+  %if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
     <p>${_("Click to generate a CSV grade report for all currently enrolled students.")}</p>
     <p>
       <input type="button" name="calculate-grades-csv" class="async-report-btn" value="${_("Generate Grade Report")}" data-endpoint="${ section_data['calculate_grades_csv_url'] }"/>
@@ -120,7 +120,7 @@ from openedx.core.djangolib.markup import HTML, Text
       ${_("The reports listed below are available for download, identified by UTC date and time of generation.")}
     </p>
 
-  %if settings.FEATURES.get('ENABLE_ASYNC_ANSWER_DISTRIBUTION'):
+  %if settings.ENABLE_ASYNC_ANSWER_DISTRIBUTION:
     <p>
       ${_("The answer distribution report listed below is generated periodically by an automated background process. The report is cumulative, so answers submitted after the process starts are included in a subsequent report. The report is generated several times per day.")}
     </p>
@@ -142,7 +142,7 @@ from openedx.core.djangolib.markup import HTML, Text
   </div>
 %endif
 
-%if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+%if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
   <div class="running-tasks-container action-type-container">
     <hr>
     <h3 class="hd hd-3">${_("Pending Tasks")}</h3>

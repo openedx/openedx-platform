@@ -7,7 +7,7 @@ from urllib.parse import quote
 import ddt
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_authz.constants.roles import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
+from openedx_authz.authz import COURSE_ADMIN, COURSE_AUDITOR, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from xblock.core import XBlock
 from xblock.utils.studio_editable import NestedXBlockSpec, StudioContainerWithNestedXBlocksMixin

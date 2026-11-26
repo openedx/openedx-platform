@@ -7,9 +7,11 @@ get_expected_duration: return the expected duration of a course (absent any user
 from datetime import timedelta
 
 from django.conf import settings
+from edx_when.api import Assignment
 
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.utils import get_course_run_details
+from xmodule.block_metadata_utils import display_name_with_default  # pylint: disable=wrong-import-order
 
 MIN_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MIN_WEEKS)
 MAX_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MAX_WEEKS)
@@ -21,6 +23,38 @@ def _catalog_integration_enabled():
     """
     catalog_integration = CatalogIntegration.current()
     return catalog_integration.is_enabled()
+
+
+def get_subsection_assignments(course):
+    """
+    Collect ``edx_when.api.Assignment`` instances for the graded subsections of a course.
+
+    Reads the course block tree directly, so the result does not depend on any user's
+    schedule or date overrides, nor on the block-structure cache. Only subsections with an
+    explicitly set ``due`` are returned: these are exactly the dates ``extract_dates``
+    stores for instructor-paced courses, so passing the same values to edx-when keeps the
+    existing date policies unchanged.
+
+    Arguments:
+        course: the published course block.
+
+    Returns:
+        list of ``edx_when.api.Assignment`` instances.
+    """
+    assignments = []
+    for section in course.get_children():
+        for subsection in section.get_children():
+            due_field = subsection.fields['due']
+            if not (subsection.graded and due_field.is_set_on(subsection)):
+                continue
+            title = display_name_with_default(subsection)
+            assignments.append(Assignment(
+                title=title,
+                date=due_field.read_from(subsection),
+                block_key=subsection.location,
+                subsection_name=title,
+            ))
+    return assignments
 
 
 def get_expected_duration(course_id):

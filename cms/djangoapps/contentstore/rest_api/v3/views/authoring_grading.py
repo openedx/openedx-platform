@@ -59,7 +59,7 @@ from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthenticat
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.mixins import StandardizedErrorMixin
 from edx_rest_framework_extensions.routers import COURSE_KEY_LOOKUP_REGEX
-from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS
+from openedx_authz.authz import COURSES_EDIT_GRADING_SETTINGS
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated

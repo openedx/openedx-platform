@@ -46,6 +46,9 @@ from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.courseware.masquerade import get_masquerade_role
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
+from lms.djangoapps.instructor.authz import constants as authz_constants
+from lms.djangoapps.instructor.authz import legacy as authz_legacy
+from lms.djangoapps.instructor.authz.api import user_has_any_instructor_permission
 from lms.djangoapps.instructor.constants import INSTRUCTOR_DASHBOARD_PLUGIN_VIEW_NAME
 from openedx.core.djangoapps.course_groups.cohorts import DEFAULT_COHORT_NAME, get_course_cohorts, is_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle_utils import legacy_discussion_experience_enabled
@@ -60,7 +63,7 @@ from xmodule.tabs import CourseTab  # pylint: disable=wrong-import-order
 
 from .. import permissions
 from ..toggles import data_download_v2_is_enabled, legacy_instructor_dashboard
-from .tools import get_units_with_due_date, title_or_url
+from .tools import get_units_with_due_date, proctored_exams_enabled, title_or_url
 
 log = logging.getLogger(__name__)
 
@@ -90,11 +93,23 @@ class InstructorDashboardTab(CourseTab):
     @classmethod
     def is_enabled(cls, course, user=None):
         """
-        Returns true if the specified user has staff access.
+        Returns true if the user can see the Instructor Dashboard.
+
+        With ``authz.enable_course_authoring`` enabled for the course, the tab is shown when
+        the user holds at least one of the Instructor Dashboard AuthZ permissions. Otherwise
+        the legacy ``VIEW_DASHBOARD`` permission is required.
         """
-        return bool(user and user.is_authenticated and
-                    get_masquerade_role(user, course.id) != 'student' and
-                    user.has_perm(permissions.VIEW_DASHBOARD, course.id))
+        return bool(
+            user
+            and user.is_authenticated
+            and get_masquerade_role(user, course.id) != "student"
+            and user_has_any_instructor_permission(
+                user,
+                authz_constants.INSTRUCTOR_DASHBOARD_PERMISSIONS,
+                course.id,
+                authz_legacy.bridgekeeper_check(permissions.VIEW_DASHBOARD),
+            )
+        )
 
 
 def show_analytics_dashboard_message(course_key):
@@ -659,10 +674,7 @@ def _section_data_download(course, access):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
 
-    show_proctored_report_button = (
-        settings.ENABLE_SPECIAL_EXAMS and
-        course.enable_proctored_exams
-    )
+    show_proctored_report_button = proctored_exams_enabled(course)
     section_key = 'data_download_2' if data_download_v2_is_enabled() else 'data_download'
     section_data = {
         'section_key': section_key,
