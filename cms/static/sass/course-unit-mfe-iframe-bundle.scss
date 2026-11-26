@@ -82,6 +82,9 @@ body,
         }
 
         .xblock-display-name {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
           font-size: 22px;
           line-height: 28px;
           font-weight: 700;
