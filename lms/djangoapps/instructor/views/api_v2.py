@@ -53,6 +53,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_authz.authz import (
     COURSES_MANAGE_LEARNER_EXTENSIONS,
+    COURSES_VIEW_LEARNER_COURSE_STATUS,
     COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 from pytz import UTC
@@ -2573,7 +2574,7 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
     ```
     """
     permission_classes = (IsAuthenticated, InstructorAuthzPermission)
-    authz_permissions = (COURSES_VIEW_LEARNER_EXTENSIONS.identifier,)
+    authz_permissions = (COURSES_VIEW_LEARNER_COURSE_STATUS.identifier,)
     permission_name = permissions.VIEW_DASHBOARD
 
     @extend_schema(

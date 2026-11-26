@@ -19,6 +19,7 @@ from openedx_authz.authz import (
     COURSE_STAFF,
     COURSES_MANAGE_LEARNER_EXTENSIONS,
     COURSES_VIEW_COURSE_INFO,
+    COURSES_VIEW_LEARNER_COURSE_STATUS,
     COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 from pytz import UTC
@@ -330,13 +331,16 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
 class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
     """
     AuthZ enforcement of the Date Extensions tab endpoints: ``GradedSubsectionsView``
-    ``UnitExtensionsView`` and ``LearnerView`` (``courses.view_learner_extensions``), and
-    ``ChangeDueDateView`` and the legacy ``ResetDueDate`` (``courses.manage_learner_extensions``).
+    ``UnitExtensionsView`` (``courses.view_learner_extensions``), ``ChangeDueDateView``
+    and the legacy ``ResetDueDate`` (``courses.manage_learner_extensions``), and
+    ``LearnerView``, the learner search of the tab (``courses.view_learner_course_status``).
     """
 
     # (url_name, "get" or "post")
-    VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"), ("learner_detail", "get"))
+    VIEW_ENDPOINTS = (("graded_subsections", "get"), ("unit_extensions", "get"))
     MANAGE_ENDPOINTS = (("change_due_date", "post"), ("reset_due_date", "post"))
+    SEARCH_ENDPOINTS = (("learner_detail", "get"),)
+    ALL_ENDPOINTS = (*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS, *SEARCH_ENDPOINTS)
 
     @classmethod
     def setUpClass(cls):
@@ -385,7 +389,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
             format="json",
         )
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_authz_course_admin_has_access(self, url_name, method):
         """A Course Admin can view and manage date extensions."""
@@ -395,7 +399,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_200_OK
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_authz_course_staff_has_access(self, url_name, method):
         """A Course Staff can view and manage date extensions."""
@@ -405,7 +409,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_200_OK
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_authz_user_without_permission_is_denied(self, url_name, method):
         """A user with no AuthZ role in the course is denied."""
@@ -415,7 +419,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_authz_denied_overrides_legacy_roles(self, url_name, method):
         """With the flag on, AuthZ denying a legacy instructor means no access."""
@@ -426,7 +430,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_legacy_instructor_keeps_access(self, url_name, method):
         """With the flag off, a legacy instructor keeps the access it always had."""
@@ -437,7 +441,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_200_OK
 
-    @ddt.data(*VIEW_ENDPOINTS, *MANAGE_ENDPOINTS)
+    @ddt.data(*ALL_ENDPOINTS)
     @ddt.unpack
     def test_legacy_student_is_denied(self, url_name, method):
         """With the flag off, an enrolled learner with no staff role is denied."""
@@ -455,7 +459,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
         """
         user = self.create_user_with_authz_role(role, self.course_key)
 
-        for url_name, method in (*self.VIEW_ENDPOINTS, *self.MANAGE_ENDPOINTS):
+        for url_name, method in self.ALL_ENDPOINTS:
             response = self._request(user, url_name, method)
 
             assert response.status_code == status.HTTP_403_FORBIDDEN, url_name
@@ -491,8 +495,21 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         self._assert_statuses(user, view_status, manage_status)
 
-    def _assert_statuses(self, user, view_status, manage_status):
-        """Assert the status ``user`` gets on the view endpoints and on the manage endpoint."""
+    def _assert_statuses(self, user, view_status, manage_status, search_status=None):
+        """
+        Assert the status ``user`` gets on the view endpoints and on the manage endpoints.
+
+        Args:
+            user (User): The user calling the endpoints.
+            view_status (int): The expected status of the view endpoints and, unless
+                ``search_status`` is given, of the learner search.
+            manage_status (int): The expected status of the manage endpoints.
+            search_status (int): Optional. The expected status of the learner search,
+                when it differs from ``view_status``.
+        """
+        for url_name, method in self.SEARCH_ENDPOINTS:
+            expected_status = view_status if search_status is None else search_status
+            assert self._request(user, url_name, method).status_code == expected_status, url_name
         for url_name, method in self.VIEW_ENDPOINTS:
             assert self._request(user, url_name, method).status_code == view_status, url_name
         for url_name, method in self.MANAGE_ENDPOINTS:
@@ -512,15 +529,30 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
             self._assert_statuses(user, status.HTTP_200_OK, status.HTTP_200_OK)
 
     @ddt.data(
-        # (permission the user holds, status of the view endpoints, status of the manage endpoint)
-        (COURSES_VIEW_LEARNER_EXTENSIONS, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN),
-        (COURSES_MANAGE_LEARNER_EXTENSIONS, status.HTTP_403_FORBIDDEN, status.HTTP_200_OK),
+        # (permission the user holds, status of the view, manage and search endpoints)
+        (COURSES_VIEW_LEARNER_EXTENSIONS, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN, status.HTTP_403_FORBIDDEN),
+        (COURSES_MANAGE_LEARNER_EXTENSIONS, status.HTTP_403_FORBIDDEN, status.HTTP_200_OK, status.HTTP_403_FORBIDDEN),
+        (
+            COURSES_VIEW_LEARNER_COURSE_STATUS,
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_200_OK,
+        ),
     )
     @ddt.unpack
-    def test_authz_permission_alone_grants_its_endpoints(self, permission, view_status, manage_status):
+    def test_authz_permission_alone_grants_its_endpoints(
+        self, permission, view_status, manage_status, search_status
+    ):
         """
-        With the flag on, a user with no legacy role at all that holds only one of the date
-        extensions permissions gets exactly the endpoints that permission covers.
+        With the flag on, a user with no legacy role at all that is allowed only one of the
+        permissions gets exactly the endpoints that permission covers. The dependencies
+        between permissions are resolved by openedx-authz, so they don't apply to this mock.
+
+        Args:
+            permission (PermissionData): The only permission the user is allowed.
+            view_status (int): The expected status of the view endpoints.
+            manage_status (int): The expected status of the manage endpoints.
+            search_status (int): The expected status of the learner search.
         """
         user = UserFactory()
 
@@ -528,7 +560,7 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
             f"{API}.authz_api.is_user_allowed",
             side_effect=lambda _user, perm, _scope: perm == permission.identifier,
         ):
-            self._assert_statuses(user, view_status, manage_status)
+            self._assert_statuses(user, view_status, manage_status, search_status)
 
     def test_legacy_does_not_query_authz(self):
         """With the flag off, AuthZ is not queried."""
