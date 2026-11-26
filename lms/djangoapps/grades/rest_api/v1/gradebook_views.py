@@ -253,6 +253,26 @@ def _has_ccx_gradebook_access(user, course_key):
     )
 
 
+def has_gradebook_api_access(user, course_key) -> bool:
+    """
+    Return whether `user` passes the access check of the Gradebook API for the course.
+
+    CCX courses follow `_has_ccx_gradebook_access`; any other course requires
+    course author access. It does not tell whether the Gradebook is enabled or
+    configured for the course.
+
+    Args:
+        user (User): The user to check.
+        course_key (CourseKey): The course to check. It may be a CCX course key.
+
+    Returns:
+        bool: True if the user passes the access check.
+    """
+    if is_ccx_course(course_key):
+        return bool(_has_ccx_gradebook_access(user, course_key))
+    return bool(has_course_author_access(user, course_key))
+
+
 def course_author_access_required(view):
     """
     Ensure the user making the API request has course author access to the given course.
@@ -272,11 +292,7 @@ def course_author_access_required(view):
         Calls the view function if has access, otherwise raises a 403.
         """
         course_key = CourseKey.from_string(course_id)
-        if is_ccx_course(course_key):
-            has_access = _has_ccx_gradebook_access(request.user, course_key)
-        else:
-            has_access = has_course_author_access(request.user, course_key)
-        if not has_access:
+        if not has_gradebook_api_access(request.user, course_key):
             raise DeveloperErrorViewMixin.api_error(
                 status_code=status.HTTP_403_FORBIDDEN,
                 developer_message='The requesting user does not have course author permissions.',

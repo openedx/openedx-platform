@@ -24,10 +24,11 @@ from openedx_authz.authz import (
     COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 
-from common.djangoapps.student.auth import has_course_author_access, has_studio_read_access
+from common.djangoapps.student.auth import has_studio_read_access
 from common.djangoapps.student.roles import GlobalStaff
 from lms.djangoapps.courseware.access import administrative_accesses_to_course_for_user, has_access
 from lms.djangoapps.discussion.django_comment_client.utils import get_user_role_names, has_forum_access
+from lms.djangoapps.grades.rest_api.v1.gradebook_views import has_gradebook_api_access
 from lms.djangoapps.instructor import permissions
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
@@ -133,16 +134,17 @@ def has_gradebook_access(user: AbstractUser, course_key: CourseKey) -> bool:
     """
     Check the legacy access to the gradebook.
 
-    It follows the same rule as the gradebook API (``course_author_access_required``).
+    It is the access check of the gradebook API.
 
     Args:
         user (AbstractUser): The user to check.
         course_key (CourseKey): The course to check.
 
     Returns:
-        bool: True with course author (Studio write) access.
+        bool: True with course author (Studio write) access. CCX courses follow
+        the CCX rule of the gradebook API.
     """
-    return bool(has_course_author_access(user, course_key))
+    return has_gradebook_api_access(user, course_key)
 
 
 def has_grading_settings_access(user: AbstractUser, course_key: CourseKey) -> bool:
