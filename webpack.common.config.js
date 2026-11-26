@@ -537,18 +537,6 @@ module.exports = Merge.merge({
                     ]
                 },
                 {
-                    test: /d3.min/,
-                    use: [
-                        'babel-loader',
-                        {
-                            loader: 'exports-loader',
-                            options: {
-                                d3: true
-                            }
-                        }
-                    ]
-                },
-                {
                     test: /logger/,
                     use: [
                         {

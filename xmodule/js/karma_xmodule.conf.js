@@ -43,7 +43,6 @@ var options = {
         {pattern: 'common_static/js/test/i18n.js', included: true},
         {pattern: 'common_static/common/js/vendor/hls.js', included: true},
         {pattern: 'public/js/split_test_staff.js', included: true},
-        {pattern: 'src/word_cloud/d3.min.js', included: true},
 
         // Load test utilities
         {pattern: 'common_static/js/vendor/jasmine-imagediff.js', included: true},
