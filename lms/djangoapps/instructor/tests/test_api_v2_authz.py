@@ -451,6 +451,23 @@ class DateExtensionsAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCas
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    @ddt.data(True, False)
+    def test_denial_uses_the_standard_error_format(self, authz_enabled):
+        """
+        With the flag on or off, every endpoint of the tab denies access with the
+        ``permission_denied`` error code.
+
+        Args:
+            authz_enabled (bool): Whether the AuthZ flag is enabled for the course.
+        """
+        self.set_authz_enabled(authz_enabled)
+
+        for url_name, method in self.ALL_ENDPOINTS:
+            response = self._request(self.learner, url_name, method)
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN, url_name
+            assert response.data["error_code"] == "permission_denied", url_name
+
     @ddt.data(COURSE_AUDITOR.external_key, COURSE_EDITOR.external_key)
     def test_authz_roles_without_legacy_equivalent_are_denied(self, role):
         """

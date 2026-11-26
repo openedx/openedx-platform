@@ -489,7 +489,7 @@ class InstructorTaskListView(DeveloperErrorViewMixin, APIView):
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
-class ChangeDueDateView(APIView):
+class ChangeDueDateView(DeveloperErrorViewMixin, APIView):
     """
     Grants a due date extension to a student for a particular unit.
     this version works with a new payload that is JSON and more up to date.
@@ -531,7 +531,7 @@ class ChangeDueDateView(APIView):
                        )})
 
 
-class GradedSubsectionsView(APIView):
+class GradedSubsectionsView(DeveloperErrorViewMixin, APIView):
     """View to retrieve graded subsections with due dates"""
     permission_classes = (IsAuthenticated, InstructorAuthzPermission)
     authz_permissions = (COURSES_VIEW_LEARNER_EXTENSIONS.identifier,)
@@ -591,7 +591,7 @@ class UnitDueDateExtension:
         )
 
 
-class UnitExtensionsView(ListAPIView):
+class UnitExtensionsView(DeveloperErrorViewMixin, ListAPIView):
     """
     Retrieve a paginated list of due date extensions for units in a course.
 

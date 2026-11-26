@@ -3360,7 +3360,7 @@ class ChangeDueDate(APIView):
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
-class ResetDueDate(APIView):
+class ResetDueDate(DeveloperErrorViewMixin, APIView):
     """
     Rescinds a due date extension for a student on a particular unit.
     """
