@@ -4,10 +4,12 @@ Tests for Content Groups REST API v2.
 from unittest.mock import patch
 
 from django.test import override_settings
+from openedx_authz.authz import COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import InstructorFactory, UserFactory
+from lms.djangoapps.instructor.authz.tests.mixins import InstructorAuthzTestMixin
 from openedx.core.djangoapps.course_groups.constants import COHORT_SCHEME
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -41,7 +43,7 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         return f'{TEST_STUDIO_BASE_URL}/course/{course_id}/group_configurations'
 
     @override_settings(MFE_CONFIG={"STUDIO_BASE_URL": TEST_STUDIO_BASE_URL})
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_list_content_groups_returns_json(self, mock_perm):
         """Verify endpoint returns JSON with correct structure"""
         mock_perm.return_value = True
@@ -83,7 +85,7 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         expected_studio_url = self._get_expected_studio_url()
         self.assertEqual(data['studio_content_groups_link'], expected_studio_url)  # noqa: PT009
 
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_list_content_groups_filters_non_cohort_partitions(self, mock_perm):
         """Verify only groups from cohort-scheme partitions are returned"""
         mock_perm.return_value = True
@@ -119,7 +121,7 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         self.assertEqual(groups[0]['name'], 'Group A')  # noqa: PT009
 
     @override_settings(MFE_CONFIG={"STUDIO_BASE_URL": TEST_STUDIO_BASE_URL})
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_list_returns_empty_groups_when_none_exist(self, mock_perm):
         """Verify empty groups array and null id when no content groups exist"""
         mock_perm.return_value = True
@@ -142,7 +144,7 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         response = client.get(self._get_url())
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])  # noqa: PT009
 
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_list_invalid_course_key_returns_400(self, mock_perm):
         """Verify invalid course key returns 400"""
         mock_perm.return_value = True
@@ -182,7 +184,7 @@ class GroupConfigurationDetailViewTestCase(ModuleStoreTestCase):
         """Helper to get detail URL"""
         return f'/api/cohorts/v2/courses/{self.course.id}/group_configurations/{configuration_id}'
 
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_get_configuration_details(self, mock_perm):
         """Verify GET returns full configuration details"""
         mock_perm.return_value = True
@@ -214,7 +216,7 @@ class ContentGroupsPermissionsTestCase(ModuleStoreTestCase):
         """Helper to get list URL"""
         return f'/api/cohorts/v2/courses/{self.course.id}/group_configurations'
 
-    @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
+    @patch('lms.djangoapps.instructor.authz.permissions.InstructorAuthzPermission.has_permission')
     def test_staff_user_can_access(self, mock_perm):
         """Verify staff users can access the endpoint"""
         mock_perm.return_value = True
@@ -230,3 +232,62 @@ class ContentGroupsPermissionsTestCase(ModuleStoreTestCase):
         client = APIClient()
         response = client.get(self._get_url())
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])  # noqa: PT009
+
+
+@skip_unless_lms
+class ContentGroupsAuthzTestCase(InstructorAuthzTestMixin, ModuleStoreTestCase):
+    """
+    AuthZ enforcement (courses.view_cohorts) for the content groups endpoints.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.course.user_partitions = [
+            UserPartition(
+                id=50,
+                name='Content Groups',
+                description='Test description',
+                groups=[Group(id=1, name='Content Group A')],
+                scheme_id=COHORT_SCHEME,
+            )
+        ]
+        self.update_course(self.course, UserFactory().id)
+        self.client = APIClient()
+        self.urls = (
+            f'/api/cohorts/v2/courses/{self.course.id}/group_configurations',
+            f'/api/cohorts/v2/courses/{self.course.id}/group_configurations/50',
+        )
+
+    def _assert_status(self, user, expected_status):
+        self.client.force_authenticate(user=user)
+        for url in self.urls:
+            assert self.client.get(url).status_code == expected_status, url
+
+    def test_course_staff_can_access(self):
+        """A Course Staff holds courses.view_cohorts."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course.id)
+        self._assert_status(user, status.HTTP_200_OK)
+
+    def test_authz_role_without_legacy_equivalent_can_access(self):
+        """With the flag on, AuthZ alone decides: no legacy role (or compat projection) is needed."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course.id)
+        with patch(
+            "common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user",
+            return_value=set(),
+        ):
+            self._assert_status(user, status.HTTP_200_OK)
+
+    def test_user_without_permission_is_denied(self):
+        """A user with no AuthZ role in the course is denied."""
+        self._assert_status(UserFactory(), status.HTTP_403_FORBIDDEN)
+
+    def test_legacy_instructor_keeps_access_with_flag_off(self):
+        """With the flag off, the legacy instructor.dashboard rule applies."""
+        self.set_authz_enabled(False)
+        self._assert_status(InstructorFactory(course_key=self.course.id), status.HTTP_200_OK)
+
+    def test_legacy_student_is_denied_with_flag_off(self):
+        """With the flag off, a user without a legacy role is denied."""
+        self.set_authz_enabled(False)
+        self._assert_status(UserFactory(), status.HTTP_403_FORBIDDEN)

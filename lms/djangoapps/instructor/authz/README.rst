@@ -28,7 +28,7 @@ Every decision is logged with the path that resolved it (``authz`` or ``legacy``
 Migrating a view
 ****************
 
-Replace ``InstructorPermission`` by ``InstructorAuthzPermission`` and declare the AuthZ permission next to the legacy one. ``course_id`` must be a URL kwarg: the permission class reads it from ``view.kwargs`` and returns a ``404`` if it is not a valid course key. Pick the case that matches the view:
+Replace ``InstructorPermission`` by ``InstructorAuthzPermission`` and declare the AuthZ permission next to the legacy one. ``course_id`` must be a URL kwarg: the permission class reads it from ``view.kwargs`` and returns a ``404`` if it is not a valid course key. If the view's URL pattern names that kwarg something else (e.g. the cohorts API's ``course_key_string``), set ``course_id_url_kwarg`` on the view to match. Pick the case that matches the view:
 
 Case 1: Same permissions for every HTTP method
 ==============================================
