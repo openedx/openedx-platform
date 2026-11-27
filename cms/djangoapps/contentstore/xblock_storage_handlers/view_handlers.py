@@ -1206,20 +1206,23 @@ def _get_gating_info(course, xblock):
     info = {}
     if xblock.category == "sequential" and course.enable_subsection_gating:
         if not hasattr(course, "gating_prerequisites"):
-            # Cache gating prerequisites on course block so that we are not
-            # hitting the database for every xblock in the course
+            # Cache gating information on the course block so that we query it
+            # once for the course, and not once for every subsection.
             course.gating_prerequisites = gating_api.get_prerequisites(course.id)
-        info["is_prereq"] = gating_api.is_prerequisite(course.id, xblock.location)
+            course.gating_prerequisite_content_keys = gating_api.get_prerequisite_content_keys(course.id)
+            course.gating_required_content = gating_api.get_all_required_content(course.id)
+        usage_key_str = str(xblock.location)
+        info["is_prereq"] = usage_key_str in course.gating_prerequisite_content_keys
         info["prereqs"] = [
             p
             for p in course.gating_prerequisites
-            if str(xblock.location) not in p["namespace"]
+            if usage_key_str not in p["namespace"]
         ]
         (
             prereq,
             prereq_min_score,
             prereq_min_completion,
-        ) = gating_api.get_required_content(course.id, xblock.location)
+        ) = course.gating_required_content.get(usage_key_str, (None, None, None))
         info["prereq"] = prereq
         info["prereq_min_score"] = prereq_min_score
         info["prereq_min_completion"] = prereq_min_completion

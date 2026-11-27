@@ -279,13 +279,67 @@ def get_required_content(course_key, gated_content_key):
     """
     milestone = get_gating_milestone(course_key, gated_content_key, 'requires')
     if milestone:
-        return (
-            _get_gating_block_id(milestone),
-            milestone.get('requirements', {}).get('min_score', None),
-            milestone.get('requirements', {}).get('min_completion', None),
-        )
+        return _required_content_from_milestone(milestone)
     else:
         return None, None, None
+
+
+def get_prerequisite_content_keys(course_key):
+    """
+    Returns the content usage keys, as strings, of everything in the course that
+    is a prerequisite.
+
+    This is the bulk version of is_prerequisite(). Use it when checking many
+    pieces of content in the same course, since it makes one query for the
+    whole course instead of one per piece of content.
+
+    Arguments:
+        course_key (str|CourseKey): The course key
+
+    Returns:
+        set: The content usage key strings for which is_prerequisite() would return True
+    """
+    return {
+        milestone['content_id']
+        for milestone in find_gating_milestones(course_key, relationship='fulfills')
+    }
+
+
+def get_all_required_content(course_key):
+    """
+    Returns the prerequisite information for all gated content in the course.
+
+    This is the bulk version of get_required_content(). Use it when checking
+    many pieces of content in the same course, since it makes one query for
+    the whole course instead of one per piece of content.
+
+    Arguments:
+        course_key (str|CourseKey): The course key
+
+    Returns:
+        dict: Maps each gated content usage key string to the same tuple that
+        get_required_content() returns for it: the prerequisite content usage
+        key, minimum score and minimum completion percentage. Content that
+        isn't gated is not included.
+    """
+    required_content = {}
+    for milestone in find_gating_milestones(course_key, relationship='requires'):
+        # get_required_content() uses the first milestone it finds, so do the same.
+        if milestone['content_id'] not in required_content:
+            required_content[milestone['content_id']] = _required_content_from_milestone(milestone)
+    return required_content
+
+
+def _required_content_from_milestone(milestone):
+    """
+    Returns the prerequisite content usage key, minimum score and minimum
+    completion percentage for a gating milestone with a 'requires' relationship.
+    """
+    return (
+        _get_gating_block_id(milestone),
+        milestone.get('requirements', {}).get('min_score', None),
+        milestone.get('requirements', {}).get('min_completion', None),
+    )
 
 
 @gating_enabled(default=[])
