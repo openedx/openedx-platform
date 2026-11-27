@@ -2,6 +2,7 @@
 Unit tests for the vertical block.
 """
 
+from unittest.mock import patch
 from urllib.parse import quote
 
 import ddt
@@ -310,6 +311,66 @@ class ContainerHandlerViewAuthzTest(CourseAuthoringAuthzTestMixin, BaseXBlockCon
         response = self.client.get(self.get_reverse_url(self.vertical.location))
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@ddt.ddt
+class ContainerChildrenViewAuthzTest(CourseAuthoringAuthzTestMixin, BaseXBlockContainer):
+    """
+    Regression tests for ContainerChildrenView, which did not check course
+    access, so any authenticated user could list a container's children.
+    """
+
+    view_name = "container_children"
+
+    @ddt.data(
+        COURSE_STAFF.external_key,
+        COURSE_ADMIN.external_key,
+        COURSE_AUDITOR.external_key,
+        COURSE_EDITOR.external_key,
+    )
+    def test_course_roles_can_view_children(self, role_key):
+        """
+        Users holding any course role with view access can list the container's children.
+        """
+        role_user = UserFactory(password=self.password)
+        self.add_user_to_role_in_course(role_user, role_key, self.course.id)
+
+        self.client.login(username=role_user.username, password=self.password)
+        response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        """
+        An authenticated user with no access to the course receives a 403.
+        """
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_permission_check_runs_before_get_xblock(self):
+        """
+        The permission check runs before get_xblock, which may create course_info blocks on GET.
+        """
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        with patch("cms.djangoapps.contentstore.rest_api.v1.views.course_index.get_xblock") as mock_get_xblock:
+            response = self.client.get(self.get_reverse_url(self.vertical.location))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        mock_get_xblock.assert_not_called()
+
+    def test_user_without_role_then_added_can_access(self):
+        """
+        A user denied access gets a 200 once they are assigned a course role.
+        """
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        url = self.get_reverse_url(self.vertical.location)
+        assert self.client.get(url).status_code == status.HTTP_403_FORBIDDEN
+
+        self.add_user_to_role_in_course(self.unauthorized_user, COURSE_EDITOR.external_key, self.course.id)
+
+        assert self.client.get(url).status_code == status.HTTP_200_OK
 
 
 class ContainerVerticalViewTest(BaseXBlockContainer):
