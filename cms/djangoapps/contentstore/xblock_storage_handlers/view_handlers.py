@@ -27,6 +27,7 @@ from edx_proctoring.api import (
 )
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
+from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.authz import (
@@ -50,6 +51,7 @@ from cms.lib.xblock.upstream_sync_block import sync_from_upstream_block
 from cms.lib.xblock.upstream_sync_container import sync_from_upstream_container
 from common.djangoapps.static_replace import replace_static_urls
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
+from common.djangoapps.student.roles import enable_authz_course_authoring
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 from common.djangoapps.util.proctoring import show_review_rules
@@ -257,6 +259,33 @@ def _check_xblock_permission(request, usage_key, category=None):
     return permission
 
 
+def _check_duplicate_source_view_access(user: User, source_usage_key: UsageKey) -> None:
+    """
+    Check that the user can view the course (or v1 library) a block is duplicated from.
+
+    Uses the authz ``courses.view_course`` permission when authz is enabled for the source course, and the
+    legacy ``has_studio_read_access`` check otherwise (including v1 libraries, which authz does not cover).
+
+    Args:
+        user (User): The user requesting the duplication.
+        source_usage_key (UsageKey): The usage key of the block being duplicated.
+
+    Raises:
+        PermissionDenied: If the user cannot view the source course or library.
+    """
+    source_course_key = source_usage_key.course_key
+    use_authz = (
+        not isinstance(source_usage_key, LibraryUsageLocator)
+        and enable_authz_course_authoring(source_course_key)
+    )
+    if use_authz:
+        allowed = authz_api.is_user_allowed(user.username, COURSES_VIEW_COURSE.identifier, str(source_course_key))
+    else:
+        allowed = has_studio_read_access(user, source_course_key)
+    if not allowed:
+        raise PermissionDenied()
+
+
 def handle_xblock(request, usage_key_string=None):
     """
     Service method with all business logic for handling xblock requests.
@@ -355,14 +384,10 @@ def _duplicate_xblock(request):
     duplicate_source_usage_key = usage_key_with_run(
         request.json["duplicate_source_locator"]
     )
-    source_course = duplicate_source_usage_key.course_key
 
-    # Check authz permission for destination
-    permission = _check_xblock_permission(request, parent_usage_key)
-    # Legacy path also requires read access on the source course
-    if permission is None:
-        if not has_studio_read_access(request.user, source_course):
-            raise PermissionDenied()
+    # Write access on the destination, and view access on the source.
+    _check_xblock_permission(request, parent_usage_key)
+    _check_duplicate_source_view_access(request.user, duplicate_source_usage_key)
 
     # Libraries have a maximum component limit enforced on them
     if isinstance(

@@ -1121,11 +1121,17 @@ def duplicate_block(
     blocks.
     """
     store = modulestore()
-    with store.bulk_operations(duplicate_source_usage_key.course_key):
+
+    source_course_key = duplicate_source_usage_key.course_key
+    dest_course_key = dest_usage_key.course_key if dest_usage_key else parent_usage_key.course_key
+
+    with store.bulk_operations(source_course_key), store.bulk_operations(dest_course_key):
         source_item = store.get_item(duplicate_source_usage_key)
         if not dest_usage_key:
-            # Change the blockID to be unique.
-            dest_usage_key = source_item.location.replace(name=uuid4().hex)
+            # Create the copy in the same course (or library) as its parent, with a unique block ID. Building the key
+            # from the source location would create the block in the source course and then attach it to a parent
+            # living somewhere else, leaving a child that does not exist in the parent's structure.
+            dest_usage_key = dest_course_key.make_usage_key(source_item.location.block_type, uuid4().hex)
 
         category = dest_usage_key.block_type
 
