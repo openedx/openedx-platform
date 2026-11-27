@@ -17,7 +17,9 @@ from uuid import uuid4
 import boto3
 import requests
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, HttpResponseNotFound, StreamingHttpResponse
 from django.shortcuts import redirect
 from django.utils.translation import gettext as _
@@ -40,12 +42,20 @@ from edxval.api import (
 )
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.authz import (
+    COURSES_CREATE_FILES,
+    COURSES_DELETE_FILES,
+    COURSES_EDIT_FILES,
+    COURSES_VIEW_FILES,
+)
 from pytz import UTC
 from rest_framework import status as rest_status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE, ENABLE_DEVSTACK_VIDEO_UPLOADS
@@ -56,7 +66,6 @@ from .models import VideoUploadConfig
 from .toggles import use_mock_video_uploads
 from .utils import get_video_uploads_url
 from .video_utils import validate_video_image
-from .views.course import get_course_and_check_access
 
 LOGGER = logging.getLogger(__name__)
 
@@ -198,7 +207,17 @@ def handle_videos(request, course_key_string, edx_video_id=None):
     DELETE
         soft deletes a video for particular course
     """
-    course = get_and_validate_course(course_key_string, request.user)
+    if request.method == "GET":
+        permission = COURSES_VIEW_FILES.identifier
+    elif request.method == "DELETE":
+        permission = COURSES_DELETE_FILES.identifier
+    elif _is_pagination_context_update_request(request):
+        # Only stores a display preference in the session; it modifies no video.
+        permission = COURSES_VIEW_FILES.identifier
+    else:
+        permission = COURSES_CREATE_FILES.identifier
+
+    course = get_and_validate_course(course_key_string, request.user, permission)
 
     if (not course and not use_mock_video_uploads()):
         return HttpResponseNotFound()
@@ -383,7 +402,7 @@ def handle_generate_video_upload_link(request, course_key_string):
     API for creating a video upload.  Returns an edx_video_id and a presigned URL that can be used
     to upload the video to AWS S3.
     """
-    course = get_and_validate_course(course_key_string, request.user)
+    course = get_and_validate_course(course_key_string, request.user, COURSES_CREATE_FILES.identifier)
     if not course:
         return Response(data='Course Not Found', status=rest_status.HTTP_400_BAD_REQUEST)
 
@@ -393,6 +412,9 @@ def handle_generate_video_upload_link(request, course_key_string):
 
 def handle_video_images(request, course_key_string, edx_video_id=None):
     """Function to handle image files"""
+    enforce_video_permission(
+        request.user, CourseKey.from_string(course_key_string), COURSES_CREATE_FILES.identifier
+    )
 
     # respond with a 404 if image upload is not enabled.
     if not VIDEO_IMAGE_UPLOAD_ENABLED.is_enabled() and not use_mock_video_uploads():
@@ -527,6 +549,7 @@ def handle_transcript_preferences(request, course_key_string):
     Returns: valid json response or 400 with error message
     """
     course_key = CourseKey.from_string(course_key_string)
+    enforce_video_permission(request.user, course_key, COURSES_EDIT_FILES.identifier)
     is_video_transcript_enabled = VideoTranscriptEnabledFlag.feature_enabled(course_key)
     if not is_video_transcript_enabled:
         return HttpResponseNotFound()
@@ -631,16 +654,55 @@ def get_video_encodings_download(request, course_key_string):
     return FileResponse(buffer, as_attachment=True, filename=filename, content_type="text/csv")
 
 
-def get_and_validate_course(course_key_string, user):
+def enforce_video_permission(
+    user: AbstractBaseUser,
+    course_key: CourseKey,
+    authz_permission: str = COURSES_VIEW_FILES.identifier,
+) -> None:
+    """
+    Raise ``PermissionDenied`` unless ``user`` may perform a video operation in the course.
+
+    When AuthZ is disabled for the course, the legacy Studio read access check applies,
+    exactly as it did before AuthZ.
+
+    Args:
+        user (AbstractBaseUser): User performing the operation.
+        course_key (CourseKey): Key of the course the operation applies to.
+        authz_permission (str): AuthZ permission identifier the operation requires.
+            Defaults to viewing the course's files.
+
+    Raises:
+        PermissionDenied: If the user lacks the permission.
+    """
+    if not user_has_course_permission(user, authz_permission, course_key, LegacyAuthoringPermission.READ):
+        raise PermissionDenied()
+
+
+def get_and_validate_course(
+    course_key_string: str,
+    user: AbstractBaseUser,
+    authz_permission: str = COURSES_VIEW_FILES.identifier,
+):
     """
     Given a course key, return the course if it exists, the given user has
-    access to it, and it is properly configured for video uploads
+    access to it, and it is properly configured for video uploads.
+
+    Args:
+        course_key_string (str): String form of the course key.
+        user (AbstractBaseUser): User performing the operation.
+        authz_permission (str): AuthZ permission identifier the operation requires.
+            See ``enforce_video_permission``.
+
+    Returns:
+        CourseBlock | None: The course, or None if it does not exist or is not
+            configured for video uploads.
+
+    Raises:
+        PermissionDenied: If the user lacks the required permission.
     """
     course_key = CourseKey.from_string(course_key_string)
-
-    # For now, assume all studio users that have access to the course can upload videos.
-    # In the future, we plan to add a new org-level role for video uploaders.
-    course = get_course_and_check_access(course_key, user)
+    enforce_video_permission(user, course_key, authz_permission)
+    course = modulestore().get_course(course_key, depth=0)
 
     if (
         settings.ENABLE_VIDEO_UPLOAD_PIPELINE and
@@ -1038,15 +1100,30 @@ def _update_pagination_context(request):
     return JsonResponse()
 
 
-def get_course_youtube_edx_video_ids(course_id):
+def get_course_youtube_edx_video_ids(course_id: str, user: AbstractBaseUser | None = None) -> JsonResponse:
     """
-    Get a list of youtube edx_video_ids
+    Get a list of youtube edx_video_ids.
+
+    When ``user`` is given, they must be able to view the course's files.
+
+    Args:
+        course_id (str): String form of the course key.
+        user (AbstractBaseUser | None): User making the request. If None, no
+            permission check is done.
+
+    Returns:
+        JsonResponse: The YouTube edx_video_ids of the course, or an error response.
+
+    Raises:
+        PermissionDenied: If ``user`` cannot view the course's files.
     """
     invalid_key_error_msg = "Invalid course_key: '%s'." % course_id  # noqa: UP031
     unexpected_error_msg = "Unexpected error occurred for course_id: '%s'." % course_id  # noqa: UP031
 
     try:  # pylint: disable=too-many-nested-blocks
         course_key = CourseKey.from_string(course_id)
+        if user is not None:
+            enforce_video_permission(user, course_key)
         course = modulestore().get_course(course_key)
 
         blocks = []

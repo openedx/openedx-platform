@@ -1691,7 +1691,7 @@ class CourseYoutubeEdxVideoIds(ModuleStoreTestCase):
         self.course = CourseFactory.create()
         self.course_with_no_youtube_videos = CourseFactory.create()
         self.store = modulestore()
-        self.user = UserFactory()
+        self.user = UserFactory(is_staff=True)
         self.client.login(username=self.user.username, password='Password1234')
 
     def get_url_for_course_key(self, course_key, kwargs=None):
