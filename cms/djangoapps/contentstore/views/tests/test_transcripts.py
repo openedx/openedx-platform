@@ -17,6 +17,7 @@ from edxval.api import create_video
 from opaque_keys.edx.keys import UsageKey
 from openedx_authz.authz import COURSE_AUDITOR, COURSE_EDITOR
 from organizations.tests.factories import OrganizationFactory
+from xblock_video import VideoBlock  # pylint: disable=wrong-import-order
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
@@ -34,7 +35,6 @@ from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-
 from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
-from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
