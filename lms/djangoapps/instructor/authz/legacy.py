@@ -68,8 +68,7 @@ def has_course_team_access(user: AbstractUser, course_key: CourseKey) -> bool:
     """
     Check the access to the course team.
 
-    It follows the same rule as ``CourseTeamPermission``
-    (``lms.djangoapps.instructor.permissions``).
+    It is the pre-AuthZ rule of the course team endpoints.
 
     Args:
         user (AbstractUser): The user to check.
