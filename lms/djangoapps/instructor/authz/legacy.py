@@ -21,6 +21,7 @@ from openedx_authz.authz import (
     COURSES_VIEW_ENROLLMENTS,
     COURSES_VIEW_GRADEBOOK,
     COURSES_VIEW_GRADING_SETTINGS,
+    COURSES_VIEW_LEARNER_COURSE_STATUS,
     COURSES_VIEW_LEARNER_EXTENSIONS,
 )
 
@@ -195,6 +196,7 @@ LEGACY_PERMISSION_CHECKS = {
     COURSES_VIEW_GRADEBOOK.identifier: has_gradebook_access,
     COURSES_VIEW_GRADING_SETTINGS.identifier: has_grading_settings_access,
     COURSES_MANAGE_LEARNER_GRADING.identifier: bridgekeeper_check(permissions.OVERRIDE_GRADES),
+    COURSES_VIEW_LEARNER_COURSE_STATUS.identifier: bridgekeeper_check(permissions.VIEW_DASHBOARD),
     COURSES_VIEW_LEARNER_EXTENSIONS.identifier: bridgekeeper_check(permissions.VIEW_DASHBOARD),
     COURSES_MANAGE_LEARNER_EXTENSIONS.identifier: bridgekeeper_check(permissions.GIVE_STUDENT_EXTENSION),
     COURSES_VIEW_COHORTS.identifier: has_cohort_view_access,

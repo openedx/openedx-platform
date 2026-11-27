@@ -290,6 +290,13 @@ constraint-dependencies = [
     "pytest<9.2.0",
     "lti-consumer-xblock==11.5.1",
 ]
+
+# TEMPORARY: install openedx-authz from openedx/openedx-authz#661 to get the
+# courses.view_learner_course_status permission. Remove this section (and re-run
+# `make compile-requirements`) once a release that includes it is on PyPI.
+[tool.uv.sources]
+openedx-authz = { git = "https://github.com/openedx/openedx-authz", rev = "8cfee04ff49359c6c4a292b85da423bf83f27fe6" }
+
 [tool.edx_lint]
 uv_constraints = [
     # Date: 2025-10-07

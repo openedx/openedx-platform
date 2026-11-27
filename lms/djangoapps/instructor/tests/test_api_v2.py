@@ -1122,13 +1122,25 @@ class GradedSubsectionsViewTest(SharedModuleStoreTestCase):
     def test_get_graded_subsections_nonexistent_course(self):
         """
         Test error handling for non-existent course.
+
+        The permission check does not load the course, so only a user that passes it
+        (global staff) reaches the view and gets the 404.
         """
-        self.client.force_authenticate(user=self.instructor)
+        self.client.force_authenticate(user=AdminFactory.create())
         nonexistent_course_id = 'course-v1:NonExistent+Course+2024'
         nonexistent_url = self._get_url(nonexistent_course_id)
         response = self.client.get(nonexistent_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+
+    def test_get_graded_subsections_nonexistent_course_without_access(self):
+        """
+        A user without access to a non-existent course gets 403, as for any other course.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url('course-v1:NonExistent+Course+2024'))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_get_graded_subsections_empty_course(self):
         """
@@ -1639,12 +1651,24 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
     def test_get_unit_extensions_nonexistent_course(self):
         """
         Test error handling for non-existent course.
+
+        The permission check does not load the course, so only a user that passes it
+        (global staff) reaches the view and gets the 404.
         """
-        self.client.force_authenticate(user=self.instructor)
+        self.client.force_authenticate(user=AdminFactory.create())
         nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
         response = self.client.get(self._get_url(course_id=nonexistent_course_id))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+
+    def test_get_unit_extensions_nonexistent_course_without_access(self):
+        """
+        A user without access to a non-existent course gets 403, as for any other course.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url(course_id='course-v1:edX+NonExistent+2024'))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_get_unit_extensions(self):
         """
