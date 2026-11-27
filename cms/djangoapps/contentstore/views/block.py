@@ -211,149 +211,153 @@ def xblock_view_handler(request, usage_key_string, view_name): # pylint: disable
 
     if "application/json" in accept_header:
         store = modulestore()
-        xblock = store.get_item(usage_key)
-        container_views = [
-            "container_preview",
-            "reorderable_container_child_preview",
-            "container_child_preview",
-        ]
+        # Rendering reads the course many times: the block, its parent, and the course again
+        # for each child. Inside one bulk operation, those reads share one copy of the course
+        # structure instead of each loading the whole structure again.
+        with store.bulk_operations(usage_key.course_key):
+            xblock = store.get_item(usage_key)
+            container_views = [
+                "container_preview",
+                "reorderable_container_child_preview",
+                "container_child_preview",
+            ]
 
-        # wrap the generated fragment in the xmodule_editor div so that the javascript
-        # can bind to it correctly
-        xblock.runtime.wrappers.append(
-            partial(
-                wrap_xblock,
-                "StudioRuntime",
-                usage_id_serializer=str,
-                request_token=request_token(request),
-            )
-        )
-
-        xblock.runtime.wrappers_asides.append(
-            partial(
-                wrap_xblock_aside,
-                "StudioRuntime",
-                usage_id_serializer=str,
-                request_token=request_token(request),
-                extra_classes=["wrapper-comp-plugins"],
-            )
-        )
-
-        if view_name in (STUDIO_VIEW, VISIBILITY_VIEW):
-            if view_name == STUDIO_VIEW:
-                load_services_for_studio(xblock.runtime, request.user)
-
-            try:
-                fragment = xblock.render(view_name)
-            # catch exceptions indiscriminately, since after this point they escape the
-            # dungeon and surface as uneditable, unsaveable, and undeletable
-            # component-goblins.
-            except Exception as exc:  # pylint: disable=broad-except
-                log.debug(
-                    "Unable to render %s for %r", view_name, xblock, exc_info=True
+            # wrap the generated fragment in the xmodule_editor div so that the javascript
+            # can bind to it correctly
+            xblock.runtime.wrappers.append(
+                partial(
+                    wrap_xblock,
+                    "StudioRuntime",
+                    usage_id_serializer=str,
+                    request_token=request_token(request),
                 )
-                fragment = Fragment(
-                    render_to_string("html_error.html", {"message": str(exc)})
-                )
-
-        elif view_name in PREVIEW_VIEWS + container_views:
-            is_pages_view = (
-                view_name == STUDENT_VIEW
-            )  # Only the "Pages" view uses student view in Studio
-
-            # Resolve the final gating booleans server-side. Each helper
-            # encapsulates its own "authz flag off" default, so the template
-            # only needs these two already-final values.
-            can_edit = _user_can_edit_course_content(request.user, usage_key.course_key)
-            can_manage_tags = _user_can_manage_tags(request.user, usage_key.course_key)
-            can_edit_title = _user_can_edit_title(request.user, usage_key.course_key)
-
-            # Determine the items to be shown as reorderable. Note that the view
-            # 'reorderable_container_child_preview' is only rendered for xblocks that
-            # are being shown in a reorderable container, so the xblock is automatically
-            # added to the list.
-            reorderable_items = set()
-            if view_name == "reorderable_container_child_preview":
-                reorderable_items.add(xblock.location)
-
-            paging = None
-            try:
-                if request.GET.get("enable_paging", "false") == "true":
-                    paging = {
-                        "page_number": int(request.GET.get("page_number", 0)),
-                        "page_size": int(request.GET.get("page_size", 0)),
-                    }
-            except ValueError:
-                return HttpResponse(
-                    content="Couldn't parse paging parameters: enable_paging: "
-                    "{}, page_number: {}, page_size: {}".format(
-                        request.GET.get("enable_paging", "false"),
-                        request.GET.get("page_number", 0),
-                        request.GET.get("page_size", 0),
-                    ),
-                    status=400,
-                    content_type="text/plain",
-                )
-
-            force_render = request.GET.get("force_render", None)
-
-            # Fetch tags of xblock and children components
-            tags_count_map = {}
-            if not is_tagging_feature_disabled():
-                tags_count_map = get_tags_count(xblock, include_children=True)
-
-            # Set up the context to be passed to each XBlock's render method.
-            context = request.GET.dict()
-            context.update(
-                {
-                    # This setting disables the recursive wrapping of xblocks
-                    "is_pages_view": is_pages_view or view_name == AUTHOR_VIEW,
-                    "is_unit_page": is_unit(xblock),
-                    "can_edit": can_edit,
-                    "can_manage_tags": can_manage_tags,
-                    "can_edit_title": can_edit_title,
-                    "root_xblock": xblock
-                    if (view_name == "container_preview")
-                    else None,
-                    "reorderable_items": reorderable_items,
-                    "paging": paging,
-                    "force_render": force_render,
-                    "item_url": "/container/{usage_key}",
-                    "tags_count_map": tags_count_map,
-                }
             )
-            fragment = get_preview_fragment(request, xblock, context)
 
-            # Note that the container view recursively adds headers into the preview fragment,
-            # so only the "Pages" view requires that this extra wrapper be included.
-            display_label = xblock.display_name or xblock.scope_ids.block_type
-            if not xblock.display_name and xblock.scope_ids.block_type == "html":
-                display_label = _("Text")
-            if is_pages_view:
-                fragment.content = render_to_string(
-                    "component.html",
+            xblock.runtime.wrappers_asides.append(
+                partial(
+                    wrap_xblock_aside,
+                    "StudioRuntime",
+                    usage_id_serializer=str,
+                    request_token=request_token(request),
+                    extra_classes=["wrapper-comp-plugins"],
+                )
+            )
+
+            if view_name in (STUDIO_VIEW, VISIBILITY_VIEW):
+                if view_name == STUDIO_VIEW:
+                    load_services_for_studio(xblock.runtime, request.user)
+
+                try:
+                    fragment = xblock.render(view_name)
+                # catch exceptions indiscriminately, since after this point they escape the
+                # dungeon and surface as uneditable, unsaveable, and undeletable
+                # component-goblins.
+                except Exception as exc:  # pylint: disable=broad-except
+                    log.debug(
+                        "Unable to render %s for %r", view_name, xblock, exc_info=True
+                    )
+                    fragment = Fragment(
+                        render_to_string("html_error.html", {"message": str(exc)})
+                    )
+
+            elif view_name in PREVIEW_VIEWS + container_views:
+                is_pages_view = (
+                    view_name == STUDENT_VIEW
+                )  # Only the "Pages" view uses student view in Studio
+
+                # Resolve the final gating booleans server-side. Each helper
+                # encapsulates its own "authz flag off" default, so the template
+                # only needs these two already-final values.
+                can_edit = _user_can_edit_course_content(request.user, usage_key.course_key)
+                can_manage_tags = _user_can_manage_tags(request.user, usage_key.course_key)
+                can_edit_title = _user_can_edit_title(request.user, usage_key.course_key)
+
+                # Determine the items to be shown as reorderable. Note that the view
+                # 'reorderable_container_child_preview' is only rendered for xblocks that
+                # are being shown in a reorderable container, so the xblock is automatically
+                # added to the list.
+                reorderable_items = set()
+                if view_name == "reorderable_container_child_preview":
+                    reorderable_items.add(xblock.location)
+
+                paging = None
+                try:
+                    if request.GET.get("enable_paging", "false") == "true":
+                        paging = {
+                            "page_number": int(request.GET.get("page_number", 0)),
+                            "page_size": int(request.GET.get("page_size", 0)),
+                        }
+                except ValueError:
+                    return HttpResponse(
+                        content="Couldn't parse paging parameters: enable_paging: "
+                        "{}, page_number: {}, page_size: {}".format(
+                            request.GET.get("enable_paging", "false"),
+                            request.GET.get("page_number", 0),
+                            request.GET.get("page_size", 0),
+                        ),
+                        status=400,
+                        content_type="text/plain",
+                    )
+
+                force_render = request.GET.get("force_render", None)
+
+                # Fetch tags of xblock and children components
+                tags_count_map = {}
+                if not is_tagging_feature_disabled():
+                    tags_count_map = get_tags_count(xblock, include_children=True)
+
+                # Set up the context to be passed to each XBlock's render method.
+                context = request.GET.dict()
+                context.update(
                     {
-                        "xblock_context": context,
-                        "xblock": xblock,
-                        "locator": usage_key,
-                        "preview": fragment.content,
-                        "label": display_label,
-                    },
+                        # This setting disables the recursive wrapping of xblocks
+                        "is_pages_view": is_pages_view or view_name == AUTHOR_VIEW,
+                        "is_unit_page": is_unit(xblock),
+                        "can_edit": can_edit,
+                        "can_manage_tags": can_manage_tags,
+                        "can_edit_title": can_edit_title,
+                        "root_xblock": xblock
+                        if (view_name == "container_preview")
+                        else None,
+                        "reorderable_items": reorderable_items,
+                        "paging": paging,
+                        "force_render": force_render,
+                        "item_url": "/container/{usage_key}",
+                        "tags_count_map": tags_count_map,
+                    }
                 )
-        else:
-            raise Http404
+                fragment = get_preview_fragment(request, xblock, context)
 
-        hashed_resources = OrderedDict()
-        for resource in fragment.resources:
-            hashed_resources[hash_resource(resource)] = resource._asdict()
+                # Note that the container view recursively adds headers into the preview fragment,
+                # so only the "Pages" view requires that this extra wrapper be included.
+                display_label = xblock.display_name or xblock.scope_ids.block_type
+                if not xblock.display_name and xblock.scope_ids.block_type == "html":
+                    display_label = _("Text")
+                if is_pages_view:
+                    fragment.content = render_to_string(
+                        "component.html",
+                        {
+                            "xblock_context": context,
+                            "xblock": xblock,
+                            "locator": usage_key,
+                            "preview": fragment.content,
+                            "label": display_label,
+                        },
+                    )
+            else:
+                raise Http404
 
-        fragment_content = fragment.content
-        if isinstance(fragment_content, bytes):
-            fragment_content = fragment.content.decode("utf-8")
+            hashed_resources = OrderedDict()
+            for resource in fragment.resources:
+                hashed_resources[hash_resource(resource)] = resource._asdict()
 
-        return JsonResponse(
-            {"html": fragment_content, "resources": list(hashed_resources.items())}
-        )
+            fragment_content = fragment.content
+            if isinstance(fragment_content, bytes):
+                fragment_content = fragment.content.decode("utf-8")
+
+            return JsonResponse(
+                {"html": fragment_content, "resources": list(hashed_resources.items())}
+            )
 
     else:
         return HttpResponse(status=406)

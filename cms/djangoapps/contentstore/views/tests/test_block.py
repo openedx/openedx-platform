@@ -201,6 +201,22 @@ class GetItemTest(ItemTest):
         resp = self.client.get(reverse_usage_url("xblock_handler", usage_key))
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
+    def test_container_preview_loads_course_structure_once(self):
+        """
+        Rendering a container preview reads the course many times, including several times
+        for each child. All of those reads should share one load of the course structure.
+        """
+        root_usage_key = self._create_vertical()
+        for category in ("html", "problem", "html"):
+            assert self.create_xblock(parent_usage_key=root_usage_key, category=category).status_code == 200
+        split = self.store._get_modulestore_by_type(ModuleStoreEnum.Type.split)  # pylint: disable=protected-access
+        connection = split.db_connection
+
+        with patch.object(connection, "get_structure", wraps=connection.get_structure) as get_structure:
+            self._get_container_preview(root_usage_key)
+
+        assert get_structure.call_count == 1
+
     def test_get_empty_container_fragment(self):
         root_usage_key = self._create_vertical()
         html, __ = self._get_container_preview(root_usage_key)
