@@ -7,6 +7,8 @@ from unittest.mock import Mock, patch
 import pytest
 from completion.models import BlockCompletion
 from ddt import data, ddt, unpack
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from milestones import api as milestones_api
 from milestones.tests.utils import MilestonesTestCaseMixin
 
@@ -171,6 +173,40 @@ class TestGatingApi(ModuleStoreTestCase, MilestonesTestCaseMixin):
         assert prereq_content_key is None
         assert min_score is None
         assert min_completion is None
+
+    def test_bulk_lookups_match_single_lookups(self):
+        """
+        get_prerequisite_content_keys() and get_all_required_content() give the
+        same answers as is_prerequisite() and get_required_content().
+        """
+        seq3 = BlockFactory.create(parent_location=self.chapter1.location, category='sequential')
+        seq4 = BlockFactory.create(parent_location=self.chapter1.location, category='sequential')
+        gating_api.add_prerequisite(self.course.id, self.seq1.location)
+        gating_api.add_prerequisite(self.course.id, seq3.location)
+        gating_api.set_required_content(self.course.id, self.seq2.location, self.seq1.location, 80, 50)
+        gating_api.set_required_content(self.course.id, seq4.location, seq3.location, '', '')
+        # A milestone from another course is ignored.
+        other_course = CourseFactory.create()
+        other_seq = BlockFactory.create(parent_location=other_course.location, category='sequential')
+        gating_api.add_prerequisite(other_course.id, other_seq.location)
+
+        with CaptureQueriesContext(connection) as queries:
+            prereq_keys = gating_api.get_prerequisite_content_keys(self.course.id)
+            required_content = gating_api.get_all_required_content(self.course.id)
+        # One query for each, whatever the number of subsections.
+        assert len([q for q in queries if 'milestones_coursecontentmilestone' in q['sql']]) == 2
+
+        assert prereq_keys == {str(self.seq1.location), str(seq3.location)}
+        assert required_content == {
+            str(self.seq2.location): (str(self.seq1.location), 80, 50),
+            str(seq4.location): (str(seq3.location), '', ''),
+        }
+        for seq in (self.seq1, self.seq2, seq3, seq4):
+            assert (str(seq.location) in prereq_keys) == gating_api.is_prerequisite(self.course.id, seq.location)
+            assert (
+                required_content.get(str(seq.location), (None, None, None))
+                == gating_api.get_required_content(self.course.id, seq.location)
+            )
 
     def test_get_gated_content(self):
         """

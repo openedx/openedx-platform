@@ -7,17 +7,21 @@ import json
 from unittest.mock import patch
 
 import ddt
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from milestones.tests.utils import MilestonesTestCaseMixin
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_usage_url
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import VisibilityState
-from openedx.core.lib.gating.api import GATING_NAMESPACE_QUALIFIER
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import VisibilityState, create_xblock_info
+from openedx.core.lib.gating import api as gating_api
+from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 from xmodule.modulestore.tests.factories import BlockFactory
 
 
 @ddt.ddt
-class TestSubsectionGating(CourseTestCase):
+class TestSubsectionGating(CourseTestCase, MilestonesTestCaseMixin):
     """
     Tests for the subsection gating feature
     """
@@ -117,34 +121,66 @@ class TestSubsectionGating(CourseTestCase):
             ''
         )
 
-    @patch('cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers.gating_api.get_prerequisites')
-    @patch('cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers.gating_api.get_required_content')
-    @patch('cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers.gating_api.is_prerequisite')
     @ddt.data(
         (90, None),
         (None, 90),
         (100, 100),
     )
     @ddt.unpack
-    def test_get_prerequisite(
-            self, min_score, min_completion,
-            mock_is_prereq, mock_get_required_content, mock_get_prereqs
-    ):
-        mock_is_prereq.return_value = True
-        mock_get_required_content.return_value = str(self.seq1.location), min_score, min_completion
-        mock_get_prereqs.return_value = [
-            {'namespace': f'{str(self.seq1.location)}{GATING_NAMESPACE_QUALIFIER}'},
-            {'namespace': f'{str(self.seq2.location)}{GATING_NAMESPACE_QUALIFIER}'}
-        ]
+    def test_get_prerequisite(self, min_score, min_completion):
+        gating_api.add_prerequisite(self.course.id, self.seq1.location)
+        gating_api.set_required_content(
+            self.course.id, self.seq2.location, self.seq1.location, min_score, min_completion
+        )
         resp = json.loads(self.client.get_json(self.seq2_url).content.decode('utf-8'))
-        mock_is_prereq.assert_called_with(self.course.id, self.seq2.location)
-        mock_get_required_content.assert_called_with(self.course.id, self.seq2.location)
-        mock_get_prereqs.assert_called_with(self.course.id)
-        self.assertTrue(resp['is_prereq'])  # noqa: PT009
+        self.assertFalse(resp['is_prereq'])  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
+            [p['block_usage_key'] for p in resp['prereqs']],
+            [str(self.seq1.location)],
+        )
         self.assertEqual(resp['prereq'], str(self.seq1.location))  # noqa: PT009
         self.assertEqual(resp['prereq_min_score'], min_score)  # noqa: PT009
         self.assertEqual(resp['prereq_min_completion'], min_completion)  # noqa: PT009
         self.assertEqual(resp['visibility_state'], VisibilityState.gated)  # noqa: PT009
+
+        resp = json.loads(self.client.get_json(self.seq1_url).content.decode('utf-8'))
+        self.assertTrue(resp['is_prereq'])  # noqa: PT009
+        # A subsection isn't listed as a possible prerequisite of itself.
+        self.assertEqual(resp['prereqs'], [])  # noqa: PT009
+        self.assertIsNone(resp['prereq'])  # noqa: PT009
+        self.assertIsNone(resp['prereq_min_score'])  # noqa: PT009
+        self.assertIsNone(resp['prereq_min_completion'])  # noqa: PT009
+
+    def test_outline_gating_queries_dont_scale_with_subsections(self):
+        """
+        The course outline looks up gating milestones once for the course, not
+        once per subsection.
+        """
+        gating_api.add_prerequisite(self.course.id, self.seq1.location)
+        gating_api.set_required_content(self.course.id, self.seq2.location, self.seq1.location, 100, 100)
+
+        def milestone_queries():
+            with CaptureQueriesContext(connection) as queries:
+                outline = create_xblock_info(
+                    modulestore().get_course(self.course.id),
+                    include_child_info=True,
+                    course_outline=True,
+                    include_children_predicate=lambda xblock: xblock.category != 'vertical',
+                    user=self.user,
+                )
+            return outline, [q for q in queries if 'milestones_coursecontentmilestone' in q['sql']]
+
+        outline, queries_for_two = milestone_queries()
+        seqs = outline['child_info']['children'][0]['child_info']['children']
+        self.assertEqual(  # noqa: PT009
+            [(s['is_prereq'], s['prereq']) for s in seqs],
+            [(True, None), (False, str(self.seq1.location))],
+        )
+
+        for i in range(3):
+            BlockFactory.create(parent_location=self.chapter.location, category='sequential', display_name=f'seq {i}')
+        _, queries_for_five = milestone_queries()
+        self.assertEqual(len(queries_for_two), len(queries_for_five))  # noqa: PT009
 
     @patch('cms.djangoapps.contentstore.signals.handlers.gating_api.set_required_content')
     @patch('cms.djangoapps.contentstore.signals.handlers.gating_api.remove_prerequisite')
