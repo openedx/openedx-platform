@@ -130,7 +130,8 @@ class SplitTestBlockLMSTest(SplitTestBlockTest):
         content_gating_flag_patcher = patch(
             'openedx.features.content_type_gating.partitions.ContentTypeGatingConfig.current',
             return_value=Mock(enabled=False, studio_override_enabled=False),
-        ).start()
+        )
+        content_gating_flag_patcher.start()
         self.addCleanup(content_gating_flag_patcher.stop)
 
     @ddt.data((0, 'split_test_cond0'), (1, 'split_test_cond1'))

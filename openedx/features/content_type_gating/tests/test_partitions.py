@@ -16,7 +16,8 @@ from xmodule.partitions.partitions import UserPartitionError  # pylint: disable=
 
 
 class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
-    def setUp(self):  # pylint: disable=super-method-not-called
+    def setUp(self):
+        super().setUp()
         self.course_key = CourseKey.from_string('course-v1:test+course+key')
         CourseOverviewFactory.create(id=self.course_key)
 
@@ -62,6 +63,8 @@ class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable
         mock_course = Mock(
             id=self.course_key, user_partitions={Mock(name='partition', id=CONTENT_GATING_PARTITION_ID): object()}
         )
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='audit')
+        CourseModeFactory.create(course_id=mock_course.id, mode_slug='verified')
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1))
 
         with patch('openedx.features.content_type_gating.partitions.LOG') as mock_log:
