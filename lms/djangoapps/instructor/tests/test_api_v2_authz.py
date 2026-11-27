@@ -16,20 +16,28 @@ from openedx_authz.authz import (
     COURSE_EDITOR,
     COURSE_LIMITED_STAFF,
     COURSE_STAFF,
+    COURSES_ENROLL_LEARNERS,
+    COURSES_MANAGE_COURSE_TEAM,
+    COURSES_UNENROLL_LEARNERS,
     COURSES_VIEW_COURSE_INFO,
+    COURSES_VIEW_ENROLLMENTS,
 )
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.roles import CourseDataResearcherRole, CourseLimitedStaffRole
 from common.djangoapps.student.tests.factories import (
+    CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
     UserFactory,
 )
 from lms.djangoapps.courseware.tabs import get_course_tab_list
+from lms.djangoapps.instructor.access import update_forum_role
 from lms.djangoapps.instructor.authz import constants
 from lms.djangoapps.instructor.authz.tests.mixins import InstructorAuthzTestMixin
+from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
+from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -313,3 +321,163 @@ class InstructorDashboardTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStor
         self.set_authz_enabled(False)
 
         assert not self._has_instructor_tab(UserFactory())
+
+
+@ddt.ddt
+class EnrollmentsTabAuthzTest(InstructorAuthzTestMixin, SharedModuleStoreTestCase):
+    """
+    The endpoints of the Enrollments tab follow the AuthZ flag.
+
+    With the flag on each one requires its AuthZ permission; enrolling and unenrolling
+    are checked separately. With the flag off the legacy rules apply.
+    """
+
+    # Endpoint -> AuthZ permission it requires.
+    ENDPOINT_PERMISSIONS = {
+        "list": COURSES_VIEW_ENROLLMENTS,
+        "status": COURSES_VIEW_ENROLLMENTS,
+        "enroll": COURSES_ENROLL_LEARNERS,
+        "unenroll": COURSES_UNENROLL_LEARNERS,
+        "beta": COURSES_MANAGE_COURSE_TEAM,
+    }
+    ALL_ENDPOINTS = frozenset(ENDPOINT_PERMISSIONS)
+    # Endpoints of the instructor v2 API, which return the standard error format.
+    V2_ENDPOINTS = ALL_ENDPOINTS - {"status"}
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.learner = UserFactory()
+        CourseEnrollmentFactory.create(user=self.learner, course_id=self.course_key)
+
+    def _request(self, user, endpoint):
+        """Call one endpoint of the tab as the user."""
+        self.client.force_authenticate(user=user)
+        course_kwargs = {"course_id": str(self.course_key)}
+        if endpoint == "list":
+            return self.client.get(reverse("instructor_api_v2:course_enrollments", kwargs=course_kwargs))
+        if endpoint == "status":
+            url = reverse("get_student_enrollment_status", kwargs=course_kwargs)
+            return self.client.post(url, {"unique_student_identifier": self.learner.email}, format="json")
+        if endpoint == "beta":
+            url = reverse("instructor_api_v2:beta_tester_modify", kwargs=course_kwargs)
+            return self.client.post(url, {"identifier": [self.learner.email], "action": "add"}, format="json")
+        url = reverse("instructor_api_v2:enrollment_modify", kwargs=course_kwargs)
+        return self.client.post(url, {"identifier": [self.learner.email], "action": endpoint}, format="json")
+
+    def _assert_access(self, user, allowed):
+        """Assert ``200`` on the ``allowed`` endpoints and the standard ``403`` on the rest."""
+        for endpoint in self.ALL_ENDPOINTS:
+            response = self._request(user, endpoint)
+            if endpoint in allowed:
+                assert response.status_code == status.HTTP_200_OK, endpoint
+            else:
+                assert response.status_code == status.HTTP_403_FORBIDDEN, endpoint
+                if endpoint in self.V2_ENDPOINTS:
+                    assert response.data["error_code"] == "permission_denied", endpoint
+
+    @staticmethod
+    def _allow_only(*permissions):
+        """Return an ``is_user_allowed`` side effect that grants only the given permissions."""
+        identifiers = {permission.identifier for permission in permissions}
+        return lambda _user, permission, _scope: permission in identifiers
+
+    def test_authz_course_admin_has_every_endpoint(self):
+        """With the flag on, a Course Admin can use the whole tab, beta testers included."""
+        user = self.create_user_with_authz_role(COURSE_ADMIN.external_key, self.course_key)
+
+        self._assert_access(user, self.ALL_ENDPOINTS)
+
+    def test_authz_course_staff_cannot_manage_beta_testers(self):
+        """With the flag on, a Course Staff manages enrollments, but not beta testers."""
+        user = self.create_user_with_authz_role(COURSE_STAFF.external_key, self.course_key)
+
+        self._assert_access(user, self.ALL_ENDPOINTS - {"beta"})
+
+    def test_authz_without_permissions_is_denied(self):
+        """With the flag on, a user without any AuthZ role gets ``403`` on every endpoint."""
+        self._assert_access(UserFactory(), set())
+
+    @ddt.data(COURSES_VIEW_ENROLLMENTS, COURSES_ENROLL_LEARNERS, COURSES_UNENROLL_LEARNERS, COURSES_MANAGE_COURSE_TEAM)
+    def test_authz_permission_alone_grants_only_its_endpoints(self, permission):
+        """
+        With the flag on, each permission grants exactly its endpoints.
+
+        In particular, ``enroll_learners`` does not allow unenrolling, and the other way around.
+        """
+        user = UserFactory()
+        allowed = {endpoint for endpoint, perm in self.ENDPOINT_PERMISSIONS.items() if perm == permission}
+
+        with patch(f"{API}.authz_api.is_user_allowed", side_effect=self._allow_only(permission)):
+            self._assert_access(user, allowed)
+
+    def test_authz_role_without_legacy_equivalent_has_every_endpoint(self):
+        """
+        With the flag on, AuthZ alone decides: no legacy role check inside the views blocks a
+        user who holds the permissions.
+        """
+        user = self.create_user_with_authz_role(COURSE_ADMIN.external_key, self.course_key)
+
+        with patch(
+            "common.djangoapps.student.roles.get_authz_compat_course_access_roles_for_user",
+            return_value=set(),
+        ):
+            self._assert_access(user, self.ALL_ENDPOINTS)
+
+    @ddt.data(StaffFactory, InstructorFactory)
+    def test_authz_legacy_role_without_authz_role_is_denied(self, user_factory):
+        """With the flag on, legacy staff and instructors without an AuthZ role get ``403`` on every endpoint."""
+        # With the flag on, adding a legacy role assigns its AuthZ equivalent instead,
+        # so the legacy-only user is created with the flag off.
+        self.set_authz_enabled(False)
+        user = user_factory(course_key=self.course_key)
+        self.set_authz_enabled(True)
+
+        self._assert_access(user, set())
+
+    def test_authz_denied_overrides_legacy_instructor(self):
+        """With the flag on, AuthZ denying a legacy instructor means no access."""
+        instructor = InstructorFactory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed", return_value=False):
+            self._assert_access(instructor, set())
+
+    @ddt.data(
+        (InstructorFactory, ALL_ENDPOINTS),
+        (StaffFactory, ALL_ENDPOINTS - {"beta"}),
+    )
+    @ddt.unpack
+    def test_legacy_role_keeps_its_access(self, user_factory, allowed):
+        """With the flag off, legacy instructors and staff keep their access, without querying AuthZ."""
+        self.set_authz_enabled(False)
+        user = user_factory(course_key=self.course_key)
+
+        with patch(f"{API}.authz_api.is_user_allowed") as is_user_allowed:
+            self._assert_access(user, allowed)
+
+        is_user_allowed.assert_not_called()
+
+    def test_legacy_staff_with_forum_admin_cannot_manage_beta_testers(self):
+        """
+        With the flag off, beta testers keep requiring instructor access.
+
+        Legacy staff with the forum Administrator role reaches the Course Team tab, but not this endpoint.
+        """
+        self.set_authz_enabled(False)
+        seed_permissions_roles(self.course_key)
+        staff = StaffFactory(course_key=self.course_key)
+        update_forum_role(self.course_key, staff, FORUM_ROLE_ADMINISTRATOR, "allow")
+
+        self._assert_access(staff, self.ALL_ENDPOINTS - {"beta"})
+
+    def test_legacy_learner_is_denied(self):
+        """With the flag off, an enrolled learner without a staff role gets ``403`` on every endpoint."""
+        self.set_authz_enabled(False)
+
+        self._assert_access(self.learner, set())
