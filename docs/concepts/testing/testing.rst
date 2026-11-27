@@ -286,7 +286,6 @@ your arguments after the ``--`` separator::
     npm run test-cms-webpack -- --your --args --here
     npm run test-lms-webpack -- --your --args --here
     npm run test-xmodule-vanilla -- --your --args --here
-    npm run test-xmodule-webpack -- --your --args --here
     npm run test-common-vanilla -- --your --args --here
     npm run test-common-require -- --your --args --here
 
