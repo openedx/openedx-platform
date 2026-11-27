@@ -2,6 +2,7 @@
 Custom permissions for the content store views.
 """
 
+from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.authz import COURSES_VIEW_COURSE, COURSES_VIEW_PAGES_AND_RESOURCES
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
@@ -68,11 +69,16 @@ class CanViewCourse(BasePermission):
     """
     Allow callers who may view the course in the path in Studio.
 
-    Reads the parsed ``course_key`` URL argument. A course that does not exist
-    is answered with 404 before permission is checked, so a signed-in caller
-    learns that a course is missing before being refused. It must follow
-    ``IsAuthenticated`` in ``permission_classes``; ahead of it, anonymous
-    callers would learn which courses exist.
+    Reads the parsed ``course_key`` URL argument or, on a route without one,
+    the course of the parsed ``usage_key`` URL argument. A course that does not
+    exist is answered with 404 before permission is checked, so a signed-in
+    caller learns that a course is missing before being refused. So is a usage
+    key whose context is not a course run, such as a content library. A key of
+    a custom course (CCX) does name a course run, so the permission check
+    decides it: Studio read access is never granted on a custom course, and
+    the permission policy grants only roles assigned on that custom course.
+    It must follow ``IsAuthenticated`` in ``permission_classes``; ahead of it,
+    anonymous callers would learn which courses exist.
 
     On courses where policy-based authoring permissions are enabled, only that
     policy is consulted; elsewhere the caller needs Studio read access to the
@@ -82,7 +88,14 @@ class CanViewCourse(BasePermission):
     def has_permission(self, request, view):
         course_key = view.kwargs.get("course_key")
         if course_key is None:
-            return False
+            usage_key = view.kwargs.get("usage_key")
+            if usage_key is None:
+                return False
+            course_key = usage_key.context_key
+            # A library's context key is not a course key, and the existence
+            # lookup below fails on it.
+            if not isinstance(course_key, CourseLocator):
+                raise NotFound(COURSE_NOT_FOUND_MESSAGE)
         # A key naming only a version has no course run behind it, and the
         # existence lookup raises for one.
         if course_key.org is None or not CourseOverview.course_exists(course_key):
