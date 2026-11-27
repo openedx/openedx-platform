@@ -1599,9 +1599,9 @@ def create_xblock_info(  # pylint: disable=too-many-statements
 
             xblock_info[
                 "has_partition_group_components"
-            ] = has_children_visible_to_specific_partition_groups(xblock)
+            ] = has_children_visible_to_specific_partition_groups(xblock, course=course)
         xblock_info["user_partition_info"] = get_visibility_partition_info(
-            xblock, course=course
+            xblock, course=course, user_partitions=user_partitions
         )
 
         if course_outline or is_xblock_unit:

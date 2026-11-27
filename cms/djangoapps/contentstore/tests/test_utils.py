@@ -20,6 +20,7 @@ from cms.djangoapps.contentstore import utils
 from cms.djangoapps.contentstore.tasks import ALL_ALLOWED_XBLOCKS, validate_course_olx
 from cms.djangoapps.contentstore.tests.utils import TEST_DATA_DIR, CourseTestCase
 from cms.djangoapps.contentstore.utils import send_course_update_notification
+from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
 from openedx.core.djangoapps.notifications.models import Notification
@@ -32,7 +33,7 @@ from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-im
     SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
-from xmodule.partitions.partitions import Group, UserPartition
+from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID, Group, UserPartition
 
 
 class LMSLinksTestCase(TestCase):
@@ -444,6 +445,19 @@ class GroupVisibilityTest(CourseTestCase):
         self.assertFalse(utils.is_visible_to_specific_partition_groups(self.html))  # noqa: PT009
         self.assertTrue(utils.is_visible_to_specific_partition_groups(self.problem))  # noqa: PT009
 
+    def test_passed_course_is_used(self):
+        """
+        When the course is passed in, the children are checked without loading
+        the course from the modulestore again.
+        """
+        self.set_group_access(self.problem, {2: [3, 4]})
+        self.vertical = self.store.get_item(self.vertical.location)
+        course = self.store.get_course(self.course.id)
+
+        with patch.object(utils, "modulestore", side_effect=AssertionError("course should not be loaded")):
+            assert utils.has_children_visible_to_specific_partition_groups(self.vertical, course=course)
+            assert utils.is_visible_to_specific_partition_groups(self.problem, course=course)
+
 
 class GetUserPartitionInfoTest(ModuleStoreTestCase):
     """
@@ -638,6 +652,68 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
     def _get_partition_info(self, schemes=None):
         """Retrieve partition info and selected groups. """
         return utils.get_user_partition_info(self.block, schemes=schemes)
+
+
+@override_settings(ENABLE_ENROLLMENT_TRACK_USER_PARTITION=True)
+class GetVisibilityPartitionInfoTest(ModuleStoreTestCase):
+    """
+    Tests for get_visibility_partition_info(), which formats partition info
+    for the visibility editor.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory()
+        CourseModeFactory.create(course_id=self.course.id, mode_slug="audit")
+        CourseModeFactory.create(course_id=self.course.id, mode_slug="verified", mode_display_name="Verified")
+        self.course.user_partitions = [
+            UserPartition(
+                id=10,
+                name="Content groups",
+                scheme=UserPartition.get_scheme("cohort"),
+                description="Content groups",
+                groups=[Group(id=100, name="Alpha"), Group(id=101, name="Beta")],
+            ),
+            UserPartition(
+                id=11,
+                name="Experiment",
+                scheme=UserPartition.get_scheme("random"),
+                description="Not shown in the visibility editor",
+                groups=[Group(id=0, name="A"), Group(id=1, name="B")],
+            ),
+        ]
+        self.course = self.store.update_item(self.course, ModuleStoreEnum.UserID.test)
+        self.block = BlockFactory.create(category="problem", parent_location=self.course.location)
+
+    def _set_group_access(self, group_access):
+        """Set group access of the block. """
+        self.block.group_access = group_access
+        self.block = self.store.update_item(self.block, ModuleStoreEnum.UserID.test)
+
+    def test_partitions_and_selection(self):
+        self._set_group_access({ENROLLMENT_TRACK_PARTITION_ID: [2], 10: [101, 999]})
+        info = utils.get_visibility_partition_info(self.block, course=self.course)
+
+        # Enrollment track partitions come before content groups, and random
+        # partitions aren't included.
+        assert [p["scheme"] for p in info["selectable_partitions"]] == ["enrollment_track", "cohort"]
+        assert info["selected_partition_index"] == 0
+        assert info["selected_groups_label"] == "Verified, Beta, Deleted Group"
+
+    def test_passed_user_partitions_are_used(self):
+        """
+        Passing in the result of get_user_partition_info() gives the same answer
+        without computing the partition info again.
+        """
+        self._set_group_access({10: [100]})
+        expected = utils.get_visibility_partition_info(self.block, course=self.course)
+
+        user_partitions = utils.get_user_partition_info(self.block, course=self.course)
+        with patch.object(utils, "get_user_partition_info", side_effect=AssertionError("should not be called")):
+            actual = utils.get_visibility_partition_info(
+                self.block, course=self.course, user_partitions=user_partitions
+            )
+        assert actual == expected
 
 
 @override_settings(ENABLE_COURSE_OLX_VALIDATION=True)
