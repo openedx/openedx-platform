@@ -273,6 +273,10 @@ class CourseMetadataView(DeveloperErrorViewMixin, APIView):
                 "grade_cutoffs": "A is 0.9, B is 0.8, C is 0.7, D is 0.6",
                 "course_errors": [],
                 "studio_url": "https://studio.example.com/course/course-v1:edX+DemoX+2024",
+                # May be null if the gradebook is not configured:
+                "gradebook_url": "http://apps.local.openedx.io:1994/gradebook/course-v1:edX+DemoX+2024",
+                # Whether the user can access the Gradebook API for the course:
+                "has_gradebook_access": true,
                 # May be null if user does not have access:
                 "admin_console_url": "http://apps.local.openedx.io:2025/admin-console/authz",
                 "permissions": {

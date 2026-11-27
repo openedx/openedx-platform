@@ -32,6 +32,7 @@ from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
+from lms.djangoapps.grades.rest_api.v1.gradebook_views import has_gradebook_api_access
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.authz import constants as authz_constants
@@ -80,6 +81,14 @@ class CourseInformationSerializerV2(serializers.Serializer):
     studio_url = serializers.SerializerMethodField(help_text="URL to view/edit course in Studio")
     gradebook_url = serializers.SerializerMethodField(
         help_text="URL to the MFE gradebook for the course (null if not configured)"
+    )
+    # TEMPORARY: ``has_gradebook_access`` will be removed once the endpoints used by
+    # the Gradebook MFE are migrated to AuthZ.
+    has_gradebook_access = serializers.SerializerMethodField(
+        help_text=(
+            "Whether the current user passes the access check of the Gradebook API for the course. "
+            "Whether the Gradebook is configured is reported by ``gradebook_url``."
+        )
     )
     studio_grading_url = serializers.SerializerMethodField(
         help_text="URL to the Studio grading settings page for the course (null if not configured)"
@@ -499,6 +508,21 @@ class CourseInformationSerializerV2(serializers.Serializer):
         if not is_writable_gradebook_enabled(course_key) or not mfe_base_url:
             return None
         return f'{mfe_base_url.rstrip("/")}/{course_key}'
+
+    def get_has_gradebook_access(self, data) -> bool:
+        """
+        Get whether the current user can use the Gradebook API for the course.
+
+        It does not use ``user_has_instructor_permission``: the Gradebook API does
+        not check ``courses.view_gradebook``, with or without AuthZ.
+
+        Args:
+            data (dict): The serializer context, with ``course`` and ``user``.
+
+        Returns:
+            bool: True if the Gradebook API accepts requests of the user for the course.
+        """
+        return has_gradebook_api_access(data['user'], data['course'].id)
 
     def get_studio_grading_url(self, data):
         """Get Studio MFE grading settings URL for the course."""
