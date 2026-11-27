@@ -5,7 +5,7 @@ MongoDB-free: all service-layer calls are mocked.
 
 patch.object is used for the ViewSet's get_serializer() method because:
   - get_serializer_class() returns a *different* serializer per action.
-  - Each serializer (StudioHomeSerializer, CourseHomeTabSerializer,
+  - Each serializer (StudioHomeContextSerializer, CourseHomeTabSerializer,
     LibraryTabSerializer) has many required fields that would be painful to
     satisfy with synthetic data.
   - Patching get_serializer() lets us focus on routing + service-call
@@ -14,10 +14,13 @@ patch.object is used for the ViewSet's get_serializer() method because:
 """
 from unittest.mock import patch
 
+from django.test import SimpleTestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from cms.djangoapps.contentstore.rest_api.v2.views.tests.helpers import generate_cms_schema
+from cms.djangoapps.contentstore.rest_api.v3.serializers import StudioHomeContextSerializer
 from cms.djangoapps.contentstore.rest_api.v3.views.home import HomeViewSet
 from common.djangoapps.student.tests.factories import UserFactory
 
@@ -124,7 +127,7 @@ class TestHomeViewSetActions(APITestCase):
 class TestHomeViewSetFieldSelection(APITestCase):
     """
     ADR 0036 — verify ``?fields=`` filters top-level keys on the ``list``
-    action's wide ``StudioHomeSerializer`` response. ``courses`` and
+    action's wide ``StudioHomeContextSerializer`` response. ``courses`` and
     ``libraries`` actions are out of scope (single-key dicts).
     """
 
@@ -143,31 +146,48 @@ class TestHomeViewSetFieldSelection(APITestCase):
         mock_org.is_autocreate_enabled.return_value = True
         mock_get_ser.return_value.data = {
             'studio_name': 'Studio', 'platform_name': 'edX',
-            'courses': [], 'libraries': [], 'archived_courses': [],
+            'course_creator_status': 'granted', 'user_is_active': True,
         }
 
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data.keys()) == {
-            'studio_name', 'platform_name', 'courses', 'libraries', 'archived_courses',
+            'studio_name', 'platform_name', 'course_creator_status', 'user_is_active',
         }
 
     @patch.object(HomeViewSet, 'get_serializer')
     @patch(MOCK_ORG_API)
     @patch(MOCK_GET_HOME_CONTEXT)
     def test_fields_csv_restricts_top_level_keys(self, mock_home, mock_org, mock_get_ser):  # noqa: ARG002
-        """``?fields=courses,libraries`` returns exactly those keys."""
+        """``?fields=course_creator_status,user_is_active`` returns exactly those keys."""
         mock_home.return_value = {'can_create_organizations': True}
         mock_org.is_autocreate_enabled.return_value = True
         mock_get_ser.return_value.data = {
             'studio_name': 'Studio', 'platform_name': 'edX',
-            'courses': [], 'libraries': [], 'archived_courses': [],
+            'course_creator_status': 'granted', 'user_is_active': True,
         }
 
-        response = self.client.get(self.url, {'fields': 'courses,libraries'})
+        response = self.client.get(self.url, {'fields': 'course_creator_status,user_is_active'})
 
         assert response.status_code == status.HTTP_200_OK
-        assert set(response.data.keys()) == {'courses', 'libraries'}
+        assert set(response.data.keys()) == {'course_creator_status', 'user_is_active'}
         assert 'studio_name' not in response.data
         assert 'platform_name' not in response.data
+
+
+class TestHomeViewSetSchema(SimpleTestCase):
+    """Only the ``list`` action is published, and it describes no course or library lists."""
+
+    def test_only_the_home_settings_are_published(self):
+        paths = generate_cms_schema()['paths']
+        for prefix in ('/api/contentstore/v3/home/', '/api/authoring/v3/home/'):
+            assert prefix in paths
+            assert f'{prefix}courses/' not in paths
+            assert f'{prefix}libraries/' not in paths
+
+    def test_the_home_settings_leave_out_the_course_and_library_lists(self):
+        fields = StudioHomeContextSerializer().fields
+        for name in ('courses', 'archived_courses', 'in_process_course_actions', 'libraries'):
+            assert name not in fields
+        assert 'course_creator_status' in fields
