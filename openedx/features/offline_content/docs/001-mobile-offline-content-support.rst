@@ -6,6 +6,10 @@ Status
 
 Accepted
 
+The implementation decisions are superseded by `ADR-003`_; the product decisions stand.
+
+.. _ADR-003: 003-offline-content-generation-architecture.rst
+
 Context
 -------
 
