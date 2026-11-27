@@ -81,6 +81,11 @@ class CmsMarkSupersededPathsTest(TestCase):
             "/api/contentstore/v0/youtube_transcripts/{course_id}/upload",
             "/api/contentstore/v1/help_urls",
             "/api/contentstore/v1/course_index/{course_id}",
+            "/api/contentstore/v0/advanced_settings/{course_id}",
+            "/api/contentstore/v0/link_check/{course_id}",
+            "/api/contentstore/v0/link_check_status/{course_id}",
+            "/api/contentstore/v0/rerun_link_update/{course_id}",
+            "/api/contentstore/v0/rerun_link_update_status/{course_id}",
         }
         assert len(SUPERSEDED_PATHS) == len(set(SUPERSEDED_PATHS))
 
@@ -99,8 +104,38 @@ class CmsMarkSupersededPathsTest(TestCase):
         assert result["paths"][index]["get"] == {"deprecated": True}
         assert result["paths"][container]["get"] == {}
 
+    def test_the_advanced_settings_operations_are_marked_and_their_successor_is_not(self):
+        legacy = "/api/contentstore/v0/advanced_settings/{course_id}"
+        conforming = "/api/authoring/v1/courses/{course_key}/advanced_settings/"
+        result = self._run({"paths": {
+            legacy: {"get": {}, "patch": {}},
+            conforming: {"get": {}, "patch": {}},
+        }})
+        assert result["paths"][legacy] == {"get": {"deprecated": True}, "patch": {"deprecated": True}}
+        assert result["paths"][conforming] == {"get": {}, "patch": {}}
+
+    def test_the_course_optimizer_operations_are_marked_and_their_successors_are_not(self):
+        legacy = {
+            "/api/contentstore/v0/link_check/{course_id}": "post",
+            "/api/contentstore/v0/link_check_status/{course_id}": "get",
+            "/api/contentstore/v0/rerun_link_update/{course_id}": "post",
+            "/api/contentstore/v0/rerun_link_update_status/{course_id}": "get",
+        }
+        conforming = (
+            "/api/authoring/v1/courses/{course_key}/link_check/",
+            "/api/authoring/v1/courses/{course_key}/previous_run_link_update/",
+        )
+        result = self._run({"paths": {
+            **{path: {method: {}} for path, method in legacy.items()},
+            **{path: {"get": {}, "post": {}} for path in conforming},
+        }})
+        for path, method in legacy.items():
+            assert result["paths"][path] == {method: {"deprecated": True}}, path
+        for path in conforming:
+            assert result["paths"][path] == {"get": {}, "post": {}}, path
+
     def test_an_unrelated_contentstore_path_is_left_unmarked(self):
-        other = "/api/contentstore/v0/advanced_settings/{course_id}"
+        other = "/api/contentstore/v0/heartbeat"
         result = self._run({"paths": {other: {"get": {}}}})
         assert "deprecated" not in result["paths"][other]["get"]
 
@@ -186,6 +221,15 @@ class SpectacularSettingsTest(SimpleTestCase):
     def test_the_default_enum_hook_is_kept_alongside_the_new_one(self):
         """Setting the key replaces drf-spectacular's default list, so it is restated."""
         assert "drf_spectacular.hooks.postprocess_schema_enums" in settings.SPECTACULAR_SETTINGS["POSTPROCESSING_HOOKS"]
+
+    def test_the_run_state_enum_name_is_pinned(self):
+        """The shared settings pin the name, and no environment replaces the dict."""
+        overrides = settings.SPECTACULAR_SETTINGS["ENUM_NAME_OVERRIDES"]
+        assert overrides["CourseOptimizerStatusEnum"] == (
+            "cms.djangoapps.contentstore.rest_api.v1.course_optimizer_service.RUN_STATES"
+        )
+        for module in self.SETTINGS_MODULES:
+            assert "ENUM_NAME_OVERRIDES" not in self._source(module), module
 
     def test_no_prefix_is_trimmed_so_paths_are_emitted_in_full(self):
         assert "SCHEMA_PATH_PREFIX_TRIM" not in settings.SPECTACULAR_SETTINGS
