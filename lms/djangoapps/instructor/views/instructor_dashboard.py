@@ -716,15 +716,6 @@ def _section_data_download(course, access):
     return section_data
 
 
-def null_applicable_aside_types(block):  # pylint: disable=unused-argument
-    """
-    get_aside method for monkey-patching into applicable_aside_types
-    while rendering an HtmlBlock for email text editing. This returns
-    an empty list.
-    """
-    return []
-
-
 def _section_send_email(course, access):
     """ Provide data for the corresponding bulk email section """
     course_key = course.id
