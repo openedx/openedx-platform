@@ -21,6 +21,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.djangoapps.contentstore_shim.tests.utils import set_course_asset_backend_status_for_test
 from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
 from xmodule.contentstore.content import VERSIONED_ASSETS_PREFIX, StaticContent
 from xmodule.contentstore.django import contentstore
@@ -75,6 +76,8 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
     Tests that use the toy course.
     """
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
+    # Set to True in subclasses to store the course's Files in openedx_content instead of the legacy contentstore.
+    MIGRATED_COURSE = False
 
     @classmethod
     def setUpClass(cls):
@@ -82,6 +85,9 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
 
         cls.contentstore = contentstore()
         cls.modulestore = modulestore()
+
+        if cls.MIGRATED_COURSE:
+            set_course_asset_backend_status_for_test(CourseKey.from_string("course-v1:edX+toy+2012_Fall"))
 
         course_items = import_course_from_xml(
             cls.modulestore, 1, TEST_DATA_DIR, ['toy'],
@@ -536,6 +542,21 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
 
         is_from_cdn = views.is_cdn_request(browser_request)
         assert is_from_cdn is True
+
+
+class MigratedContentStoreToyCourseTest(ContentStoreToyCourseTest):  # pylint: disable=test-inherits-tests
+    """
+    The toy course tests, with the course's Files stored in openedx_content.
+    """
+
+    MIGRATED_COURSE = True
+
+    def test_files_are_migrated(self):
+        assert self.course_key == CourseKey.from_string("course-v1:edX+toy+2012_Fall")
+        _assets, count = self.contentstore.versioned_store.get_all_content_for_course(self.course_key)
+        assert count > 0
+        _assets, count = self.contentstore.legacy_store.get_all_content_for_course(self.course_key)
+        assert count == 0
 
 
 @ddt.ddt

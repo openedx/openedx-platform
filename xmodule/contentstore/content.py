@@ -390,6 +390,14 @@ class ContentstoreAsset(TypedDict):
     """The path that the asset was imported from (e.g. ``images/foo.png``), if any"""
 
 
+class ContentStoreReadOnlyError(Exception):
+    """
+    Raised when trying to change the Files of a course whose Files are
+    currently read-only, e.g. because they're being migrated to a different
+    backend.
+    """
+
+
 class ContentStore:
     """
     Abstraction for all ContentStore providers.
