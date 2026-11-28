@@ -211,6 +211,7 @@ RATELIMIT_RATE = '2/m'
 
 ############## openedx_content config ##############
 OPENEDX_LEARNING = {
+    # When running tests, store Component/Asset media files only in memory:
     "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}  # noqa: F405  # pylint: disable=line-too-long
 }
 
