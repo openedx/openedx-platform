@@ -2821,6 +2821,16 @@ COURSES_API_CACHE_TIMEOUT = 3600  # Value is in seconds
 
 COMPLETION_BY_VIEWING_DELAY_MS = 5000
 
+############## Settings for openedx-core's learner routes ##############
+
+# .. setting_name: OPENEDX_LEARNING_LEARNER_RESOLVER
+# .. setting_default: 'lms.djangoapps.course_home_api.utils.resolve_course_learner'
+# .. setting_description: Dotted path of the callable that every openedx-core learner route naming a
+#   learner, such as the learner competency statuses view, uses to pick the learner whose data a
+#   request may read. The contract is openedx-core ADR 0008, in
+#   docs/openedx_learning/decisions/0008-learner-resolver.rst of openedx-core.
+OPENEDX_LEARNING_LEARNER_RESOLVER = 'lms.djangoapps.course_home_api.utils.resolve_course_learner'
+
 ############### Settings for Django Rate limit #####################
 
 # .. toggle_name: RATELIMIT_ENABLE

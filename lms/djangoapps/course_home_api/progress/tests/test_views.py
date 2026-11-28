@@ -297,7 +297,7 @@ class ProgressTabTestViews(BaseCourseHomeTests):
 
         # users with the ccx coach role can view other students' progress pages
         with patch(
-            'lms.djangoapps.course_home_api.progress.views.has_ccx_coach_role',
+            'lms.djangoapps.course_home_api.utils.has_ccx_coach_role',
             return_value=True
         ):
             response = self.client.get(self.url)
