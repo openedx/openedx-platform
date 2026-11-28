@@ -277,8 +277,10 @@ class ContainerChildrenView(APIView, ContainerHandlerMixin):
             if current_xblock.has_children:
                 for child in current_xblock.children:
                     child_info = modulestore().get_item(child)
-                    user_partition_info = get_visibility_partition_info(child_info, course=course)
                     user_partitions = get_user_partition_info(child_info, course=course)
+                    user_partition_info = get_visibility_partition_info(
+                        child_info, course=course, user_partitions=user_partitions
+                    )
                     upstream_link = UpstreamLink.try_get_for_block(child_info, log_error=False)
                     validation_messages = get_xblock_validation_messages(child_info)
                     render_error = get_xblock_render_error(request, child_info)

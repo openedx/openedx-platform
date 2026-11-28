@@ -563,29 +563,35 @@ def is_currently_visible_to_students(xblock):
     return True
 
 
-def has_children_visible_to_specific_partition_groups(xblock):
+def has_children_visible_to_specific_partition_groups(xblock, course=None):
     """
     Returns True if this xblock has children that are limited to specific user partition groups.
     Note that this method is not recursive (it does not check grandchildren).
+
+    If ``course`` is provided, it is used to look up the user partitions instead
+    of loading the course from the modulestore once per child.
     """
     if not xblock.has_children:
         return False
 
     for child in xblock.get_children():
-        if is_visible_to_specific_partition_groups(child):
+        if is_visible_to_specific_partition_groups(child, course=course):
             return True
 
     return False
 
 
-def is_visible_to_specific_partition_groups(xblock):
+def is_visible_to_specific_partition_groups(xblock, course=None):
     """
     Returns True if this xblock has visibility limited to specific user partition groups.
+
+    If ``course`` is provided, it is used to look up the user partitions instead
+    of loading the course from the modulestore.
     """
     if not xblock.group_access:
         return False
 
-    for partition in get_user_partition_info(xblock):
+    for partition in get_user_partition_info(xblock, course=course):
         if any(g["selected"] for g in partition["groups"]):
             return True
 
@@ -797,11 +803,17 @@ def get_user_partition_info(xblock, schemes=None, course=None):
         # a deleted group
         # Also filter by scheme name if there's a filter defined.
         selected_groups = set(xblock.group_access.get(p.id, []) or [])
-        if (p.groups or selected_groups) and (schemes is None or p.scheme.name in schemes):
+        if schemes is not None and p.scheme.name not in schemes:
+            continue
+
+        # Some partitions (e.g. enrollment tracks) compute their groups each
+        # time the property is read, so only read it once.
+        partition_groups = p.groups
+        if partition_groups or selected_groups:
 
             # First, add groups defined by the partition
             groups = []
-            for g in p.groups:
+            for g in partition_groups:
                 # Falsey group access for a partition mean that all groups
                 # are selected.  In the UI, though, we don't show the particular
                 # groups selected, since there's a separate option for "all users".
@@ -813,7 +825,7 @@ def get_user_partition_info(xblock, schemes=None, course=None):
                 })
 
             # Next, add any groups set on the XBlock that have been deleted
-            all_groups = {g.id for g in p.groups}
+            all_groups = {g.id for g in partition_groups}
             missing_group_ids = selected_groups - all_groups
             for gid in missing_group_ids:
                 groups.append({
@@ -834,7 +846,7 @@ def get_user_partition_info(xblock, schemes=None, course=None):
     return partitions
 
 
-def get_visibility_partition_info(xblock, course=None):
+def get_visibility_partition_info(xblock, course=None, user_partitions=None):
     """
     Retrieve user partition information for the component visibility editor.
 
@@ -847,12 +859,26 @@ def get_visibility_partition_info(xblock, course=None):
             instead of loading the course.  This is useful if we're calling this function multiple
             times for the same course want to minimize queries to the modulestore.
 
+        user_partitions (list): The result of ``get_user_partition_info(xblock, course=course)``
+            with no ``schemes`` filter. Callers that already have it can pass it in so that
+            it isn't computed again. The partition dicts in it are reused in the result.
+
     Returns: dict
 
     """
+    if user_partitions is None:
+        user_partitions = get_user_partition_info(xblock, course=course)
+
+    def partitions_with_scheme(scheme):
+        """
+        Return the partitions in user_partitions that use ``scheme``, in the same
+        order that ``get_user_partition_info(xblock, schemes=[scheme])`` would.
+        """
+        return [partition for partition in user_partitions if partition["scheme"] == scheme]
+
     selectable_partitions = []
     # We wish to display enrollment partitions before cohort partitions.
-    enrollment_user_partitions = get_user_partition_info(xblock, schemes=["enrollment_track"], course=course)
+    enrollment_user_partitions = partitions_with_scheme("enrollment_track")
 
     # For enrollment partitions, we only show them if there is a selected group or
     # or if the number of groups > 1.
@@ -860,16 +886,16 @@ def get_visibility_partition_info(xblock, course=None):
         if len(partition["groups"]) > 1 or any(group["selected"] for group in partition["groups"]):
             selectable_partitions.append(partition)
 
-    team_user_partitions = get_user_partition_info(xblock, schemes=["team"], course=course)
+    team_user_partitions = partitions_with_scheme("team")
     selectable_partitions += team_user_partitions
 
     course_key = xblock.scope_ids.usage_id.course_key
     is_library = isinstance(course_key, LibraryLocator)
     if not is_library and ContentTypeGatingConfig.current(course_key=course_key).studio_override_enabled:
-        selectable_partitions += get_user_partition_info(xblock, schemes=[CONTENT_TYPE_GATING_SCHEME], course=course)
+        selectable_partitions += partitions_with_scheme(CONTENT_TYPE_GATING_SCHEME)
 
     # Now add the cohort user partitions.
-    selectable_partitions = selectable_partitions + get_user_partition_info(xblock, schemes=["cohort"], course=course)
+    selectable_partitions = selectable_partitions + partitions_with_scheme("cohort")
 
     # Find the first partition with a selected group. That will be the one initially enabled in the dialog
     # (if the course has only been added in Studio, only one partition should have a selected group).
