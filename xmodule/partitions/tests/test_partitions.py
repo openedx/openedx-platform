@@ -5,10 +5,11 @@ Test the partitions and partitions service
 
 
 from datetime import datetime
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from django.test import TestCase, override_settings
+from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import CourseLocator
 from stevedore.extension import Extension, ExtensionManager
 
@@ -549,3 +550,97 @@ class TestGetCourseUserPartitions(PartitionServiceBaseClass):
         assert 2 == len(all_partitions)
         assert self.TEST_SCHEME_NAME == all_partitions[0].scheme.name
         assert self.ENROLLMENT_TRACK_SCHEME_NAME == all_partitions[1].scheme.name
+
+
+class TestGetAllPartitionsForCourseCaching(PartitionServiceBaseClass):
+    """
+    Test the request cache for dynamic partitions in get_all_partitions_for_course.
+    """
+
+    def setUp(self):
+        super().setUp()
+        RequestCache.clear_all_namespaces()
+        self.addCleanup(RequestCache.clear_all_namespaces)
+        self.dynamic_partition = UserPartition(
+            99, "Dynamic Partition", "generated", self.TEST_GROUPS, self.non_random_scheme
+        )
+        patcher = patch(
+            "xmodule.partitions.partitions_service._get_dynamic_partitions",
+            return_value=[self.dynamic_partition],
+        )
+        self.mock_dynamic_partitions = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_repeated_calls_are_cached(self):
+        expected = [self.user_partition, self.dynamic_partition]
+        assert get_all_partitions_for_course(self.course) == expected
+        assert get_all_partitions_for_course(self.course) == expected
+        assert get_all_partitions_for_course(self.course, active_only=True) == expected
+        assert self.mock_dynamic_partitions.call_count == 1
+
+    def test_returned_list_is_not_shared(self):
+        first = get_all_partitions_for_course(self.course)
+        first.clear()
+        assert get_all_partitions_for_course(self.course) == [self.user_partition, self.dynamic_partition]
+
+    def test_adding_or_removing_static_partitions_changes_key(self):
+        other_partition = UserPartition(1, "Other Partition", "another one", self.TEST_GROUPS, self.non_random_scheme)
+        get_all_partitions_for_course(self.course)
+
+        self.course.user_partitions.append(other_partition)
+        assert get_all_partitions_for_course(self.course) == [
+            self.user_partition, other_partition, self.dynamic_partition
+        ]
+        assert self.mock_dynamic_partitions.call_count == 2
+
+        self.course.user_partitions = [other_partition]
+        assert get_all_partitions_for_course(self.course) == [other_partition, self.dynamic_partition]
+        assert self.mock_dynamic_partitions.call_count == 3
+
+    def test_editing_static_partition_reuses_dynamic_partitions(self):
+        """
+        Static partitions are always read from the course, so editing one without changing its
+        ID returns the edited version without generating the dynamic partitions again.
+        """
+        get_all_partitions_for_course(self.course)
+        renamed = self.user_partition._replace(name="Renamed")
+        self.course.user_partitions = [renamed]
+        assert get_all_partitions_for_course(self.course) == [renamed, self.dynamic_partition]
+        assert self.mock_dynamic_partitions.call_count == 1
+
+    def test_course_objects_with_same_partitions_share_entry(self):
+        """
+        The key is the course ID and its static partition IDs, not the course object, so another
+        copy of the same course reuses the cached dynamic partitions.
+        """
+        other_course = Mock(id=self.course.id, user_partitions=list(self.course.user_partitions))
+        get_all_partitions_for_course(self.course)
+        get_all_partitions_for_course(other_course)
+        assert self.mock_dynamic_partitions.call_count == 1
+
+    def test_different_courses_have_separate_entries(self):
+        other_course = Mock(
+            id=CourseLocator(org='edX', course='other', run='run'),
+            user_partitions=list(self.course.user_partitions),
+        )
+        get_all_partitions_for_course(self.course)
+        get_all_partitions_for_course(other_course)
+        assert self.mock_dynamic_partitions.call_count == 2
+
+    def test_cache_key_does_not_render_course(self):
+        """
+        Rendering a course block as a string is slow, so the cache key must not do it.
+        """
+        class UnprintableCourse:
+            """A course that fails the test if anything turns it into a string."""
+            def __init__(self, course_id, user_partitions):
+                self.id = course_id
+                self.user_partitions = user_partitions
+
+            def __repr__(self):
+                raise AssertionError("The cache key rendered the whole course")
+
+            __str__ = __repr__
+
+        course = UnprintableCourse(self.course.id, [self.user_partition])
+        assert get_all_partitions_for_course(course) == [self.user_partition, self.dynamic_partition]
