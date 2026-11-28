@@ -4,25 +4,29 @@ user partitions.  It uses the user_service key/value store provided by the LMS r
 persist the assignments.
 """
 import logging
-from typing import Dict  # noqa: UP035
+from typing import TYPE_CHECKING, Dict  # noqa: UP035
 
 from django.contrib.auth import get_user_model
+from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.keys import CourseKey
 
-from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.dynamic_partitions_generators import DynamicPartitionGeneratorsPluginManager
 from xmodule.modulestore.django import modulestore
 from xmodule.partitions.partitions import get_partition_from_id
 
-from .partitions import Group
+from .partitions import Group, UserPartition
+
+if TYPE_CHECKING:
+    from xmodule.course_block import CourseBlock
 
 User = get_user_model()
 
 log = logging.getLogger(__name__)
 
+_DYNAMIC_PARTITIONS_CACHE_NAMESPACE = "xmodule.partitions.partitions_service.dynamic_partitions"
 
-@request_cached()
-def get_all_partitions_for_course(course, active_only=False):
+
+def get_all_partitions_for_course(course: "CourseBlock", active_only: bool = False) -> list[UserPartition]:
     """
     A method that returns all `UserPartitions` associated with a course, as a List.
     This will include the ones defined in course.user_partitions, but it may also
@@ -35,7 +39,7 @@ def get_all_partitions_for_course(course, active_only=False):
         Returns:
             A List of UserPartitions associated with the course.
     """
-    all_partitions = course.user_partitions + _get_dynamic_partitions(course)
+    all_partitions = course.user_partitions + _get_cached_dynamic_partitions(course)
     if active_only:
         all_partitions = [partition for partition in all_partitions if partition.active]
     return all_partitions
@@ -68,6 +72,32 @@ def get_user_partition_groups(course_key: CourseKey, user_partitions: list, user
         if group is not None:
             partition_groups[getattr(partition, partition_dict_key)] = group
     return partition_groups
+
+
+def _get_cached_dynamic_partitions(course: "CourseBlock") -> list[UserPartition]:
+    """
+    Return the dynamic user partitions for this course, cached for the rest of the request.
+
+    Generating them takes database queries, and Studio's course outline asks for a course's
+    partitions over a thousand times per request on a large course.
+
+    The built-in generators read only two things from the course: its ID, and the IDs of its
+    static user_partitions, which they check so they don't create a partition with an ID that's
+    already taken. Everything else they use comes from the database or settings. The key is built
+    from those two things, so it changes if a static partition is added or removed during a
+    request, which Studio's group configuration handlers do. (Don't key on the course object
+    itself: XBlock.__repr__ renders every field on the course, which cost more than the work
+    being cached.)
+    """
+    cache_key = (course.id, frozenset(partition.id for partition in course.user_partitions))
+    request_cache = RequestCache(_DYNAMIC_PARTITIONS_CACHE_NAMESPACE)
+    cached_response = request_cache.get_cached_response(cache_key)
+    if cached_response.is_found:
+        return cached_response.value
+
+    dynamic_partitions = _get_dynamic_partitions(course)
+    request_cache.set(cache_key, dynamic_partitions)
+    return dynamic_partitions
 
 
 def _get_dynamic_partitions(course):
