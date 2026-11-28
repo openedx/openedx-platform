@@ -785,20 +785,18 @@ class MiscCourseTests(ContentStoreTestCase):
         # check that there's actually content in the 'question' field
         self.assertGreater(len(items[0].question), 0)  # noqa: PT009
 
-    def test_module_preview_in_whitelist(self):
+    def test_module_preview(self):
         """
         Tests the ajax callback to render an XBlock
         """
-        with override_settings(COURSES_WITH_UNSAFE_CODE=[str(self.course.id)]):
-            # also try a custom response which will trigger the 'is this course in whitelist' logic
-            resp = self.client.get_json(
-                get_url('xblock_view_handler', self.vert_loc, kwargs={'view_name': 'container_preview'})
-            )
-            self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        resp = self.client.get_json(
+            get_url('xblock_view_handler', self.vert_loc, kwargs={'view_name': 'container_preview'})
+        )
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
-            vertical = self.store.get_item(self.vert_loc)
-            for child in vertical.children:
-                self.assertContains(resp, str(child))
+        vertical = self.store.get_item(self.vert_loc)
+        for child in vertical.children:
+            self.assertContains(resp, str(child))
 
     def test_delete(self):
         # make sure the parent points to the child object which is to be deleted

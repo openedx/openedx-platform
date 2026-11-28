@@ -850,11 +850,6 @@ if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         ),
     ]
 
-if settings.ENABLE_DEBUG_RUN_PYTHON:
-    urlpatterns += [
-        path('debug/run_python', debug_views.run_python),
-    ]
-
 urlpatterns += [
     path('debug/show_parameters', debug_views.show_parameters),
 ]

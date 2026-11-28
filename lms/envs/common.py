@@ -208,10 +208,6 @@ HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/commit/8f17e6ae9ed76fa75b3caf867b65ccb632cb6870
 ENABLE_STUDENT_HISTORY_VIEW = True
 
-# Turn on a page that lets staff enter Python code to be run in the
-# sandbox, for testing whether it's enabled properly.
-ENABLE_DEBUG_RUN_PYTHON = False
-
 # Enable instructor dash to submit background tasks
 ENABLE_INSTRUCTOR_BACKGROUND_TASKS = True
 

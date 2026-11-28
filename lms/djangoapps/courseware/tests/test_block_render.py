@@ -2883,14 +2883,7 @@ class LmsModuleSystemShimTest(SharedModuleStoreTestCase):
         assert rendered == '<div id="hi" ns="main">Testing the MakoService</div>\n'
 
     @override_settings(COURSES_WITH_UNSAFE_CODE=[r'course-v1:edX\+LmsModuleShimTest\+2021_Fall'])
-    def test_can_execute_unsafe_code_when_allowed(self):
-        assert self.block.runtime.can_execute_unsafe_code()
-
-    @override_settings(COURSES_WITH_UNSAFE_CODE=[r'course-v1:edX\+full\+2021_Fall'])
-    def test_cannot_execute_unsafe_code_when_disallowed(self):
-        assert not self.block.runtime.can_execute_unsafe_code()
-
-    def test_cannot_execute_unsafe_code(self):
+    def test_cannot_execute_unsafe_code_even_when_listed(self):
         assert not self.block.runtime.can_execute_unsafe_code()
 
     @override_settings(PYTHON_LIB_FILENAME=PYTHON_LIB_FILENAME)

@@ -87,13 +87,13 @@ class RuntimeShim:
     @property
     def can_execute_unsafe_code(self):
         """
-        Determine if capa problems in this context/course are allowed to run
-        unsafe code. See xmodule/util/sandboxing.py
+        Always False.
 
-        Seems only to be used by capa.
+        Course code always runs in the codejail sandbox now, so there is no
+        unsafe execution to allow.  Kept so that XBlocks that still read it
+        don't break.
         """
-        # TODO: Refactor capa to access this directly, don't bother the runtime. Then remove it from here.
-        return False  # Change this if/when we need to support unsafe courses in the new runtime.
+        return False
 
     def get_python_lib_zip(self):
         """

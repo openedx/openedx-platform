@@ -838,7 +838,8 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             ajax_url=self.ajax_url,
             anonymous_student_id=anonymous_student_id,
             cache=cache_service,
-            can_execute_unsafe_code=sandbox_service.can_execute_unsafe_code,
+            # Remove with https://github.com/openedx/xblocks-core/issues/350
+            can_execute_unsafe_code=lambda: False,
             get_python_lib_zip=sandbox_service.get_python_lib_zip,
             DEBUG=self.debug,
             i18n=self.runtime.service(self, "i18n"),
