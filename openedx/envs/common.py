@@ -530,6 +530,24 @@ CONTEXT_PROCESSORS = [
 
 DEFAULT_TEMPLATE_ENGINE = TEMPLATES[0]
 
+############################### WSGI Startup ###############################
+
+# .. toggle_name: WSGI_WARM_UP_SERVICE_AND_FREEZE_GC
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: When True, LMS and Studio web workers load the URLconf and the
+#   modulestore classes before they serve their first request, then freeze every object
+#   created during startup (gc.freeze()) so that later garbage collections skip them, and
+#   make garbage collection run less often. Set this to False to skip all of that. See
+#   openedx/core/lib/wsgi_warmup.py for the details.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-11-28
+# .. toggle_warning: This only applies to WSGI servers that load lms/wsgi.py or
+#   cms/wsgi.py. It has no effect on Apache deployments that load lms/wsgi_apache_lms.py,
+#   or on runserver, Celery workers, or management commands.
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/pull/39437
+WSGI_WARM_UP_SERVICE_AND_FREEZE_GC = True
+
 ############################## Site Settings ###############################
 
 HTTPS = 'on'
