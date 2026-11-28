@@ -71,7 +71,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.util.monitoring import monitor_import_failure
 from openedx.core.djangoapps.content.learning_sequences.api import key_supports_outlines
 from openedx.core.djangoapps.content_libraries import api as v2contentlib_api
-from openedx.core.djangoapps.content_tagging.api import make_copied_tags_editable
+from openedx.core.djangoapps.content_tagging.api import copy_course_tags_and_criteria, make_copied_tags_editable
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
@@ -185,6 +185,8 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
 
         # set initial permissions for the user to access the course.
         initialize_permissions(destination_course_key, User.objects.get(id=user_id))
+
+        copy_course_tags_and_criteria(source_course_key, destination_course_key)
 
         # update state: Succeeded
         CourseRerunState.objects.succeeded(course_key=destination_course_key)
